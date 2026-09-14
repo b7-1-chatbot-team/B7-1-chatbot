@@ -1,235 +1,365 @@
 # 03. API 명세
 
-- Base: 개발 `http://127.0.0.1:5173/api` (Vite 프록시) · 백엔드 직접 `http://127.0.0.1:8000/api` · 운영 `https://<도메인>/api`
+> 기준 문서: [`API_명세_초안.md`](../API_명세_초안.md) · [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md)
+> 이 문서는 초안을 팀 합의 형태로 확정·상세화한 버전이다. 초안과 이 문서가 어긋나면 **초안이 기준**이다.
+
+## 0. 공통 규약
+
+### Base URL
+
+| 환경 | URL |
+|------|-----|
+| 개발(백엔드 직접) | `http://localhost:8000` |
+| 개발(프론트) | `http://localhost:5173` — axios `baseURL` 은 `VITE_API_BASE_URL` |
+| 배포 | `https://<Render 백엔드 주소>` |
+
 - 요청/응답 본문: `application/json`
-- 인증: 로그인 시 발급되는 `chatlog_session` 쿠키 (HttpOnly). curl 은 `-c/-b cookie.txt`
-- 모든 응답 헤더에 `X-Request-ID` (서버 로그의 `request_id=` 와 동일)
-- Swagger UI: `http://127.0.0.1:8000/docs`
+- Swagger UI: `<Base URL>/docs`
+
+### 인증 방식
+
+**JWT Bearer 토큰.** 로그인 성공 시 발급받은 `access_token` 을 이후 요청 헤더에 포함한다.
+
+```
+Authorization: Bearer <access_token>
+```
+
+- 서명 알고리즘 `HS256` (`JWT_ALGORITHM`), 비밀키 `JWT_SECRET_KEY`
+- 만료 `JWT_EXPIRE_MINUTES` (초안: 60분) → 응답의 `expires_in` 은 초 단위(3600)
+- 서버는 토큰 상태를 저장하지 않는다. **로그아웃은 클라이언트가 토큰을 삭제**하는 것으로 처리하며 별도 API 가 없다.
+- 만료·위조·누락은 모두 `401 UNAUTHORIZED`
+
+### 공통 에러 응답 형식
+
+모든 에러는 아래 형태로 통일한다. 프론트는 `error.code` 로 분기한다.
+
+```json
+{
+  "error": {
+    "code": "AI_TIMEOUT",
+    "message": "현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요."
+  }
+}
+```
+
+### 에러 코드 목록
+
+| code | HTTP | 발생 상황 |
+|---|---|---|
+| `VALIDATION_ERROR` | 422 | 입력값 검증 실패 (빈 입력, 길이 초과, 이메일 형식 등) |
+| `EMAIL_ALREADY_EXISTS` | 409 | 회원가입 시 이메일 중복 |
+| `INVALID_CREDENTIALS` | 401 | 로그인 실패 (이메일/비밀번호 불일치) |
+| `UNAUTHORIZED` | 401 | 토큰 없음 / 만료 / 위조 |
+| `AI_TIMEOUT` | 504 | AI API 타임아웃 |
+| `AI_CALL_FAILED` | 502 | AI API 호출 실패 (그 외 오류) |
+| `INTERNAL_ERROR` | 500 | 서버 내부 오류 |
+
+> 로그인 실패 메시지는 이메일/비밀번호 중 무엇이 틀렸는지 구분하지 않는다(계정 존재 여부 추측 방지).
 
 ## 요약
 
 | Method | Path | 인증 | 설명 | 성공 |
 |--------|------|:----:|------|------|
-| GET | `/api/health` | – | 서버·DB 상태 | 200 |
-| GET | `/api/config` | – | 공개 설정(컨텍스트 턴, 최대 길이, 데모 모드) | 200 |
 | POST | `/api/auth/signup` | – | 회원가입 | 201 |
-| POST | `/api/auth/login` | – | 로그인, 세션 쿠키 발급 | 200 |
-| POST | `/api/auth/logout` | – | 세션 삭제, 쿠키 제거 | 204 |
-| GET | `/api/auth/me` | ✅ | 현재 사용자 | 200 |
+| POST | `/api/auth/login` | – | 로그인, JWT 발급 | 200 |
+| GET | `/api/auth/me` | ✅ | 현재 사용자 (새로고침 시 상태 복원) | 200 |
 | POST | `/api/chat` | ✅ | 질문 → AI 응답 (+DB 저장) | 200 |
 | GET | `/api/me/chats` | ✅ | 내 대화 로그 | 200 |
-| GET | `/api/me/server-logs` | ✅ | 내 요청의 서버 로그 (챗 화면 패널) | 200 |
-| GET | `/api/admin/stats` | 🔒 admin | 전체 통계 | 200 |
-| GET | `/api/admin/users` | 🔒 admin | 사용자 목록 (대화 수·실패 수·최근 활동, 검색) | 200 |
-| GET | `/api/admin/users/{user_id}/chats` | 🔒 admin | 특정 사용자 대화 조회 | 200 |
-
-✅ 로그인 필요 · 🔒 admin 역할 필요 (일반 사용자 403)
-
-## 오류 응답 (공통)
-
-```json
-{ "error": "AI_TIMEOUT", "message": "현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.", "request_id": "1f3a9c0b7d2e" }
-```
-
-| 상태 | error | 발생 상황 |
-|------|-------|-----------|
-| 400 | `INVALID_INPUT` | 빈 질문/공백, 1000자 초과, 아이디·비밀번호 형식, 운영에서 simulate 사용 |
-| 401 | `UNAUTHORIZED` | 쿠키 없음/세션 없음 |
-| 401 | `SESSION_EXPIRED` | 세션 만료 |
-| 401 | `INVALID_CREDENTIALS` | 로그인 실패 |
-| 403 | `FORBIDDEN_ORIGIN` | 허용되지 않은 Origin 의 POST (CSRF 방어) |
-| 403 | `FORBIDDEN` | admin 이 아닌 사용자의 관리자 API 호출 |
-| 404 | `USER_NOT_FOUND` | 관리자 대화 조회 대상 사용자 없음 |
-| 409 | `USERNAME_TAKEN` | 중복 아이디 |
-| 503 | `AI_TIMEOUT` | AI 호출이 `AI_TIMEOUT` 초 초과 |
-| 503 | `AI_ERROR` | AI 인증 실패·429·5xx·연결 실패·거절·빈 응답 |
-| 503 | `DB_UNAVAILABLE` | health 에서 DB 연결 실패 |
-| 500 | `INTERNAL_ERROR` | 처리되지 않은 예외 (로그 `unhandled_error`) |
 
 ---
 
-## GET /api/health
+## 1. 인증 (담당: 어썸체크 / 팀장)
 
-```bash
-curl -i http://127.0.0.1:8000/api/health
+### 1-1. 회원가입
+
 ```
+POST /api/auth/signup
+```
+
+**Request**
 ```json
-200 {"status":"ok","db":"ok"}
+{
+  "email": "user@example.com",
+  "password": "password1234",
+  "nickname": "어썸체크"
+}
 ```
 
-## GET /api/config
+**Response `201 Created`**
 ```json
-200 {"service_name":"Chatlog","context_turns":5,"max_message_length":1000,"demo_mode":true,"ai_provider":"mock","ai_model":"mock"}
+{
+  "id": 1,
+  "email": "user@example.com",
+  "nickname": "어썸체크",
+  "created_at": "2026-09-14T10:00:00+09:00"
+}
 ```
 
-## POST /api/auth/signup
+**검증 규칙**
 
 | 필드 | 규칙 |
 |------|------|
-| username | `^[A-Za-z0-9_]{3,30}$` |
-| password | 4~72자 (bcrypt 72byte 한계) |
+| `email` | 이메일 형식(Pydantic `EmailStr`), 중복 불가 |
+| `password` | 최소 8자 이상 |
+| `nickname` | 1~20자 |
+
+- 비밀번호는 **bcrypt 로 해싱해서 저장** (평문 저장 금지). 응답에 해시를 포함하지 않는다.
+
+**에러**: `VALIDATION_ERROR`(422), `EMAIL_ALREADY_EXISTS`(409)
 
 ```bash
-curl -i -X POST http://127.0.0.1:8000/api/auth/signup \
-  -H 'Content-Type: application/json' -d '{"username":"alice","password":"pass1234"}'
+curl -i -X POST http://localhost:8000/api/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"password1234","nickname":"어썸체크"}'
 ```
 ```json
-201 {"id":2,"username":"alice","created_at":"2026-09-14T02:43:29.807150Z"}
-409 {"error":"USERNAME_TAKEN","message":"이미 사용 중인 아이디입니다.","request_id":"..."}
-400 {"error":"INVALID_INPUT","message":"아이디는 영문·숫자·밑줄(_) 3~30자로 입력해 주세요.","request_id":"..."}
+409 {"error":{"code":"EMAIL_ALREADY_EXISTS","message":"이미 가입된 이메일입니다."}}
+422 {"error":{"code":"VALIDATION_ERROR","message":"비밀번호는 8자 이상으로 입력해 주세요."}}
 ```
 
-## POST /api/auth/login
+---
 
-```bash
-curl -i -c cookie.txt -X POST http://127.0.0.1:8000/api/auth/login \
-  -H 'Content-Type: application/json' -d '{"username":"tester","password":"<DEMO_PASSWORD>"}'
-```
-```
-HTTP/1.1 200 OK
-set-cookie: chatlog_session=Xy...; HttpOnly; Max-Age=86400; Path=/; SameSite=lax
+### 1-2. 로그인
 
-{"id":1,"username":"tester","created_at":"2026-09-14T02:41:11.120000Z"}
 ```
+POST /api/auth/login
+```
+
+**Request**
 ```json
-401 {"error":"INVALID_CREDENTIALS","message":"아이디 또는 비밀번호가 올바르지 않습니다.","request_id":"..."}
+{
+  "email": "user@example.com",
+  "password": "password1234"
+}
 ```
 
-## POST /api/auth/logout
-```bash
-curl -i -b cookie.txt -X POST http://127.0.0.1:8000/api/auth/logout   # 204, set-cookie: chatlog_session=""; Max-Age=0
-```
-
-## GET /api/auth/me
+**Response `200 OK`**
 ```json
-200 {"id":1,"username":"tester","created_at":"..."}
-401 {"error":"UNAUTHORIZED","message":"로그인이 필요합니다.","request_id":"..."}
-```
-
-## POST /api/chat
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| message | string | 필수. 앞뒤 공백 제거 후 1~`MAX_MESSAGE_LENGTH`(1000)자 |
-| simulate | `"timeout"` \| `"error"` \| null | 선택. `DEMO_MODE=true` 에서만 허용 |
-
-```bash
-curl -b cookie.txt -X POST http://127.0.0.1:8000/api/chat \
-  -H 'Content-Type: application/json' -d '{"message":"배포 방법 알려줘"}'
-curl -b cookie.txt -X POST http://127.0.0.1:8000/api/chat \
-  -H 'Content-Type: application/json' -d '{"message":"내가 방금 뭘 물어봤지?"}'
-```
-```json
-200 {
-  "chat_id": 12,
-  "answer": "직전에 '배포 방법 알려줘'라고 물어보셨어요. (mock · 컨텍스트 1턴 전달됨)",
-  "latency_ms": 402,
-  "context_turns": 1,
-  "saved": true,
-  "request_id": "a81c2f0e9b13",
-  "created_at": "2026-09-14T02:44:05.101200Z"
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 3600
 }
 ```
 
 | 필드 | 의미 |
 |------|------|
-| context_turns | 이번 AI 호출에 함께 보낸 이전 Q/A 개수 |
-| saved | DB 저장 성공 여부 (false 여도 답변은 반환) |
+| `access_token` | JWT. payload 에 `sub`(user_id), `exp` 포함 |
+| `token_type` | 항상 `bearer` |
+| `expires_in` | 만료까지 남은 초. `JWT_EXPIRE_MINUTES × 60` |
 
-오류:
-```json
-400 {"error":"INVALID_INPUT","message":"질문은 1~1000자로 입력해 주세요.","request_id":"..."}
-401 {"error":"UNAUTHORIZED","message":"로그인이 필요합니다.","request_id":"..."}
-503 {"error":"AI_TIMEOUT","message":"현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.","request_id":"..."}
-503 {"error":"AI_ERROR","message":"AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.","request_id":"..."}
-```
-
-## GET /api/me/chats?limit=50
-
-`limit` 1~200. 세션 사용자 본인 기록만, 최신순.
+**에러**: `VALIDATION_ERROR`(422), `INVALID_CREDENTIALS`(401)
 
 ```bash
-curl -b cookie.txt 'http://127.0.0.1:8000/api/me/chats?limit=2'
+curl -X POST http://localhost:8000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"password1234"}'
 ```
 ```json
-200 {
-  "items": [
-    {"id":13,"user_id":1,"question":"긴 글 요약해줘","answer":null,"status":"error","error_code":"AI_TIMEOUT",
-     "latency_ms":15002,"request_id":"c0ffee123456","created_at":"2026-09-14T02:45:10.000000Z"},
-    {"id":12,"user_id":1,"question":"내가 방금 뭘 물어봤지?","answer":"직전에 ...","status":"success","error_code":null,
-     "latency_ms":402,"request_id":"a81c2f0e9b13","created_at":"2026-09-14T02:44:05.101200Z"}
-  ],
-  "count": 13,
-  "avg_latency_ms": 405
+401 {"error":{"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호가 올바르지 않습니다."}}
+```
+
+---
+
+### 1-3. 내 정보 조회
+
+> 프론트가 새로고침 후 로그인 상태를 복원할 때 사용한다.
+
+```
+GET /api/auth/me
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`**
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "nickname": "어썸체크"
 }
 ```
 
-## 관리자 API (role=admin)
+**에러**: `UNAUTHORIZED`(401)
 
-관리자 계정은 `.env` 의 `ADMIN_USERNAME`/`ADMIN_PASSWORD` 로 서버 시작 시 생성된다. 로그인 방법은 일반 사용자와 같다.
-```bash
-curl -c admin.txt -X POST http://127.0.0.1:8000/api/auth/login \
-  -H 'Content-Type: application/json' -d '{"username":"admin","password":"<ADMIN_PASSWORD>"}'
-# 200 {"id":150,"username":"admin","role":"admin","created_at":"..."}
-```
-
-### GET /api/admin/stats
 ```json
-200 {"users":150,"chats":148,"errors":35,"avg_latency_ms":400}
-403 {"error":"FORBIDDEN","message":"관리자만 접근할 수 있습니다.","request_id":"..."}
+401 {"error":{"code":"UNAUTHORIZED","message":"로그인이 필요합니다."}}
 ```
 
-### GET /api/admin/users?q=&limit=50&offset=0
-| 파라미터 | 설명 |
-|----------|------|
-| q | username 부분 검색 (최대 30자) |
-| limit | 1~200 (기본 50) |
-| offset | 0 이상 |
+---
 
-정렬: 최근 대화 시각 내림차순, 대화 없는 사용자는 뒤.
-```bash
-curl -b admin.txt 'http://127.0.0.1:8000/api/admin/users?q=trk&limit=2'
+### 1-4. 로그아웃 (API 없음)
+
+JWT 는 서버가 상태를 갖지 않으므로 **로그아웃 엔드포인트를 두지 않는다.**
+프론트가 저장된 토큰을 삭제하고 인증 상태를 초기화한 뒤 로그인 화면으로 이동한다.
+(토큰은 `JWT_EXPIRE_MINUTES` 경과 시 서버에서 거부된다.)
+
+---
+
+## 2. 챗봇 (담당: 박성현A)
+
+### 2-1. 질문 전송
+
 ```
+POST /api/chat
+Authorization: Bearer <token>
+```
+
+**Request**
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `message` | string | 필수. 앞뒤 공백 제거 후 1~`MAX_MESSAGE_LENGTH`(1000)자 |
+
 ```json
-200 {
-  "items": [
-    {"id":42,"username":"trk_1a2b3c4d","role":"user","created_at":"2026-09-14T05:10:00Z",
-     "chat_count":3,"error_count":1,"last_chat_at":"2026-09-14T05:10:02Z"}
-  ],
-  "total": 1
+{
+  "message": "FastAPI에서 CORS 설정은 어떻게 해?"
 }
 ```
 
-### GET /api/admin/users/{user_id}/chats?status=&limit=50&offset=0
-| 파라미터 | 설명 |
-|----------|------|
-| status | `success` \| `error` \| (생략 = 전체) |
-| limit / offset | 위와 동일 |
+**Response `200 OK`**
+```json
+{
+  "chat_id": 987,
+  "question": "FastAPI에서 CORS 설정은 어떻게 해?",
+  "answer": "FastAPI에서는 CORSMiddleware를 사용합니다...",
+  "created_at": "2026-09-14T10:05:12+09:00"
+}
+```
+
+**동작 흐름**
+
+1. 인증 확인 (비로그인 시 `UNAUTHORIZED`)
+2. 입력 검증 (빈 문자열·공백만 차단, 최대 길이 1000자) — **AI 호출 이전에 수행**
+3. 해당 사용자의 최근 N개 대화를 DB 에서 조회 → 컨텍스트 구성
+4. Gemini API 호출 (`httpx`, 타임아웃 `AI_TIMEOUT_SECONDS`)
+5. 응답 수신 → `chat_logs` 에 질문/응답 저장
+6. 결과 반환
+
+**컨텍스트 유지 정책**
+
+- 같은 사용자의 최근 `AI_CONTEXT_TURNS`(초안: 5)개 Q/A 쌍을 프롬프트에 포함한다.
+- 토큰 초과 방지를 위해 **오래된 것부터** 잘라낸다.
+- 조회는 항상 `WHERE user_id = <토큰의 사용자>` 로 강제한다. 클라이언트가 보낸 user_id 는 사용하지 않는다.
+
+**에러**: `UNAUTHORIZED`(401), `VALIDATION_ERROR`(422), `AI_TIMEOUT`(504), `AI_CALL_FAILED`(502)
+
+```json
+422 {"error":{"code":"VALIDATION_ERROR","message":"질문은 1~1000자로 입력해 주세요."}}
+504 {"error":{"code":"AI_TIMEOUT","message":"현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요."}}
+502 {"error":{"code":"AI_CALL_FAILED","message":"AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요."}}
+```
+
+> **AI 호출이 실패해도 서버는 종료되지 않고 위 에러 응답을 반환해야 한다.**
+> 타임아웃/실패 이후에 보낸 정상 질문은 계속 200 으로 처리되어야 한다.
+
+---
+
+## 3. 대화 로그 (담당: 어썸체크 / 팀장)
+
+### 3-1. 내 대화 로그 조회
+
+```
+GET /api/me/chats?limit=20&offset=0
+Authorization: Bearer <token>
+```
+
+**Query Parameters**
+
+| 이름 | 타입 | 기본값 | 설명 |
+|---|---|---|---|
+| `limit` | int | 20 | 조회 개수 (최대 100) |
+| `offset` | int | 0 | 시작 위치 |
+
+**Response `200 OK`**
+```json
+{
+  "total": 42,
+  "items": [
+    {
+      "chat_id": 987,
+      "question": "FastAPI에서 CORS 설정은 어떻게 해?",
+      "answer": "FastAPI에서는 CORSMiddleware를 사용합니다...",
+      "created_at": "2026-09-14T10:05:12+09:00"
+    }
+  ]
+}
+```
+
+| 필드 | 의미 |
+|------|------|
+| `total` | 해당 사용자의 전체 기록 수 (페이지네이션용) |
+| `items` | 최신순 정렬 |
+
+**에러**: `UNAUTHORIZED`(401)
 
 ```bash
-curl -b admin.txt 'http://127.0.0.1:8000/api/admin/users/42/chats?status=error'
-```
-```json
-200 {
-  "user": {"id":42,"username":"trk_1a2b3c4d","role":"user","created_at":"2026-09-14T05:10:00Z"},
-  "items": [
-    {"id":301,"user_id":42,"question":"오류 질문","answer":null,"status":"error","error_code":"AI_ERROR",
-     "latency_ms":300,"request_id":"9f07e894e269","created_at":"2026-09-14T05:10:02Z"}
-  ],
-  "count": 1,
-  "avg_latency_ms": 401
-}
-404 {"error":"USER_NOT_FOUND","message":"사용자를 찾을 수 없습니다.","request_id":"..."}
-```
-감사 로그: `admin_list_users user_id=150 q=trk count=1`, `admin_view_chats user_id=150 target_user_id=42 status=error`
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"password1234"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 
-## GET /api/me/server-logs?limit=30
-```json
-200 [
-  {"time":"11:44:05","level":"INFO","line":"request_received method=POST path=/api/chat","request_id":"a81c2f0e9b13"},
-  {"time":"11:44:05","level":"INFO","line":"chat_request user_id=1 length=14","request_id":"a81c2f0e9b13"},
-  {"time":"11:44:05","level":"INFO","line":"ai_call_start user_id=1 provider=mock context_turns=1","request_id":"a81c2f0e9b13"},
-  {"time":"11:44:05","level":"INFO","line":"ai_call_success user_id=1 latency_ms=402","request_id":"a81c2f0e9b13"},
-  {"time":"11:44:05","level":"INFO","line":"db_save_success user_id=1 chat_id=12 status=success","request_id":"a81c2f0e9b13"}
-]
+curl -H "Authorization: Bearer $TOKEN" 'http://localhost:8000/api/me/chats?limit=20&offset=0'
 ```
+
+> 이 엔드포인트가 평가지의 **"사용자 기준 대화 로그 조회/추적"** 항목을 충족한다.
+
+---
+
+## 4. 연관 DB 스키마 (참고)
+
+API 응답 형태와 직결되므로 함께 정리한다. 상세는 [04-database.md](04-database.md).
+
+### `users`
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `id` | INTEGER PK | 사용자 식별자 |
+| `email` | TEXT UNIQUE | 로그인 ID |
+| `hashed_password` | TEXT | 해싱된 비밀번호 (bcrypt) |
+| `nickname` | TEXT | 표시 이름 |
+| `created_at` | DATETIME | 가입 시각 |
+
+### `chat_logs`
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `id` | INTEGER PK | 대화 식별자 (응답에서는 `chat_id`) |
+| `user_id` | INTEGER FK → users.id | 사용자 식별 |
+| `question` | TEXT | 사용자 질문 |
+| `answer` | TEXT | AI 응답 |
+| `created_at` | DATETIME | 생성 시각 |
+
+> 평가지 최소 추적 필드(사용자 / 시간 / 질문 / 응답)를 모두 포함한다.
+
+---
+
+## 5. 서버 로그 이벤트 규약
+
+세 트랙이 같은 포맷으로 로그를 남긴다.
+
+```
+INFO  request_received   user_id=12 path=/api/chat
+INFO  ai_call_start      user_id=12 request_id=abc123
+INFO  ai_call_success    request_id=abc123 latency_ms=1240
+ERROR ai_call_failed     request_id=abc123 reason=timeout
+INFO  db_save_success    user_id=12 chat_id=987
+ERROR db_save_failed     user_id=12 reason=...
+```
+
+- 질문 원문·비밀번호·API 키는 로그에 남기지 않는다.
+- `request_id` 로 한 요청의 흐름을 이어서 추적한다.
+
+---
+
+## 6. 확정 전 합의가 필요한 항목
+
+`API_명세_초안.md` §6 과 동일하게 관리한다. 확정되면 이 표와 초안을 함께 갱신한다.
+
+| 항목 | 초안 값 | 상태 |
+|------|---------|------|
+| JWT 만료 시간 | 1시간 (`JWT_EXPIRE_MINUTES=60`) | 합의 필요 |
+| 컨텍스트 유지 개수 N | 5 (`AI_CONTEXT_TURNS=5`) | 합의 필요 |
+| AI API 타임아웃 | 30초 (`AI_TIMEOUT_SECONDS=30`) | 합의 필요 |
+| 질문 최대 길이 | 1000자 (`MAX_MESSAGE_LENGTH=1000`) | 합의 필요 |
+| 사용할 AI API 제공자 | **Google Gemini (Flash 계열)** | `기술스택_및_아키텍처.md` 에서 선택됨 |
+| 토큰 저장 위치 | localStorage vs 메모리 | **프론트(이성준) 결정** |
+| React 빌드 서빙 방식 | **Vercel 별도 배포** (FastAPI 서빙 안 함) | `기술스택_및_아키텍처.md` 에서 선택됨 |

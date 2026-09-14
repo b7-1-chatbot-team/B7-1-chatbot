@@ -1,137 +1,210 @@
-# 06. 실행 · 배포 방법
+# 06. 설치 · 실행 · 배포
+
+> 기준 문서: [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md) §2 §4 §5
 
 ## 1. 요구 환경
-- Python 3.11+ (검증: 3.14.7) · Node.js 20+ (검증: 24.11) · sqlite3 CLI
 
-## 2. 환경 변수 (backend/.env)
+- Python 3.11+
+- Node.js 20+
+- sqlite3 CLI (DB 확인용)
 
-`cp backend/.env.example backend/.env` 후 값 입력. **`.env` 는 `.gitignore` 로 커밋 금지.**
+## 2. 설치
+
+### 백엔드
+
+`backend/requirements.txt`
+
+```
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+bcrypt==4.2.1
+pyjwt==2.10.1
+httpx==0.28.1
+python-multipart==0.0.20
+```
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env        # 값 입력 (§3)
+uvicorn app.main:app --reload
+# → http://localhost:8000  ·  Swagger: http://localhost:8000/docs
+```
+
+### 프론트엔드
+
+```bash
+npm create vite@latest frontend -- --template react
+cd frontend
+npm install react-router-dom axios
+npm install -D tailwindcss @tailwindcss/vite
+npm run dev
+# → http://localhost:5173
+```
+
+## 3. 환경변수
+
+### `backend/.env` (`.env.example` 을 복사해서 사용)
+
+**`.env` 는 절대 커밋하지 않는다.** 저장소에는 값이 비어 있는 `.env.example` 만 둔다.
+
+```
+GEMINI_API_KEY=
+JWT_SECRET_KEY=
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=60
+DATABASE_URL=sqlite:///./data/app.db
+AI_TIMEOUT_SECONDS=30
+AI_CONTEXT_TURNS=5
+MAX_MESSAGE_LENGTH=1000
+CORS_ORIGINS=
+```
 
 | 키 | 기본값 | 설명 | 민감 |
 |----|--------|------|:----:|
-| `APP_ENV` | development | 실행 환경 표기 | |
-| `DATABASE_URL` | `sqlite:///backend/app.db` | SQLAlchemy URL | |
-| `AI_PROVIDER` | auto | `auto`(키 있으면 anthropic) / `anthropic` / `mock` | |
-| `ANTHROPIC_API_KEY` | (없음) | Claude API 키 — **서버에서만 사용** | ✅ |
-| `AI_MODEL` | claude-opus-5 | 사용 모델 | |
-| `AI_EFFORT` | low | 응답 깊이(low~max). 챗은 지연 최소화 위해 low | |
-| `AI_MAX_TOKENS` | 4096 | 응답 최대 토큰 | |
-| `AI_TIMEOUT` | 15 | AI 호출 총 제한 시간(초) | |
-| `CONTEXT_TURNS` | 5 | 함께 보낼 이전 Q/A 수 | |
-| `MAX_MESSAGE_LENGTH` | 1000 | 질문 최대 글자수 | |
-| `DEMO_MODE` | true | 응답 시뮬레이션 허용 (평가 시연용) | |
-| `SESSION_TTL_HOURS` | 24 | 세션 유효 시간 | |
-| `SESSION_COOKIE_SECURE` | false | **운영 HTTPS 에서 true** | |
-| `ALLOWED_ORIGINS` | localhost:5173 | 허용 Origin (쉼표 구분) | |
-| `DEMO_USERNAME` | tester | 시작 시 생성할 데모 계정 | |
-| `DEMO_PASSWORD` | (없음) | 데모 계정 비밀번호. 비우면 생성 안 함 | ✅ |
-| `ADMIN_USERNAME` | admin | 시작 시 생성(또는 승격)할 관리자 아이디 | |
-| `ADMIN_PASSWORD` | (없음) | 관리자 비밀번호. 비우면 관리자 생성 안 함. **이미 존재하는 계정의 비밀번호는 바꾸지 않음** | ✅ |
+| `GEMINI_API_KEY` | (없음) | Google Gemini API 키 — **서버에서만 사용** | ✅ |
+| `JWT_SECRET_KEY` | (없음) | JWT 서명 키. 충분히 긴 난수 (`python -c "import secrets;print(secrets.token_urlsafe(48))"`) | ✅ |
+| `JWT_ALGORITHM` | `HS256` | 서명 알고리즘. 디코드 시에도 이 값으로 **고정** | |
+| `JWT_EXPIRE_MINUTES` | `60` | 토큰 만료(분). 응답 `expires_in` = ×60 | |
+| `DATABASE_URL` | `sqlite:///./data/app.db` | SQLAlchemy URL | |
+| `AI_TIMEOUT_SECONDS` | `30` | Gemini 호출 제한 시간(초) | |
+| `AI_CONTEXT_TURNS` | `5` | 프롬프트에 포함할 최근 Q/A 수 | |
+| `MAX_MESSAGE_LENGTH` | `1000` | 질문 최대 글자수 | |
+| `CORS_ORIGINS` | (없음) | 허용 Origin, 쉼표 구분. 예: `http://localhost:5173,https://<앱>.vercel.app` | |
 
-`frontend/.env` (선택): `VITE_API_PROXY_TARGET=http://127.0.0.1:8000` — 개발 프록시 대상. **브라우저 번들에 비밀값을 넣지 않는다.**
+### `frontend/.env`
 
-## 3. 로컬 실행
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+> **프론트 `.env` 에는 비밀값을 절대 넣지 않는다.** `VITE_` 접두어 변수는 빌드 결과물에 그대로 포함되어 브라우저에서 볼 수 있다. Gemini 키는 백엔드에만 둔다.
+
+## 4. 로컬 실행 확인
 
 ```bash
 # 1) 백엔드
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env            # DEMO_PASSWORD, ADMIN_PASSWORD, (선택) ANTHROPIC_API_KEY 입력
-uvicorn app.main:app --reload --port 8000
-#   → 시작 로그: demo_user_seeded username=tester / admin_user_seeded username=admin action=created
-#                app_started ai_provider=mock|anthropic
+cd backend && source .venv/bin/activate && uvicorn app.main:app --reload
 
 # 2) 프론트 (새 터미널)
-cd frontend
-npm install
-npm run dev                     # http://127.0.0.1:5173
+cd frontend && npm run dev
 
-# 3) 확인
-curl http://127.0.0.1:5173/api/health    # {"status":"ok","db":"ok"}
-# 브라우저: http://127.0.0.1:5173  일반 사용자(DEMO_USERNAME) / 관리자(ADMIN_USERNAME → "관리자" 탭)
+# 3) API 확인
+curl -X POST http://localhost:8000/api/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"password1234","nickname":"어썸체크"}'
+
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"password1234"}' \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+
+curl -X POST http://localhost:8000/api/chat \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"message":"FastAPI에서 CORS 설정은 어떻게 해?"}'
+
+curl -H "Authorization: Bearer $TOKEN" 'http://localhost:8000/api/me/chats?limit=20&offset=0'
 ```
 
-## 4. 운영 배포 (Ubuntu VM + Nginx + systemd)
+## 5. CORS 설정
 
-### 선택 이유
-- **단일 VM**: SQLite 파일 DB·메모리 로그 버퍼를 쓰는 단일 프로세스 구조에 맞음. 비용 최소 (AWS Lightsail/EC2, GCP e2-micro, Oracle Free Tier 등)
-- **Nginx**: React 정적 파일 서빙 + `/api` 리버스 프록시를 **같은 도메인**으로 → 세션 쿠키·CSRF 설정이 단순, CORS 불필요
-- **systemd**: 프로세스 비정상 종료 시 자동 재시작(`Restart=always`), 부팅 시 자동 시작
-- **certbot**: 무료 HTTPS → `Secure` 쿠키 사용 가능
-- uvicorn `--workers 1`: SQLite 동시 쓰기와 메모리 링버퍼 일관성 유지 (PoC 규모 충분)
+프론트(Vercel)와 백엔드(Render)가 **다른 도메인**이므로 CORS 가 필수다.
 
-### 최초 설치
-```bash
-# 0) 서버 준비 (보안그룹/방화벽: 22, 80, 443 오픈)
-sudo apt update && sudo apt install -y python3-venv nginx sqlite3 git rsync
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs
-sudo useradd -r -m -d /opt/chatlog chatlog
+```python
+# app/main.py
+from fastapi.middleware.cors import CORSMiddleware
 
-# 1) 코드
-sudo -u chatlog git clone <REPO_URL> /opt/chatlog
-cd /opt/chatlog/backend
-sudo -u chatlog python3 -m venv .venv
-sudo -u chatlog .venv/bin/pip install -r requirements.txt
-sudo -u chatlog cp .env.example .env && sudo chmod 600 .env
-sudo -u chatlog nano .env
-#   APP_ENV=production
-#   ANTHROPIC_API_KEY=...        DEMO_PASSWORD=...        ADMIN_PASSWORD=... (평가용 관리자, 강한 비밀번호)
-#   SESSION_COOKIE_SECURE=true   ALLOWED_ORIGINS=https://<도메인>
-#   DEMO_MODE=true  (평가 기간 시연용. 종료 후 false)
-
-# 2) 프론트 빌드
-cd /opt/chatlog/frontend && sudo -u chatlog npm ci && sudo -u chatlog npm run build
-sudo mkdir -p /var/www/chatlog && sudo rsync -a --delete dist/ /var/www/chatlog/
-
-# 3) systemd
-sudo cp /opt/chatlog/deploy/systemd/chatlog.service /etc/systemd/system/
-sudo systemctl daemon-reload && sudo systemctl enable --now chatlog
-sudo systemctl status chatlog
-
-# 4) Nginx
-sudo cp /opt/chatlog/deploy/nginx/chatlog.conf /etc/nginx/sites-available/chatlog.conf
-sudo sed -i 's/chatlog.example.com/<도메인>/' /etc/nginx/sites-available/chatlog.conf
-sudo ln -s /etc/nginx/sites-available/chatlog.conf /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-
-# 5) HTTPS
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d <도메인>
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,   # 개발 서버 + Vercel 도메인
+    allow_credentials=False,                    # JWT 헤더 방식이라 쿠키 불필요
+    allow_methods=["*"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 ```
 
-### 재배포
-```bash
-ssh <server> 'sudo -u chatlog bash /opt/chatlog/deploy/deploy.sh'
-```
-(`git pull` → pip → **pytest 통과 확인** → npm build → 정적 파일 교체 → 서비스 재시작 → health 확인)
+- 개발: `http://localhost:5173`, `http://127.0.0.1:5173`
+- 배포: `https://<앱>.vercel.app` (+ Vercel 프리뷰 도메인이 필요하면 함께 추가)
+- `allow_origins=["*"]` 는 쓰지 않는다.
 
-### 운영 확인 명령
-```bash
-sudo systemctl status chatlog
-sudo journalctl -u chatlog -n 50
-tail -f /opt/chatlog/backend/logs/app.log
-grep ai_call_failed /opt/chatlog/backend/logs/app.log
-sqlite3 /opt/chatlog/backend/app.db < /opt/chatlog/backend/scripts/check_logs.sql
+## 6. 배포
+
+### 6-1. 백엔드 — Render
+
+| 항목 | 값 |
+|------|-----|
+| 서비스 종류 | Web Service (무료) |
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| 환경변수 | Render 대시보드 **Environment** 에 §3 의 키를 등록 (`.env` 파일 업로드 금지) |
+
+체크 포인트
+- `CORS_ORIGINS` 에 Vercel 도메인을 넣는다.
+- **15분 유휴 시 슬립** → 첫 요청이 수십 초 걸릴 수 있다. 평가 직전에 한 번 깨워 두거나, 프론트에서 첫 로딩 시 안내 문구를 띄운다.
+- 파일시스템이 영속되지 않으므로 SQLite 데이터가 재배포 시 사라질 수 있다 → [04-database.md](04-database.md) "운영 주의: Render 디스크"
+
+### 6-2. 프론트 — Vercel
+
+| 항목 | 값 |
+|------|-----|
+| Framework Preset | Vite |
+| Root Directory | `frontend` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| 환경변수 | `VITE_API_BASE_URL=https://<Render 백엔드 주소>` |
+
+체크 포인트
+- SPA 라우팅: `/chat` 직접 접속(새로고침)이 404 나면 `vercel.json` 에 rewrite 추가
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
 ```
 
-### 외부 접속 검증 (평가 전 필수)
+### 6-3. 배포 순서
+
+1. Render 에 백엔드 먼저 배포 → 백엔드 URL 확보
+2. Vercel 환경변수 `VITE_API_BASE_URL` 에 그 URL 입력 → 프론트 배포 → Vercel URL 확보
+3. Render 환경변수 `CORS_ORIGINS` 에 Vercel URL 추가 → **백엔드 재배포**
+4. README 의 서비스 URL 칸에 Vercel URL 기입
+
+## 7. 외부 접속 검증 (평가 전 필수)
+
 ```bash
 # 서버 밖(다른 네트워크, 휴대폰 핫스팟 등)에서
-curl -i https://<도메인>/api/health
-BASE=https://<도메인> DEMO_PASSWORD=<값> ADMIN_PASSWORD=<값> bash backend/scripts/e2e_flow.sh
+curl -i https://<render-backend>/docs
+curl -i -X POST https://<render-backend>/api/auth/login \
+  -H 'Content-Type: application/json' -d '{"email":"...","password":"..."}'
 ```
+브라우저로 `https://<앱>.vercel.app` 접속 → 가입 → 로그인 → 질문 → 응답 → 로그 조회까지 전 흐름 재현.
 
-## 5. 트러블슈팅
+## 8. 트러블슈팅
+
 | 증상 | 원인 / 해결 |
 |------|-------------|
-| 로그인 후에도 계속 401 | HTTP 로 접속 중인데 `SESSION_COOKIE_SECURE=true` → HTTPS 로 접속하거나 개발에서는 false |
-| POST 가 403 FORBIDDEN_ORIGIN | `ALLOWED_ORIGINS` 에 실제 접속 도메인 누락, 또는 Nginx 에서 Host 전달 누락. **`$host` 는 포트를 제거**하므로 비표준 포트(예: 8443)에서는 `proxy_set_header Host $http_host` 사용 (검증 N06) |
-| 64KB 넘는 요청이 413 | 의도된 제한 (`client_max_body_size 64k`) |
-| `/chat` 새로고침 시 404 | Nginx `try_files ... /index.html` 누락 |
-| 관리자 탭이 안 보임 | `ADMIN_PASSWORD` 비어 있음 → 로그 `admin_user_seeded` 없음. 설정 후 재시작 |
-| 관리자 로그인 실패 | 계정이 이미 있으면 `.env` 비밀번호로 갱신되지 않음 (시드는 생성·승격만) |
-| 항상 mock 응답 | `ANTHROPIC_API_KEY` 비어 있음 (`app_started ai_provider=mock` 로그로 확인) |
-| 모든 질문이 AI_ERROR | 로그 `detail=auth_failed`(키 오류) / `rate_limited` / `status_5xx` 확인 |
-| 502 Bad Gateway | uvicorn 중지 → `systemctl status chatlog`, `journalctl -u chatlog` |
+| 브라우저 콘솔에 CORS 오류 | `CORS_ORIGINS` 에 실제 프론트 도메인 누락 → 추가 후 Render 재배포 |
+| 첫 요청이 30초 이상 걸림 | Render 무료 플랜 슬립에서 깨어나는 중 (콜드 스타트). 미리 한 번 호출해 둔다 |
+| 로그인은 되는데 이후 요청이 401 | axios 인터셉터가 `Authorization` 헤더를 붙이지 않음 / 토큰 저장 키 불일치 |
+| 배포 후 계속 401 | Render 재배포로 SQLite 가 초기화되어 계정이 사라짐 → 재가입 |
+| 모든 질문이 `AI_CALL_FAILED` | `GEMINI_API_KEY` 미설정·오류. 로그 `ai_call_failed reason=` 확인 (`auth_failed` / `rate_limited` / `status_5xx`) |
+| 가끔 `AI_CALL_FAILED` (429) | Gemini 무료 티어 rate limit. 잠시 후 재시도 |
+| 응답이 계속 `AI_TIMEOUT` | `AI_TIMEOUT_SECONDS` 가 너무 짧거나 네트워크 지연. 값 조정 후 재배포 |
+| `/chat` 새로고침 시 404 | Vercel SPA rewrite 누락 (§6-2) |
+| 로컬에서 프론트가 백엔드를 못 찾음 | `frontend/.env` 의 `VITE_API_BASE_URL` 확인, dev 서버 재시작 |
+
+## 9. 민감정보 관리 체크
+
+- `.gitignore` 에 `.env`, `*.db`, `__pycache__`, `node_modules`, `.venv`, `dist`
+- 저장소에는 `backend/.env.example`, `frontend/.env.example` 만 (키 이름 수준, 값 없음)
+- API 키는 서버 환경변수로만 사용, 응답·프론트 번들에 미포함
+
+```bash
+git ls-files | grep -E '(^|/)\.env$'                 # 출력 없어야 함
+grep -rn "AIza" --exclude-dir={node_modules,.venv,dist} .   # 출력 없어야 함
+```
