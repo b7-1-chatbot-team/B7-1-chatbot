@@ -1,6 +1,6 @@
 # 04. DB 구조
 
-> 기준 문서: [`API_명세_초안.md`](../API_명세_초안.md) §4 · [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md)
+> 관련 문서: [03-api.md](03-api.md) §4 · [02-architecture.md](02-architecture.md)
 
 - DB: **SQLite** (`DATABASE_URL=sqlite:///./data/app.db`)
 - ORM: **SQLAlchemy 2.0** (`Mapped` / `mapped_column` 스타일)
@@ -100,7 +100,7 @@ CREATE INDEX ix_chat_logs_created_at ON chat_logs (created_at);
 
 ## CRUD 계층 분리
 
-라우터에는 DB 로직을 두지 않는다 (`기능_리스트.md` — "CRUD(리포지토리) 계층 분리").
+라우터에는 DB 로직을 두지 않는다 ([02-architecture.md](02-architecture.md) §3 — CRUD 계층).
 
 | 파일 | 함수 | 역할 |
 |------|------|------|
@@ -155,4 +155,4 @@ Render 무료 웹 서비스는 **파일시스템이 영속되지 않는다**(재
 | Render Persistent Disk | 유료 플랜 필요. `DATABASE_URL` 을 마운트 경로로 지정 |
 | 외부 DB 로 전환 | 예: Neon/Supabase Postgres. SQLAlchemy 라 URL 만 교체하면 됨. **스택 변경이므로 팀 합의 필요** |
 
-현재 합의: **그대로 사용** (`기술스택_및_아키텍처.md` 의 SQLite 선택 유지).
+현재 합의: **그대로 사용** ([02-architecture.md](02-architecture.md) §1 의 SQLite 선택 유지).

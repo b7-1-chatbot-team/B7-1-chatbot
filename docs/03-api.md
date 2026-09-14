@@ -1,7 +1,7 @@
 # 03. API 명세
 
-> 기준 문서: [`API_명세_초안.md`](../API_명세_초안.md) · [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md)
-> 이 문서는 초안을 팀 합의 형태로 확정·상세화한 버전이다. 초안과 이 문서가 어긋나면 **초안이 기준**이다.
+> 관련 문서: [02-architecture.md](02-architecture.md) · [04-database.md](04-database.md)
+> API 계약의 기준 문서다. 합의가 필요한 값은 §6, 문서 간 불일치는 [11-open-issues.md](11-open-issues.md) 에서 관리한다.
 
 ## 0. 공통 규약
 
@@ -231,7 +231,7 @@ Authorization: Bearer <token>
 1. 인증 확인 (비로그인 시 `UNAUTHORIZED`)
 2. 입력 검증 (빈 문자열·공백만 차단, 최대 길이 1000자) — **AI 호출 이전에 수행**
 3. 해당 사용자의 최근 N개 대화를 DB 에서 조회 → 컨텍스트 구성
-4. Gemini API 호출 (`httpx`, 타임아웃 `AI_TIMEOUT_SECONDS`)
+4. Codyssey AI API 호출 (`httpx`, 타임아웃 `AI_TIMEOUT_SECONDS`)
 5. 응답 수신 → `chat_logs` 에 질문/응답 저장
 6. 결과 반환
 
@@ -352,7 +352,7 @@ ERROR db_save_failed     user_id=12 reason=...
 
 ## 6. 확정 전 합의가 필요한 항목
 
-`API_명세_초안.md` §6 과 동일하게 관리한다. 확정되면 이 표와 초안을 함께 갱신한다.
+확정되면 이 표와 관련 문서를 함께 갱신한다. 문서 간 불일치 목록은 [11-open-issues.md](11-open-issues.md) 참고.
 
 | 항목 | 초안 값 | 상태 |
 |------|---------|------|
@@ -360,6 +360,6 @@ ERROR db_save_failed     user_id=12 reason=...
 | 컨텍스트 유지 개수 N | 5 (`AI_CONTEXT_TURNS=5`) | 합의 필요 |
 | AI API 타임아웃 | 30초 (`AI_TIMEOUT_SECONDS=30`) | 합의 필요 |
 | 질문 최대 길이 | 1000자 (`MAX_MESSAGE_LENGTH=1000`) | 합의 필요 |
-| 사용할 AI API 제공자 | **Google Gemini (Flash 계열)** | `기술스택_및_아키텍처.md` 에서 선택됨 |
+| 사용할 AI API 제공자 | **Codyssey AI API (COPA)** | 확정 |
 | 토큰 저장 위치 | localStorage vs 메모리 | **프론트(이성준) 결정** |
-| React 빌드 서빙 방식 | **Vercel 별도 배포** (FastAPI 서빙 안 함) | `기술스택_및_아키텍처.md` 에서 선택됨 |
+| React 빌드 서빙 방식 | **Vercel 별도 배포** (FastAPI 서빙 안 함) | 배포 방식 미확정 — [11-open-issues.md](11-open-issues.md) |

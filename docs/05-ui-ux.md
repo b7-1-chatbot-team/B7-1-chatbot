@@ -1,7 +1,7 @@
 # 05. UI / UX 설계
 
-> 담당: **이성준 (프론트엔드)** — `기능_리스트.md` "이성준 — 프론트엔드 (React)"
-> 스택: React · Vite · React Router · axios · Context API · **Tailwind CSS**
+> 담당: **이성준 (프론트엔드)** — [09-team.md](09-team.md) §3
+> 스택: React · Vite · React Router · axios · Context API · **CSS Modules**
 > 디자인 기준 시안: `docs/design/AI Chat Service.html` (다크 톤 · 청록 포인트 · 기술 정보는 모노 폰트)
 
 ## 1. 디자인 시스템
@@ -17,13 +17,12 @@ Google Fonts 로드 + `system-ui` 폴백.
 
 ### 색상 토큰
 
-Tailwind v4 의 `@theme` 로 CSS 변수를 선언하고, 클래스(`bg-surface`, `text-muted` 등)로 사용한다.
+전역 `index.css` 의 `:root` 에 CSS 변수로 선언하고, 컴포넌트별 `*.module.css` 에서 `var(--color-surface)` 처럼 사용한다.
+CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래스 이름은 파일 단위로 격리된다 (`import styles from './Chat.module.css'` → `className={styles.bubble}`).
 
 ```css
 /* frontend/src/index.css */
-@import "tailwindcss";
-
-@theme {
+:root {
   --color-bg:          #0e1113;   /* 페이지 배경 */
   --color-surface:     #14181a;   /* 카드·패널 */
   --color-surface-2:   #161a1d;
@@ -43,7 +42,7 @@ Tailwind v4 의 `@theme` 로 CSS 변수를 선언하고, 클래스(`bg-surface`,
 ### 형태
 
 - 모서리: 카드 14px · 입력/버튼 9~10px · 말풍선 14px(꼬리 쪽 4px)
-- 등장 애니메이션 `rise`(6px 위로 페이드) 0.25~0.3s, 로딩 점 `blink` 1.2s — `motion-reduce:` 로 비활성
+- 등장 애니메이션 `rise`(6px 위로 페이드) 0.25~0.3s, 로딩 점 `blink` 1.2s — `@media (prefers-reduced-motion: reduce)` 에서 비활성
 - 최대 폭 1180px, 좌우 여백 `clamp(16px, 4vw, 32px)`
 
 ## 2. 라우팅
@@ -118,7 +117,7 @@ Tailwind v4 의 `@theme` 로 CSS 변수를 선언하고, 클래스(`bg-surface`,
 | `401 INVALID_CREDENTIALS` | 상태코드 칩 + 서버 메시지, **비밀번호 필드만 비움** (무엇이 틀렸는지 구분해서 알리지 않음) |
 | 접근성 | `label` 연결, `autocomplete=email / current-password / new-password`, 오류 `role="alert"` |
 
-**토큰 저장 위치**: `localStorage` vs 메모리 — `API_명세_초안.md` §6 의 미확정 항목. 프론트 담당이 결정하고 확정 시 이 문서와 초안을 함께 갱신한다.
+**토큰 저장 위치**: `localStorage` vs 메모리 — [03-api.md](03-api.md) §6 의 미확정 항목. 프론트 담당이 결정하고 확정 시 이 문서와 03-api.md 를 함께 갱신한다.
 
 | 선택지 | 장점 | 단점 |
 |--------|------|------|
@@ -179,11 +178,11 @@ GET /api/me/chats — 로그인한 사용자 본인의 기록만    │   42   �
 - 반응형 그리드 `minmax(min(100%, 380px), 1fr)` → 모바일 1열
 - 상단에 `total` 표시, 하단 "더 보기" 로 `offset` 증가 (기본 `limit=20`)
 - 비어 있으면 점선 박스 "아직 저장된 대화가 없습니다."
-- `기능_리스트.md` 상 **선택 항목**이지만, 평가지의 "DB 확인 수단" 을 화면으로 충족하므로 구현 권장
+- [features.md](features.md) F9 기준 **선택 항목**이지만, 평가지의 "DB 확인 수단" 을 화면으로 충족하므로 구현 권장
 
 ## 4. API 호출 공통 모듈
 
-`기능_리스트.md` — "API 호출 공통 모듈 (Authorization 헤더 자동 첨부, 에러 파싱)"
+Authorization 헤더 자동 첨부와 에러 파싱을 한 모듈에서 처리한다.
 
 ```js
 // src/api/client.js
@@ -246,7 +245,7 @@ client.interceptors.response.use(
 
 ## 8. 참고: 시안에 있으나 스펙 범위 밖인 요소
 
-`docs/design/*.html` 및 `docs/screenshots/` 에는 아래 요소가 보인다. **현재 `기능_리스트.md` / `API_명세_초안.md` 범위에는 없다.** 구현하려면 별도 API 가 필요하므로 팀 합의 후 추가한다.
+`docs/design/*.html` 및 `docs/screenshots/` 에는 아래 요소가 보인다. **현재 [features.md](features.md) / [03-api.md](03-api.md) 범위에는 없다.** 구현하려면 별도 API 가 필요하므로 팀 합의 후 추가한다.
 
 | 요소 | 필요한 것 |
 |------|-----------|

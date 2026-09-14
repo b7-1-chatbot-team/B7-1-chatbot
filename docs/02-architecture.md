@@ -1,7 +1,7 @@
 # 02. 시스템 구조 · 내부 절차 · 기술 결정
 
-> 기준 문서: [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md) · [`API_명세_초안.md`](../API_명세_초안.md)
-> 이 문서는 기준 문서를 확장해 **내부 처리 절차와 결정 근거**까지 정리한 버전이다.
+> 관련 문서: [03-api.md](03-api.md) · [04-database.md](04-database.md) · [features.md](features.md)
+> 이 문서는 시스템 구조와 **내부 처리 절차·결정 근거**를 정리한다. 미확정·불일치 항목: [11-open-issues.md](11-open-issues.md)
 
 ## 1. 기술 스택
 
@@ -30,13 +30,13 @@
 | 라우팅 | **React Router** |
 | HTTP | **axios** |
 | 상태 관리 | **Context API** |
-| 스타일 | **Tailwind CSS** |
+| 스타일 | **CSS Modules** (`*.module.css`, Vite 기본 지원) + 전역 CSS 변수 |
 
 ### 외부 서비스
 
 | 구분 | 선택 | 비고 |
 |------|------|------|
-| AI API | **Google Gemini** | 무료 티어(rate limit 방식), **Flash 계열** 사용 |
+| AI API | **Codyssey AI API (COPA)** | 교육 환경 제공 API. OpenAI 호환 `chat/completions` 형식 |
 | 백엔드 배포 | **Render** | 무료 웹 서비스, **15분 유휴 시 슬립** |
 | 프론트 배포 | **Vercel** | 정적 빌드, 슬립 없음 |
 | 형상관리 | **GitHub** | PR 기반 협업 |
@@ -46,7 +46,7 @@
 ```mermaid
 flowchart TD
     subgraph client["클라이언트"]
-        React["React SPA (Vercel)<br/>Vite · React Router · axios · Tailwind"]
+        React["React SPA (Vercel)<br/>Vite · React Router · axios · CSS Modules"]
     end
 
     subgraph server["FastAPI 서버 (Render)"]
@@ -56,7 +56,7 @@ flowchart TD
     end
 
     DB[("SQLite<br/>users · chat_logs")]
-    AI["Gemini API<br/>httpx · 타임아웃"]
+    AI["Codyssey AI API<br/>httpx · 타임아웃"]
 
     React -->|"HTTPS / JSON + JWT"| Router
     Router --> Service
@@ -107,7 +107,7 @@ flowchart TD
 | **서비스 계층** | 비즈니스 로직 — 비밀번호 해싱·검증, JWT 발급, 컨텍스트 구성, AI 호출과 예외 처리 |
 | **CRUD 계층** | DB 질의 전담 |
 | **SQLite** | 사용자 계정 및 대화 로그 영속 저장 |
-| **Gemini API** | 외부 AI 응답 생성. **키는 서버 환경변수에만 존재** |
+| **Codyssey AI API** | 외부 AI 응답 생성. **키는 서버 환경변수에만 존재** |
 
 | 파일 | 역할 |
 |------|------|
@@ -120,7 +120,7 @@ flowchart TD
 | `app/core/dependencies.py` | `get_current_user` — Bearer 토큰 → 사용자. 실패 시 401 |
 | `app/core/logging.py` | 구조화 로그 포맷, `request_id` |
 | `app/services/auth_service.py` | 가입/로그인 로직, 중복 검사, 토큰 발급 |
-| `app/services/ai_service.py` | 컨텍스트 구성, httpx Gemini 호출, 타임아웃·예외 → `AI_TIMEOUT`/`AI_CALL_FAILED` |
+| `app/services/ai_service.py` | 컨텍스트 구성, httpx Codyssey AI API 호출, 타임아웃·예외 → `AI_TIMEOUT`/`AI_CALL_FAILED` |
 | `app/routers/auth.py` | signup / login / me |
 | `app/routers/chat.py` | `POST /api/chat` |
 | `app/routers/logs.py` | `GET /api/me/chats` |
@@ -148,7 +148,7 @@ flowchart TD
 
 1. **프론트와 백엔드가 서로 다른 도메인에 배포된다** (Vercel ↔ Render). 쿠키 인증은 크로스 사이트 쿠키가 되어 `SameSite=None; Secure` 와 CORS `credentials` 를 모두 맞춰야 하고, 브라우저의 서드파티 쿠키 차단 정책에 영향을 받는다. 헤더 방식은 이 문제가 없다.
 2. **Render 무료 플랜은 15분 유휴 시 슬립**하고 파일시스템이 영속되지 않는다. 세션을 SQLite 에 저장하면 슬립 복구/재배포마다 로그인이 전부 풀릴 수 있다. JWT 는 서버 상태에 의존하지 않는다.
-3. 구현 범위가 작다. 팀 3인이 병렬로 작업하는 상황에서 **인증 dependency 하나**로 챗·로그 라우터가 재사용할 수 있다 (`기능_리스트.md` — "인증 dependency 구현, 라우터에서 재사용 가능하게 분리").
+3. 구현 범위가 작다. 팀 3인이 병렬로 작업하는 상황에서 **인증 dependency 하나**로 챗·로그 라우터가 재사용할 수 있다 ([features.md](features.md) B6 — `get_current_user` 의존성).
 4. CSRF 대응이 불필요해 백엔드 보안 작업량이 줄어든다.
 
 ### 채택에 따른 약점과 보완
@@ -156,7 +156,7 @@ flowchart TD
 | 위협 | 보완 |
 |------|------|
 | 로그아웃 후에도 토큰이 만료 전까지 유효 | 만료를 짧게(`JWT_EXPIRE_MINUTES=60`), 로그아웃 시 프론트가 토큰을 즉시 삭제 |
-| XSS 로 localStorage 토큰 탈취 | React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용), 외부 스크립트 미삽입. **저장 위치(localStorage vs 메모리)는 프론트 담당이 최종 결정** (`API_명세_초안.md` §6) |
+| XSS 로 localStorage 토큰 탈취 | React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용), 외부 스크립트 미삽입. **저장 위치(localStorage vs 메모리)는 프론트 담당이 최종 결정** ([03-api.md](03-api.md) §6) |
 | `JWT_SECRET_KEY` 유출 시 전체 토큰 위조 | 키는 `.env` 로만 주입, 저장소 커밋 금지, Render 환경변수로 설정 |
 | 알고리즘 혼동 공격(`alg:none` 등) | 디코드 시 `algorithms=["HS256"]` 을 **명시적으로 고정** |
 | 네트워크 도청 | Render·Vercel 모두 HTTPS 기본 제공 |
@@ -222,7 +222,7 @@ sequenceDiagram
     participant S as ai_service
     participant C as crud
     participant D as SQLite
-    participant G as Gemini API
+    participant G as Codyssey AI API
     B->>R: POST /api/chat {message} + Bearer 토큰
     R->>R: get_current_user (실패 401 UNAUTHORIZED)
     R->>R: log request_received user_id path
@@ -258,7 +258,7 @@ sequenceDiagram
 | 항목 | 결정 | 이유 |
 |------|------|------|
 | 검증 위치 | AI 호출 **이전** | 빈 입력으로 외부 API 호출·쿼터 소모 방지 |
-| 서버 검증 | 프론트 검증과 **별개로 필수** | API 를 직접 호출하면 프론트 검증을 우회할 수 있음 (`기능_리스트.md` 명시) |
+| 서버 검증 | 프론트 검증과 **별개로 필수** | API 를 직접 호출하면 프론트 검증을 우회할 수 있음 ([features.md](features.md) B11) |
 | 컨텍스트 | 같은 사용자 최근 `AI_CONTEXT_TURNS`(5) Q/A | 토큰 비용 상한 고정 |
 | 컨텍스트 초과 | **오래된 것부터 잘라냄** | 최근 맥락 우선 유지 |
 | 타임아웃 | `httpx.Timeout(AI_TIMEOUT_SECONDS)` | 무한 대기로 워커가 묶이는 것 방지 |
@@ -273,16 +273,17 @@ sequenceDiagram
 - `total` + `items`(최신순, `limit`/`offset`)
 - `limit` 은 최대 100 으로 상한 (과도한 조회 방지)
 
-## 6. Gemini 연동 메모
+## 6. Codyssey AI API 연동 메모
 
 | 항목 | 내용 |
 |------|------|
-| 호출 방식 | `httpx` 로 REST 직접 호출 (`google-generativeai` SDK 미사용 — 의존성 최소화, 타임아웃 제어 명확) |
-| 모델 | **Flash 계열** (무료 티어·저지연) |
-| 키 전달 | 요청 헤더/쿼리로 `GEMINI_API_KEY`. **서버에서만 사용**, 응답·프론트 번들에 절대 포함하지 않음 |
-| 컨텍스트 형식 | `contents: [{role:"user"|"model", parts:[{text}]}]` — 이전 Q/A 를 user/model 쌍으로 나열 |
-| 실패 유형 | 타임아웃 / 401·403(키 오류) / 429(rate limit) / 5xx / 연결 실패 / 빈 응답·안전 차단 |
-| 무료 티어 주의 | 분당·일일 요청 수 제한. 429 는 `AI_CALL_FAILED` 로 처리하고 로그 `reason=rate_limited` 로 구분 |
+| 엔드포인트 | `POST https://copa.codyssey.kr/v1/chat/completions` (OpenAI 호환 형식, 현재 `backend/main.py`) |
+| 호출 방식 | REST 직접 호출. HTTP 클라이언트(httpx vs 현재 코드의 requests)는 [11-open-issues.md](11-open-issues.md) 참고 |
+| 모델 | `gpt-5-mini` (현재 `backend/main.py` 값) |
+| 키 전달 | `Authorization: Bearer <COPA_API_KEY>`. **서버에서만 사용**, 응답·프론트 번들에 절대 포함하지 않음 |
+| 컨텍스트 형식 | `messages: [{role:"user"|"assistant", content}]` — 이전 Q/A 를 user/assistant 쌍으로 나열한 뒤 현재 질문 |
+| 실패 유형 | 타임아웃 / 401·403(키 오류) / 429(호출 제한) / 5xx / 연결 실패 / 빈 응답 |
+| 호출 제한 | 교육 환경의 제한값 미확인. 429 는 `AI_CALL_FAILED` 로 처리하고 로그 `reason=rate_limited` 로 구분 |
 
 ## 7. 요청 흐름 요약
 
@@ -290,6 +291,6 @@ sequenceDiagram
 2. axios 가 `POST /api/chat` 호출 (`Authorization: Bearer <token>`)
 3. FastAPI 라우터가 인증 dependency 로 사용자 확인
 4. 서비스 계층이 CRUD 를 통해 해당 사용자의 최근 N개 대화 조회
-5. httpx 로 Gemini API 호출 (타임아웃 설정)
+5. httpx 로 Codyssey AI API 호출 (타임아웃 설정)
 6. 응답 수신 → CRUD 계층이 `chat_logs` 에 질문·응답 저장
 7. 결과를 JSON 으로 반환, React 가 화면에 렌더링

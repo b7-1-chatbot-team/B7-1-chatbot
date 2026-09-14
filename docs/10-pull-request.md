@@ -1,7 +1,8 @@
 # 10. Pull Request 가이드
 
-> 브랜치 전략·커밋 컨벤션: [docs/09-team.md §2](09-team.md#2-브랜치-전략--커밋-컨벤션)
-> 모든 병합은 PR 로만 한다 (mission §4-7 "PR 기반 Merge 기록", §6 "브랜치/PR 기록이 저장소에 남아야 한다").
+> 브랜치 전략·커밋 컨벤션: [docs/09-team.md §2](09-team.md#2-팀-운영-규칙)
+> 코드 병합은 PR 로만 한다 (mission §4-7 "PR 기반 Merge 기록", §6 "브랜치/PR 기록이 저장소에 남아야 한다").
+> **예외: `docs/` 문서만 바꾸는 커밋은 develop 에 직접 push** 한다 (팀 합의 — [09-team.md §2-1](09-team.md#2-팀-운영-규칙)).
 > 아래 본문 템플릿은 `.github/pull_request_template.md` 에도 등록되어 PR 생성 시 자동으로 채워진다.
 
 ## 1. PR 규칙
@@ -20,6 +21,7 @@ docs: v1.0 기본 문서 추가
 |-------------|------|------|
 | `feature/*` `refactor/*` `fix/*` `docs/*` `chore/*` `test/*` | `develop` | 일반 작업 |
 | `hotfix/*` | `main` | 머지 후 **`main → develop` 반영 PR 필수** |
+| (PR 없음) `docs/` 문서만 수정 | `develop` 직접 push | 코드·설정이 섞이면 `docs/*` 브랜치 + PR |
 | `develop` (릴리스) | `main` | 평가·배포 시점, 태그 `v1.0.0` |
 
 ### 1-3. 크기와 범위

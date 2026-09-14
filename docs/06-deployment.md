@@ -1,11 +1,11 @@
 # 06. 설치 · 실행 · 배포
 
-> 기준 문서: [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md) §2 §4 §5
+> 관련 문서: [02-architecture.md](02-architecture.md) · [03-api.md](03-api.md) · 배포 방식 미확정 — [11-open-issues.md](11-open-issues.md)
 
 ## 1. 요구 환경
 
 - Python 3.11+
-- Node.js 20+
+- Node.js 24 LTS (`frontend/.nvmrc` 로 고정 — `nvm use`)
 - sqlite3 CLI (DB 확인용)
 
 ## 2. 설치
@@ -42,8 +42,7 @@ uvicorn app.main:app --reload
 ```bash
 npm create vite@latest frontend -- --template react
 cd frontend
-npm install react-router-dom axios
-npm install -D tailwindcss @tailwindcss/vite
+npm install react-router-dom axios   # 스타일은 CSS Modules (Vite 기본 지원, 설치 없음)
 npm run dev
 # → http://localhost:5173
 ```
@@ -55,7 +54,7 @@ npm run dev
 **`.env` 는 절대 커밋하지 않는다.** 저장소에는 값이 비어 있는 `.env.example` 만 둔다.
 
 ```
-GEMINI_API_KEY=
+COPA_API_KEY=
 JWT_SECRET_KEY=
 JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=60
@@ -68,12 +67,12 @@ CORS_ORIGINS=
 
 | 키 | 기본값 | 설명 | 민감 |
 |----|--------|------|:----:|
-| `GEMINI_API_KEY` | (없음) | Google Gemini API 키 — **서버에서만 사용** | ✅ |
+| `COPA_API_KEY` | (없음) | Codyssey AI API 키 — **서버에서만 사용** | ✅ |
 | `JWT_SECRET_KEY` | (없음) | JWT 서명 키. 충분히 긴 난수 (`python -c "import secrets;print(secrets.token_urlsafe(48))"`) | ✅ |
 | `JWT_ALGORITHM` | `HS256` | 서명 알고리즘. 디코드 시에도 이 값으로 **고정** | |
 | `JWT_EXPIRE_MINUTES` | `60` | 토큰 만료(분). 응답 `expires_in` = ×60 | |
 | `DATABASE_URL` | `sqlite:///./data/app.db` | SQLAlchemy URL | |
-| `AI_TIMEOUT_SECONDS` | `30` | Gemini 호출 제한 시간(초) | |
+| `AI_TIMEOUT_SECONDS` | `30` | AI API 호출 제한 시간(초) | |
 | `AI_CONTEXT_TURNS` | `5` | 프롬프트에 포함할 최근 Q/A 수 | |
 | `MAX_MESSAGE_LENGTH` | `1000` | 질문 최대 글자수 | |
 | `CORS_ORIGINS` | (없음) | 허용 Origin, 쉼표 구분. 예: `http://localhost:5173,https://<앱>.vercel.app` | |
@@ -84,7 +83,7 @@ CORS_ORIGINS=
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-> **프론트 `.env` 에는 비밀값을 절대 넣지 않는다.** `VITE_` 접두어 변수는 빌드 결과물에 그대로 포함되어 브라우저에서 볼 수 있다. Gemini 키는 백엔드에만 둔다.
+> **프론트 `.env` 에는 비밀값을 절대 넣지 않는다.** `VITE_` 접두어 변수는 빌드 결과물에 그대로 포함되어 브라우저에서 볼 수 있다. AI API 키(`COPA_API_KEY`)는 백엔드에만 둔다.
 
 ## 4. 로컬 실행 확인
 
@@ -192,8 +191,8 @@ curl -i -X POST https://<render-backend>/api/auth/login \
 | 첫 요청이 30초 이상 걸림 | Render 무료 플랜 슬립에서 깨어나는 중 (콜드 스타트). 미리 한 번 호출해 둔다 |
 | 로그인은 되는데 이후 요청이 401 | axios 인터셉터가 `Authorization` 헤더를 붙이지 않음 / 토큰 저장 키 불일치 |
 | 배포 후 계속 401 | Render 재배포로 SQLite 가 초기화되어 계정이 사라짐 → 재가입 |
-| 모든 질문이 `AI_CALL_FAILED` | `GEMINI_API_KEY` 미설정·오류. 로그 `ai_call_failed reason=` 확인 (`auth_failed` / `rate_limited` / `status_5xx`) |
-| 가끔 `AI_CALL_FAILED` (429) | Gemini 무료 티어 rate limit. 잠시 후 재시도 |
+| 모든 질문이 `AI_CALL_FAILED` | `COPA_API_KEY` 미설정·오류. 로그 `ai_call_failed reason=` 확인 (`auth_failed` / `rate_limited` / `status_5xx`) |
+| 가끔 `AI_CALL_FAILED` (429) | AI API 호출 제한(rate limit) 초과. 잠시 후 재시도 |
 | 응답이 계속 `AI_TIMEOUT` | `AI_TIMEOUT_SECONDS` 가 너무 짧거나 네트워크 지연. 값 조정 후 재배포 |
 | `/chat` 새로고침 시 404 | Vercel SPA rewrite 누락 (§6-2) |
 | 로컬에서 프론트가 백엔드를 못 찾음 | `frontend/.env` 의 `VITE_API_BASE_URL` 확인, dev 서버 재시작 |
@@ -206,5 +205,5 @@ curl -i -X POST https://<render-backend>/api/auth/login \
 
 ```bash
 git ls-files | grep -E '(^|/)\.env$'                 # 출력 없어야 함
-grep -rn "AIza" --exclude-dir={node_modules,.venv,dist} .   # 출력 없어야 함
+git grep -n "COPA_API_KEY=."                         # 출력 없어야 함 (추적 파일에 키 값 없음)
 ```

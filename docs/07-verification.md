@@ -1,7 +1,7 @@
 # 07. 검증 계획 및 결과
 
 > ⚠️ **읽기 전 주의**
-> §1~§3 은 **팀 스펙(JWT · Gemini · Render/Vercel) 기준 검증 계획**이다. 아직 실행되지 않았다.
+> §1~§3 은 **팀 스펙(JWT · Codyssey AI API · Render/Vercel) 기준 검증 계획**이다. 아직 실행되지 않았다.
 > §4 는 **스펙 확정 이전 참조 구현(PoC, 세션 쿠키 · Claude · Nginx)** 에서 **실제로 측정된 결과**다. 스펙과 구현이 다르므로 그대로 제출 근거로 쓸 수 없다.
 > 두 절을 섞지 않는다. 스펙대로 구현이 끝나면 §1~§3 을 실행하고 그 결과로 §4 를 대체한다.
 
@@ -123,7 +123,7 @@ curl -s -o /dev/null -w '%{http_code} bad-token\n' -H "Authorization: Bearer xxx
 | D02 | 외부망에서 가입→로그인→질문→응답→로그 | 전 흐름 성공 |
 | D03 | 브라우저 콘솔 | CORS 오류 없음 |
 | D04 | Render 슬립 후 첫 요청 | 지연은 있으나 최종 성공 |
-| D05 | 프론트 번들 검색 | `AIza`(Gemini 키) 등 비밀값 미포함 |
+| D05 | 프론트 번들 검색 | `COPA_API_KEY` 값 등 비밀값 미포함 |
 | D06 | `git ls-files \| grep -E '(^\|/)\.env$'` | 출력 없음 |
 
 ### 1-5. L5 — 데이터 / 로그 증빙
@@ -150,12 +150,12 @@ grep ai_call_failed backend/logs/app.log
 
 ---
 
-## 3. 실제 Gemini 연동 검증 (키 발급 후)
+## 3. 실제 Codyssey AI API 연동 검증 (키 설정 후)
 
-1. `backend/.env` 에 `GEMINI_API_KEY` 입력 → 재시작
+1. `backend/.env` 에 `COPA_API_KEY` 입력 → 재시작
 2. L2 스크립트 실행 (문맥 유지 항목은 실제 모델이 문장을 바꿔 말하므로 **의미로 판정**)
 3. 실제 타임아웃: `AI_TIMEOUT_SECONDS=0.5` 로 낮추고 질문 → `ai_call_failed reason=timeout`, `504 AI_TIMEOUT`
-4. 실제 호출 실패: `GEMINI_API_KEY=invalid` 로 두고 질문 → `ai_call_failed reason=auth_failed`, `502 AI_CALL_FAILED`
+4. 실제 호출 실패: `COPA_API_KEY=invalid` 로 두고 질문 → `ai_call_failed reason=auth_failed`, `502 AI_CALL_FAILED`
 5. rate limit: 짧은 시간에 반복 호출 → `429` → `502 AI_CALL_FAILED`, 로그 `reason=rate_limited`
 6. 위 3~5 직후 정상 질문이 `200` 인지 확인 (서비스 유지)
 
@@ -165,7 +165,7 @@ grep ai_call_failed backend/logs/app.log
 
 > **이 절의 수치는 스펙 확정 이전 구현에서 측정된 실제 값이다.**
 > 구성: 2026-09-14, macOS, Python 3.14.7, Node 24.11, **세션 쿠키 인증 · Anthropic Claude(mock 공급자) · 로컬 Nginx**.
-> 스펙(JWT · Gemini · Render/Vercel)과 다르므로 **스펙 기준 증빙으로 사용하지 않는다.** 어떤 케이스가 스펙 전환 후에도 그대로 유효한지는 §4-4 참고.
+> 스펙(JWT · Codyssey AI API · Render/Vercel)과 다르므로 **스펙 기준 증빙으로 사용하지 않는다.** 어떤 케이스가 스펙 전환 후에도 그대로 유효한지는 §4-4 참고.
 
 ### 4-1. 실행 결과 요약
 

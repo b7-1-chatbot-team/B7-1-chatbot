@@ -1,6 +1,6 @@
 # 08. 평가 대응 체크리스트
 
-> 기준: [`기능_리스트.md`](../기능_리스트.md) · [`API_명세_초안.md`](../API_명세_초안.md) · [`기술스택_및_아키텍처.md`](../기술스택_및_아키텍처.md)
+> 기준: [features.md](features.md) · [03-api.md](03-api.md) · [02-architecture.md](02-architecture.md) · 미확정·불일치: [11-open-issues.md](11-open-issues.md)
 > 범례: ✅ 완료 · 🟡 진행/부분 · ⬜ 미착수
 
 ---
@@ -12,7 +12,7 @@
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
 | 로그인 상태에서 웹 페이지로 텍스트 질문 입력 | ⬜ | features.md F11 (Chat 화면) |
-| 서버가 질문 수신 후 AI API 호출해 응답 생성 | ⬜ | A1·A4 (`POST /api/chat` → Gemini) |
+| 서버가 질문 수신 후 AI API 호출해 응답 생성 | ⬜ | A1·A4 (`POST /api/chat` → Codyssey AI API) |
 | AI 응답이 웹 화면에 표시 | ⬜ | F12 (같은 화면 누적) |
 | 평가 시점 외부 네트워크에서 접속 가능한 URL | ⬜ | C3·C4 (Render + Vercel), docs/06 §6 |
 
@@ -22,8 +22,8 @@
 |------|:----:|------|
 | GitHub Repository 링크 | ⬜ | 저장소 생성 후 README 기입 |
 | 프로젝트 개요(문제·타겟·시나리오) | ✅ | [01-scenario.md](01-scenario.md), README §1 |
-| 시스템 구조(아키텍처·컴포넌트 역할) | ✅ | [02-architecture.md](02-architecture.md), `기술스택_및_아키텍처.md` |
-| API 명세(요청/응답 예시) | ✅ | [03-api.md](03-api.md), `API_명세_초안.md`, Swagger `/docs` |
+| 시스템 구조(아키텍처·컴포넌트 역할) | ✅ | [02-architecture.md](02-architecture.md) |
+| API 명세(요청/응답 예시) | ✅ | [03-api.md](03-api.md), Swagger `/docs` |
 | DB 구조(ERD·필드 설명) | ✅ | [04-database.md](04-database.md) |
 | DB 확인 방법 안내 (1개 이상) | ✅ | ① `GET /api/me/chats` ② "내 대화 로그" 화면 ③ `scripts/check_logs.sql` — **3종** |
 | 배포 및 실행 방법(환경변수 설정 포함) | ✅ | [06-deployment.md](06-deployment.md) |
@@ -52,7 +52,7 @@
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
 | 서버가 질문 수신 → AI API 호출 → 응답 생성 | ⬜ | A1·A4 — V10 |
-| AI 호출은 서버에서만, 키 클라이언트 미노출 | ⬜ | A5 (`GEMINI_API_KEY` 서버 전용) — D05 |
+| AI 호출은 서버에서만, 키 클라이언트 미노출 | ⬜ | A5 (`COPA_API_KEY` 서버 전용) — D05 |
 | 최소한의 컨텍스트 전략 | ⬜ | A7·A8 (최근 5턴, 오래된 것부터 제거) — V11·V12 |
 
 ### §4-4 대화 로그 저장 및 조회/추적
@@ -96,7 +96,7 @@
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| Python & FastAPI | ✅ (결정) | `기술스택_및_아키텍처.md` §1 |
+| Python & FastAPI | ✅ (결정) | [02-architecture.md](02-architecture.md) §1 |
 | SQLite, 평가자가 연결/조회 가능 | ✅ (결정) | `data/app.db` + `check_logs.sql` |
 | 민감정보 코드/문서에 직접 작성 금지 | ⬜ | PR 리뷰 + `grep` |
 | 모든 민감정보 환경변수 관리 | ⬜ | B2 (`config.py`) |
@@ -107,7 +107,9 @@
 
 ---
 
-## 2. `기능_리스트.md` 대조
+## 2. 기능 번호 대조
+
+> 이 절의 번호(A·B·F)는 [features.md](features.md) 번호 체계와 다르다 — [11-open-issues.md](11-open-issues.md) C6
 
 ### 이성준 — 프론트엔드 (React)
 
@@ -204,7 +206,7 @@
 | 인증 방식 | 서버 세션 + HttpOnly 쿠키 (`sessions` 테이블) | **JWT Bearer** (PyJWT, HS256, 60분) |
 | 계정 필드 | `username` + `password` | **`email` + `password` + `nickname`** |
 | 로그아웃 | `POST /api/auth/logout` (세션 삭제) | **API 없음** — 프론트가 토큰 삭제 |
-| AI 공급자 | Anthropic Claude (`anthropic` SDK) + mock | **Google Gemini (Flash 계열) + httpx** |
+| AI 공급자 | Anthropic Claude (`anthropic` SDK) + mock | **Codyssey AI API (COPA) + httpx** |
 | 에러 응답 | `{"error","message","request_id"}` (평면) | **`{"error":{"code","message"}}` (중첩)** |
 | 입력 검증 실패 | `400 INVALID_INPUT` | **`422 VALIDATION_ERROR`** |
 | 이메일 중복 | `409 USERNAME_TAKEN` | **`409 EMAIL_ALREADY_EXISTS`** |
@@ -217,7 +219,7 @@
 | 추가 엔드포인트 | `/api/health`, `/api/config`, `/api/me/server-logs`, `simulate` 파라미터 | **스펙에 없음** (필요하면 팀 합의 후 추가) |
 | 백엔드 구조 | `app/*.py` 평면 | **`routers/ services/ crud/ models/ schemas/ core/`** |
 | 프론트 HTTP | `fetch` 래퍼 | **axios + 인터셉터** |
-| 프론트 스타일 | 자체 CSS (`styles.css`) | **Tailwind CSS** |
+| 프론트 스타일 | 자체 CSS (`styles.css`) | **CSS Modules** |
 | 배포 | Ubuntu VM + Nginx + systemd + certbot | **Render(백) + Vercel(프론트)** |
 | CORS | 동일 도메인이라 사실상 불필요 | **필수** (도메인 분리) |
 

@@ -12,7 +12,8 @@
 | 프론트 분리 허용 여부 | 허용. mission §3 "라우팅, 요청/응답, **템플릿 또는 프론트 연동**", §4-1 "형태 자유" |
 | 필수 제약 | 백엔드 Python + FastAPI, DB SQLite 권장 (§5) |
 | plan.md 영향 | Jinja2 템플릿(Step 6), 디렉토리 구조, 의존성 목록 수정 필요 |
-| 인증 방식 | **서버 측 세션(DB) + HttpOnly·SameSite 쿠키** — 근거: docs/02-architecture.md §4 |
+| 인증 방식 | **JWT Bearer (PyJWT, HS256)** — 근거: docs/02-architecture.md §4 |
+| AI API | **Codyssey AI API (COPA)** — docs/02-architecture.md §6 |
 | 입력 검증 실패 코드 | **400 `INVALID_INPUT`** 으로 통일 |
 | PoC 구현 대조 | docs/08-checklist.md §2 |
 | 관리자 기능 | **채택** — mission §2-2 "관리자/내부 로그 확인 화면"(47줄), §4-4 "관리자 조회 API/화면"(92줄) 선택지. `role=admin` 은 `.env` 시드로만, 조회 전용 (B15, F10) |

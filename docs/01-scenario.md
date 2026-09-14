@@ -29,7 +29,7 @@
 3. 서버 로그에 `request_received → ai_call_start → ai_call_success → db_save_success` 가 순서대로 남음
 
 ### S3. AI 장애 (타임아웃 / 호출 실패)
-1. Gemini 응답이 `AI_TIMEOUT_SECONDS`(초안 30초)를 넘김
+1. AI API 응답이 `AI_TIMEOUT_SECONDS`(초안 30초)를 넘김
 2. **504 `AI_TIMEOUT`** → 오류 말풍선: "현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요."
 3. 쿼터 초과·키 오류·5xx 등은 **502 `AI_CALL_FAILED`** → "AI 응답을 가져오지 못했습니다."
 4. **서버는 종료되지 않는다.** 입력창은 즉시 다시 사용 가능하고, 이어지는 정상 질문은 200 으로 처리된다.
@@ -63,7 +63,7 @@ flowchart TD
     L -- "401 INVALID_CREDENTIALS" --> LE[오류 안내 표시] --> L
     C -- 질문 전송 --> V{입력 검증}
     V -- 실패 --> VE["422 VALIDATION_ERROR 안내"] --> C
-    V -- 통과 --> AI{Gemini 호출}
+    V -- 통과 --> AI{AI API 호출}
     AI -- 성공 --> OK[응답 말풍선 + DB 저장] --> C
     AI -- 타임아웃 --> T["504 AI_TIMEOUT 안내"] --> C
     AI -- 호출 실패 --> F["502 AI_CALL_FAILED 안내"] --> C
@@ -75,7 +75,7 @@ flowchart TD
 
 ## 5. 시연 순서 (평가용)
 
-`기능_리스트.md` — "제출 전 최종 점검" 과 동일한 흐름이다.
+[08-checklist.md](08-checklist.md) §4 평가 당일 체크리스트와 함께 사용한다.
 
 | # | 동작 | 확인 포인트 |
 |---|------|-------------|
