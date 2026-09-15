@@ -1,3 +1,11 @@
+---
+name: 기본 이슈 템플릿
+about: feat / fix / refactor 이슈 작성 시 사용하는 기본 템플릿입니다.
+title: ''
+labels: ''
+assignees: ''
+---
+
 <!-- 제목 예시: [FEAT] 회원가입 API 구현 / [FIX] 로그인 토큰 만료 오류 / [REFACTOR] chat 서비스 구조 개선 -->
 
 ## 이슈 유형
