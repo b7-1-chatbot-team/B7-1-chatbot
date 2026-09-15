@@ -58,8 +58,8 @@ npm run dev
 COPA_API_KEY=
 JWT_SECRET_KEY=
 JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=60
-REFRESH_TOKEN_EXPIRE_DAYS=7
+JWT_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=1
 DATABASE_URL=sqlite:///./data/app.db
 AI_TIMEOUT_SECONDS=30
 AI_CONTEXT_TURNS=5
@@ -75,10 +75,10 @@ ADMIN_NICKNAME=
 | `COPA_API_KEY` | (없음) | Codyssey AI API 키 — **서버에서만 사용** | ✅ |
 | `JWT_SECRET_KEY` | (없음) | JWT 서명 키. 충분히 긴 난수 (`python -c "import secrets;print(secrets.token_urlsafe(48))"`) | ✅ |
 | `JWT_ALGORITHM` | `HS256` | 서명 알고리즘. 디코드 시에도 이 값으로 **고정** | |
-| `JWT_EXPIRE_MINUTES` | `60` | access token 만료(분). 응답 `expires_in` = ×60 | |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | `7` | refresh token 만료(일). 응답 `refresh_expires_in` = ×86400 | |
+| `JWT_EXPIRE_MINUTES` | `15` | access token 만료(분). 응답 `expires_in` = ×60 | |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | `1` | refresh token 만료(일). 응답 `refresh_expires_in` = ×86400 | |
 | `DATABASE_URL` | `sqlite:///./data/app.db` | SQLAlchemy URL. Railway 는 `sqlite:////data/app.db` (§6-1) | |
-| `AI_TIMEOUT_SECONDS` | `30` | AI API 호출 제한 시간(초) | |
+| `AI_TIMEOUT_SECONDS` | `30` | AI API 호출 전체 대기 상한(초) | |
 | `AI_CONTEXT_TURNS` | `5` | 프롬프트에 포함할 최근 성공 Q/A 수 | |
 | `MAX_MESSAGE_LENGTH` | `1000` | 질문 최대 글자수 | |
 | `CORS_ORIGINS` | (없음) | 허용 Origin, 쉼표 구분. 예: `http://localhost:5173,https://<프론트>.up.railway.app` | |
@@ -200,6 +200,7 @@ Railway Project
 
 - Railway 의 Serverless(슬리핑)를 켜면 트래픽이 없을 때 서비스가 잠들고, **첫 요청이 늦거나 실패(502)** 할 수 있다.
 - 개발 중에는 비용 절감용으로 켜도 되지만, **평가 전에는 끈다.**
+- 잠든 동안에는 만료 refresh token 정리 스케줄러(하루 1회)도 멈춘다. 깨어나면 시작 시 정리가 실행된다.
 
 ## 7. 외부 접속 · CORS 검증 (평가 전 필수)
 
@@ -234,7 +235,8 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 | 재배포 후 계정이 사라짐 | SQLite 가 Volume 밖에 있음 → Volume `/data` 연결 + `DATABASE_URL=sqlite:////data/app.db` |
 | 서비스가 뜨지만 접속 안 됨 | Start Command 에 `--host 0.0.0.0 --port $PORT` 누락 |
 | 로그인은 되는데 이후 요청이 `code: 401` | axios 인터셉터가 `Authorization` 헤더를 붙이지 않음 / 토큰 저장 키 불일치 |
-| 1시간쯤 지나면 로그인 화면으로 튕김 | refresh 재발급 실패 — 인터셉터가 refresh 를 호출하는지, `refresh_tokens` 에 행이 있는지, 서버 재배포로 DB 가 초기화됐는지(Volume) 확인 |
+| 하루 넘게 쓰지 않은 뒤 로그인 화면으로 이동 | 정상 (refresh token 1일 만료) |
+| 15분마다 로그인 화면으로 튕김 | refresh 재발급 실패 — 인터셉터가 refresh 를 호출하는지, `refresh_tokens` 에 행이 있는지, 서버 재배포로 DB 가 초기화됐는지(Volume) 확인 |
 | 로그아웃 후에도 잠시 API 호출이 됨 | 정상. access token 은 `exp` 까지 유효하고, refresh 재발급만 차단된다 |
 | 관리자 화면이 `code: 403` | `ADMIN_EMAIL` 이 로그인 계정과 다름 / 시드 후 재시작 안 함 |
 | 모든 질문이 `code: 502` | `COPA_API_KEY` 미설정·오류. 로그 `ai_call_failed reason=` 확인 (`auth_failed` / `rate_limited` / `status_5xx`) |

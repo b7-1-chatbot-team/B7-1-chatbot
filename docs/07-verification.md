@@ -28,11 +28,12 @@
 | V02b | 다른 이메일 + 같은 닉네임 | `code: 201` (닉네임 중복 허용) | §4-2 |
 | V03 | 비밀번호 7자 / 잘못된 이메일 / 닉네임 21자 | `code: 422`, `data.message` 존재, `detail` 키 없음 | §4-5 |
 | V04 | DB 의 `hashed_password` 확인 | bcrypt prefix(`$2b$`), 평문 아님 | §4-2 |
-| V05 | 로그인 성공 | `code: 200`, `data.access_token`·`refresh_token`·`token_type=bearer`·`expires_in=3600`·`refresh_expires_in`, `refresh_tokens` 에 해시 1행(원문 아님) | §4-2 |
+| V05 | 로그인 성공 | `code: 200`, `data.access_token`·`refresh_token`·`token_type=bearer`·`expires_in=900`·`refresh_expires_in=86400`, `refresh_tokens` 에 해시 1행(원문 아님) | §4-2 |
 | V05b | `POST /api/auth/refresh` 유효 토큰 | `code: 200`, 새 토큰 쌍, (회전 시) 이전 refresh 로 재요청하면 `code: 401` | §4-2 |
 | V05c | refresh 만료 / 위조 / body 누락 | `code: 401` / `code: 401` / `code: 422` | §4-2 |
 | V05d | `POST /api/auth/logout` 후 같은 refresh 로 재발급 | 로그아웃 `code: 200`, 행 삭제, 재발급 `code: 401` | §4-2 |
 | V05e | 이미 폐기된 refresh 로 로그아웃 재요청 | `code: 200` (같은 결과) | §4-2 |
+| V05f | 만료 행 정리 작업 실행 (`delete_expired` 직접 호출) | `expires_at < now` 행만 삭제, 유효 행 유지 | §4-2 |
 | V06 | 틀린 비밀번호 / 없는 이메일 | `code: 401` (메시지 동일) | §4-2 |
 | V07 | `GET /api/auth/me` 유효 토큰 | `code: 200`, `data: {id, email, nickname, role}` | §4-2 |
 | V08 | 토큰 없음 / 변조 / 만료 | `code: 401` | §4-2 |
@@ -42,7 +43,7 @@
 | V12 | 7번째 질문 | 컨텍스트가 `AI_CONTEXT_TURNS`(5)턴으로 제한됨, 실패 기록은 제외 | §4-3 |
 | V13 | 빈 문자열 / 공백만 | `code: 422`, AI 호출 안 됨 | §4-5 |
 | V14 | 1001자 → 422 / 1000자 → 200 (경계값) | | §4-5 |
-| V15 | AI 타임아웃 강제 (`httpx.TimeoutException`) | `code: 504`, `chat_logs` status=error·error_code=AI_TIMEOUT, **서버 프로세스 유지** | §4-5, §6 |
+| V15 | AI 타임아웃 강제 (응답을 30초 넘게 지연 / `httpx.TimeoutException`) | `code: 504`, `chat_logs` status=error·error_code=AI_TIMEOUT, **서버 프로세스 유지** | §4-5, §6 |
 | V16 | AI 500/429/연결 실패 강제 | `code: 502`, error_code=AI_CALL_FAILED | §4-5 |
 | V17 | 장애 직후 정상 질문 | `code: 200` (서비스 유지) | §4-5 |
 | V18 | 사용자 A 의 로그가 B 에게 안 보임 | `items` 에 타인 기록 없음 | §4-4 |
@@ -126,7 +127,8 @@ curl -s -H "Authorization: Bearer $ATOKEN" $BASE/api/admin/failures
 | B09 | 한글 조합 중 Enter | 전송 안 됨, 조합 완료 후 Enter 는 1회만 전송 |
 | B10 | 공백만 입력 | 전송 버튼 비활성 |
 | B11 | 1200자 입력 | 1000자에서 잘림, 카운터 강조 |
-| B12 | AI 실패 재현 (`COPA_API_KEY` 를 잘못된 값으로 두고 재배포) | 오류 말풍선 + `502 · AI_CALL_FAILED`, 서버 유지 |
+| B12 | AI 실패 재현 (`COPA_API_KEY` 를 잘못된 값으로 두고 재배포) | 오류 말풍선 + `502 · AI_CALL_FAILED` + [다시 시도] 버튼, 서버 유지, **자동 재요청 없음**(Network 에 `/api/chat` 1회) |
+| B12b | 키를 정상으로 되돌린 뒤 [다시 시도] 클릭 | 같은 질문으로 `/api/chat` 1회 재호출, 오류 말풍선이 응답으로 교체, 요청 중 버튼 비활성 |
 | B13 | 새로고침 | 로그인 유지(`/auth/me`), 이전 대화 복원 |
 | B14 | 내 대화 로그 | 카드 수 = 성공 질문 수, `total` 표시 |
 | B15 | 새 계정의 로그 화면 | "아직 저장된 대화가 없습니다." |

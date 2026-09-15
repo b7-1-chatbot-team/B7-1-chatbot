@@ -28,12 +28,12 @@
 | B1 | 앱 기본 구성 | 설정 로딩(`.env`), SQLite 연결, CORS(개발 + Railway 프론트 도메인), **공통 응답 봉투·예외 핸들러**(422/404/405/500 도 `{code, data}`) | §5, §6 |
 | B2 | DB 모델 | `users`(role), `chat_logs`(status·error_code·latency_ms·request_id), `server_logs` (아래 3절) | §4-4 |
 | B3 | 회원가입 API | `POST /api/auth/signup` — email 중복 체크(409), 닉네임 중복 허용, bcrypt 해시 저장, role=user | §4-2 |
-| B4 | 로그인·재발급·로그아웃 API | `POST /api/auth/login` — access(JWT)·refresh token 발급, refresh 는 해시로 `refresh_tokens` 저장, 실패 401 · `POST /api/auth/refresh` — 재발급(회전) · `POST /api/auth/logout` — refresh 행 삭제 | §4-2 |
+| B4 | 로그인·재발급·로그아웃 API | `POST /api/auth/login` — access(JWT)·refresh token 발급, refresh 는 해시로 `refresh_tokens` 저장, 실패 401 · `POST /api/auth/refresh` — 재발급(회전) · `POST /api/auth/logout` — refresh 행 삭제 · 만료 행 정리 스케줄러(시작 시 + 24시간마다). access 15분 / refresh 1일 | §4-2 |
 | B5 | 현재 사용자 API | `GET /api/auth/me` — 로그인 상태 복원, `role` 포함 | §4-2 |
 | B6 | 접근 제어 | `get_current_user` 의존성, 비로그인 시 `/api/chat`, `/api/me/*`, `/api/admin/*` → 401 | §4-2 |
 | B7 | 챗 API | `POST /api/chat` — 수신 → 검증 → 컨텍스트 구성 → AI 호출 → DB 저장 → 응답 | §4-3 |
-| B8 | AI 클라이언트 | httpx, `COPA_API_KEY` 서버 환경변수 전용, 타임아웃 설정 | §4-3, §6 |
-| B9 | 실패 처리 | 타임아웃 → 504 / 기타 → 502, `data.message` 안내, **실패도 `chat_logs` 에 status=error 저장**, 서버 유지 | §4-5, §6 |
+| B8 | AI 클라이언트 | `httpx.AsyncClient`, `COPA_API_KEY` 서버 환경변수 전용, 호출 전체 30초 타임아웃 | §4-3, §6 |
+| B9 | 실패 처리 | 타임아웃 → 504 / 기타 → 502, `data.message` 안내, **실패도 `chat_logs` 에 status=error 저장**, 서버 유지, **서버 자동 재시도 없음** | §4-5, §6 |
 | B10 | 컨텍스트 유지 | 동일 사용자 최근 N턴(`AI_CONTEXT_TURNS`) **성공** Q/A 를 messages 에 포함 | §4-3 |
 | B11 | 입력 검증 | 빈 입력/공백 차단, 최대 1000자, 이메일 형식, 비밀번호 8자+, 닉네임 1~20 → 422 | §4-5 |
 | B12 | 내 로그 조회 API | `GET /api/me/chats` — 토큰 사용자 기준, 성공 기록, `{total, items}` | §4-4, §2-2 |
@@ -57,7 +57,7 @@
 | F4 | 인증 상태 관리 | 앱 로드 시 `/api/auth/me`(role), 헤더 로그인/로그아웃 표시, 로그아웃 버튼(`/api/auth/logout` 후 토큰 삭제) | §4-2 |
 | F5 | 보호 라우트·토큰 재발급 | 비로그인 `/chat`·`/logs`·`/admin` → `/login`, 인증 API 외 `code:401` 수신 시 refresh 1회 후 재시도, 재발급 실패 시 로그인 이동 | §4-2 |
 | F6 | 챗 화면 | 입력창 + 전송, 같은 화면에 질문/응답 말풍선 누적, 응답 대기 로딩 표시 | §4-1 |
-| F7 | 오류 안내 | `code` 504/502/422/500 시 채팅창에 `data.message` 안내, 봉투 없는 응답 → "서버에 연결할 수 없습니다" | §4-5 |
+| F7 | 오류 안내 | `code` 504/502/422/500 시 채팅창에 `data.message` 안내, 봉투 없는 응답 → "서버에 연결할 수 없습니다", 504·502 오류 말풍선에 **[다시 시도] 버튼**(같은 질문 재전송) | §4-5 |
 | F8 | 클라이언트 입력 검증 | 빈 입력 전송 버튼 비활성, 글자 수 제한 (서버 검증 보조) | §4-5 |
 | F9 | 내 대화 로그 화면 | `/logs` — `/api/me/chats` 카드 목록, total, 더 보기 | §4-4 |
 | F10 | 관리자 가드·메뉴 | `RequireAdmin`(role≠admin → `/chat`), 관리자에게만 "관리자" 탭 표시 | §2-2, §4-4 |

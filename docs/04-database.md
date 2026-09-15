@@ -101,12 +101,19 @@ access token(JWT)은 서버에 저장하지 않는다. **refresh token 만 해�
 | `id` | INTEGER | PK | 식별자 |
 | `user_id` | INTEGER | FK→users.id ON DELETE CASCADE, INDEX | 토큰 소유자 |
 | `token_hash` | TEXT | UNIQUE, NOT NULL | refresh token 의 SHA-256 해시. **원문은 저장하지 않는다** (DB 가 유출돼도 토큰으로 쓸 수 없음) |
-| `expires_at` | DATETIME | NOT NULL, INDEX | 만료 시각 (`REFRESH_TOKEN_EXPIRE_DAYS`) |
+| `expires_at` | DATETIME | NOT NULL, INDEX | 만료 시각 = 발급 시각 + `REFRESH_TOKEN_EXPIRE_DAYS`(1일). **평문 날짜 컬럼**이라 토큰 없이 조회·삭제 가능 |
 | `created_at` | DATETIME | NOT NULL | 발급 시각 |
 
-- 로그인: 행 추가 / 재발급: 기존 행 삭제 + 새 행 추가(회전 초안) / 로그아웃: 행 삭제
+- 로그인: 행 추가 / 재발급: 기존 행 삭제 + 새 행 추가(회전, 만료 다시 1일) / 로그아웃: 행 삭제
 - 한 사용자가 여러 기기에서 로그인하면 행이 여러 개 생긴다 (기기별 로그아웃)
-- 만료된 행 정리 방식은 [11-open-issues.md](11-open-issues.md) A7 세부 결정
+- **만료 행 정리 (확정)**: 앱 lifespan 의 백그라운드 작업이 **서버 시작 시 1회 + 이후 24시간마다** 실행
+
+```sql
+DELETE FROM refresh_tokens WHERE expires_at < :now;
+```
+
+> 스케줄러는 토큰 원문이나 해시를 풀 필요가 없다. 만료 판단은 **`expires_at` 컬럼**으로만 한다. `token_hash` 는 사용자가 보낸 토큰과 비교할 때만 쓴다.
+> Railway Serverless(슬리핑) 중에는 스케줄러도 멈추지만, 깨어나면 시작 시 정리가 실행되고, 만료 행은 재발급 조회 조건(`expires_at > now`)에서 이미 제외되므로 보안 영향은 없다.
 
 > `db_save_failed` 는 DB 장애 상황일 수 있으므로 `server_logs` 저장도 실패할 수 있다. 이때도 **파일/콘솔 로그에는 반드시 남긴다.** 보관 기간·정리 방식은 [11-open-issues.md](11-open-issues.md) G4.
 
@@ -232,6 +239,7 @@ CREATE INDEX ix_refresh_tokens_expires_at ON refresh_tokens (expires_at);
 | `app/crud/refresh_token.py` | `create(db, user_id, token_hash, expires_at)` | 로그인·재발급 시 저장 |
 | | `get_valid(db, token_hash, now)` | 재발급 검증 (만료 제외) |
 | | `delete(db, token_hash)` | 로그아웃·회전 시 폐기 |
+| | `delete_expired(db, now)` | 스케줄러 — 만료 행 일괄 삭제 |
 | `app/crud/server_log.py` | `create(db, request_id, level, event, user_id, detail)` | 이벤트 저장 |
 | | `list_by_request(db, request_id)` | 관리자 요청 흐름 |
 

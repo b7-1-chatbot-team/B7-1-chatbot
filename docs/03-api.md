@@ -29,14 +29,15 @@ Authorization: Bearer <access_token>
 
 | 토큰 | 형식 | 수명 | 서버 저장 | 용도 |
 |------|------|------|-----------|------|
-| `access_token` | JWT (`sub`=user_id, `exp`) | `JWT_EXPIRE_MINUTES` (초안 60분) | 저장 안 함 | 모든 인증 API 의 `Authorization` 헤더 |
-| `refresh_token` | 무작위 문자열 (`secrets.token_urlsafe`) | `REFRESH_TOKEN_EXPIRE_DAYS` (초안 7일) | **SHA-256 해시로 `refresh_tokens` 테이블에 저장** | `POST /api/auth/refresh` 로 새 토큰 발급 · `POST /api/auth/logout` 으로 폐기 |
+| `access_token` | JWT (`sub`=user_id, `exp`) | `JWT_EXPIRE_MINUTES` = **15분** | 저장 안 함 | 모든 인증 API 의 `Authorization` 헤더 |
+| `refresh_token` | 무작위 문자열 (`secrets.token_urlsafe`) | `REFRESH_TOKEN_EXPIRE_DAYS` = **1일** (재발급마다 새 토큰이 다시 1일) | **SHA-256 해시로 `refresh_tokens` 테이블에 저장** | `POST /api/auth/refresh` 로 새 토큰 발급 · `POST /api/auth/logout` 으로 폐기 |
 
 - 응답의 `expires_in` / `refresh_expires_in` 은 초 단위
 - access token 만료·위조·누락 → `code: 401` → 프론트가 refresh 로 1회 재발급 시도
 - refresh token 무효(없음·만료·폐기) → `code: 401` → 다시 로그인
 - refresh token 은 요청 **body** 로 보낸다 (쿠키 미사용 → CORS `credentials` 불필요)
-- 수명·회전 방식 등 세부값은 [11-open-issues.md](11-open-issues.md) A7 결정 항목
+- 만료된 refresh token 행은 **하루 1회 스케줄러**가 삭제한다 ([04-database.md](04-database.md) refresh_tokens)
+- 값을 이렇게 정한 이유: [12-decisions.md](12-decisions.md)
 
 ### 공통 응답 형식 (확정)
 
@@ -174,8 +175,8 @@ POST /api/auth/login
     "access_token": "eyJhbGciOiJIUzI1NiIs...",
     "refresh_token": "q3Xv9...",
     "token_type": "bearer",
-    "expires_in": 3600,
-    "refresh_expires_in": 604800
+    "expires_in": 900,
+    "refresh_expires_in": 86400
   }
 }
 ```
@@ -240,14 +241,14 @@ POST /api/auth/refresh
 ```json
 {
   "code": 200,
-  "data": { "access_token": "eyJ...", "refresh_token": "Zk81...", "token_type": "bearer", "expires_in": 3600, "refresh_expires_in": 604800 }
+  "data": { "access_token": "eyJ...", "refresh_token": "Zk81...", "token_type": "bearer", "expires_in": 900, "refresh_expires_in": 86400 }
 }
 ```
 
 **동작**
 1. body 의 refresh token 을 SHA-256 해시 → `refresh_tokens` 에서 조회
 2. 없음 / `expires_at` 지남 → `code: 401`
-3. 새 access token 발급. **refresh token 회전(초안)**: 기존 행 삭제 후 새 refresh token 발급·저장 (회전 여부는 [11-open-issues.md](11-open-issues.md) A7 결정 항목)
+3. 새 access token 발급 + **refresh token 회전**: 기존 행 삭제 후 새 refresh token(만료 = 지금 + 1일) 발급·저장 → 이전 refresh token 은 즉시 사용 불가
 
 **실패**: `401`(refresh token 무효), `422`(body 누락)
 
@@ -322,7 +323,7 @@ Authorization: Bearer <token>
 2. 요청마다 `request_id` 발급, 로그 `request_received`
 3. 입력 검증 (빈 문자열·공백만 차단, 최대 1000자) — **AI 호출 이전에 수행** (실패 `422`)
 4. 해당 사용자의 최근 성공 Q/A N개를 DB 에서 조회 → 컨텍스트 구성
-5. Codyssey AI API 호출 (`httpx`, 타임아웃 `AI_TIMEOUT_SECONDS`)
+5. Codyssey AI API 호출 (`httpx.AsyncClient`, 호출 전체 대기 상한 `AI_TIMEOUT_SECONDS`=30초, **서버 자동 재시도 없음**)
 6. 결과를 `chat_logs` 에 저장 — **성공은 `status=success`, AI 실패도 `status=error` + `error_code` 로 저장** (관리자 실패 기록용)
 7. 결과 반환
 
@@ -342,6 +343,16 @@ Authorization: Bearer <token>
 
 > **AI 호출이 실패해도 서버는 종료되지 않고 위 응답을 반환해야 한다.**
 > 타임아웃/실패 이후에 보낸 정상 질문은 계속 `code: 200` 으로 처리되어야 한다.
+
+**AI 실패 시 재시도 방식 (확정)**
+
+| 항목 | 규칙 |
+|------|------|
+| 서버 | AI 호출이 실패하면 **자동 재시도하지 않고** 즉시 `code: 504` / `502` 반환 |
+| 프론트 | 오류 말풍선에 안내 문구 + **[다시 시도] 버튼** 표시 |
+| 재시도 | 사용자가 버튼을 누르면 **같은 질문으로 `POST /api/chat` 을 새로 호출** (새 `request_id`) |
+| 기록 | 실패한 요청은 `status=error` 로 남고, 재시도는 별도 행으로 저장된다 |
+| 중복 방지 | 재시도 요청 중에는 버튼·전송 비활성 |
 
 ---
 
@@ -555,13 +566,15 @@ WARN  admin_forbidden    request_id=def457 user_id=12 path=/api/admin/stats
 
 | 항목 | 초안 값 | 상태 |
 |------|---------|------|
-| access token 만료 시간 | 1시간 (`JWT_EXPIRE_MINUTES=60`) | 합의 필요 |
+| access token 만료 시간 | **15분** (`JWT_EXPIRE_MINUTES=15`) | 확정 |
 | 로그아웃 API · refresh token | **access + refresh token, `POST /api/auth/refresh`·`/logout` 제공** | 확정 (A7) |
-| refresh token 수명 · 회전 · 형식 | 7일 (`REFRESH_TOKEN_EXPIRE_DAYS=7`) · 재발급 시 회전 · 무작위 문자열 해시 저장 | 합의 필요 (A7 세부) |
-| 컨텍스트 유지 개수 N | 5 (`AI_CONTEXT_TURNS=5`) | 합의 필요 |
-| AI API 타임아웃 | 30초 (`AI_TIMEOUT_SECONDS=30`) | 합의 필요 |
-| 질문 최대 길이 | 1000자 (`MAX_MESSAGE_LENGTH=1000`) | 합의 필요 |
+| refresh token 수명 · 회전 · 형식 · 정리 | **1일** (`REFRESH_TOKEN_EXPIRE_DAYS=1`) · 재발급 시 회전 · 무작위 문자열 SHA-256 해시 저장 · 하루 1회 스케줄러 삭제 | 확정 |
+| 로그아웃 요청에 필요한 토큰 | body 의 refresh token 만 (초안) | 합의 필요 (A7-8) |
+| 컨텍스트 유지 개수 N | **5** (`AI_CONTEXT_TURNS=5`) | 확정 |
+| AI API 타임아웃 | **30초, 호출 전체 대기 상한** (`AI_TIMEOUT_SECONDS=30`) | 확정 |
+| AI 실패 재시도 | 서버 자동 재시도 없음, 사용자 [다시 시도] 버튼 | 확정 |
+| 질문 최대 길이 | **1000자** (`MAX_MESSAGE_LENGTH=1000`) | 확정 |
 | 사용할 AI API 제공자 | **Codyssey AI API (COPA)** | 확정 |
 | 응답 형식 | `{code, data}`, HTTP 항상 200 | 확정 |
 | 배포 | **Railway 서비스 2개 (프론트·백엔드 별도 도메인)** | 확정 |
-| 토큰 저장 위치 | localStorage vs 메모리 | **프론트(이성준) 결정** |
+| 토큰 저장 위치 | localStorage vs 메모리 (access·refresh 같은 곳, refresh 는 body 전송) | **미정 — 프론트 구현 중 결정** (A15) |

@@ -18,7 +18,7 @@
 | 설정 관리 | **pydantic-settings**, python-dotenv | 환경변수 로딩 (mission §6) |
 | 비밀번호 해싱 | **bcrypt** | 단방향·salt 내장. 평문 저장 금지 |
 | 인증 | **PyJWT** | 토큰 발급·검증 |
-| HTTP 클라이언트 | **httpx** | AI API 호출, 타임아웃 제어 (현재 코드는 requests — [11-open-issues.md](11-open-issues.md) A20) |
+| HTTP 클라이언트 | **httpx `AsyncClient`** | AI API 비동기 호출, 타임아웃 제어 (현재 코드의 `requests` 는 교체 대상) |
 | 로깅 | 표준 `logging` + `server_logs` 테이블 | 운영 이벤트 추적 (mission §4-5), 관리자 요청 흐름 조회 |
 
 ### 프론트엔드
@@ -122,7 +122,7 @@ flowchart TD
 
 | 파일 | 역할 |
 |------|------|
-| `app/main.py` | 앱 생성, CORS 미들웨어, 라우터 등록, 예외 핸들러(`RequestValidationError`·`HTTPException`·`Exception` → `{code, data:{message}}`, HTTP 200), 시작 시 관리자 시드 |
+| `app/main.py` | 앱 생성, CORS 미들웨어, 라우터 등록, 예외 핸들러(`RequestValidationError`·`HTTPException`·`Exception` → `{code, data:{message}}`, HTTP 200), 시작 시 관리자 시드, lifespan 에서 **만료 refresh token 정리 스케줄러(하루 1회)** 실행 |
 | `app/core/responses.py` | `ok(data, code=200)` / `fail(code, message)` — 공통 봉투 생성 |
 | `app/config.py` | `.env` → `Settings`. 비밀값은 코드에 기본값을 두지 않음 |
 | `app/database.py` | 엔진/세션 팩토리, `PRAGMA foreign_keys=ON`, `get_db` 의존성 |
@@ -170,8 +170,8 @@ flowchart TD
 
 | 위협 | 보완 |
 |------|------|
-| 로그아웃 후에도 access token 이 만료 전까지 유효 | access token 수명을 짧게(`JWT_EXPIRE_MINUTES`), 로그아웃 시 **서버가 refresh token 행을 삭제**해 재발급 차단, 프론트는 두 토큰 즉시 삭제 |
-| refresh token 탈취 | DB 에는 SHA-256 해시만 저장, 재발급 시 회전(초안)으로 이전 토큰 무효화, 만료 `REFRESH_TOKEN_EXPIRE_DAYS` |
+| 로그아웃 후에도 access token 이 만료 전까지 유효 | access token 수명을 **15분**으로 짧게(`JWT_EXPIRE_MINUTES=15`), 로그아웃 시 **서버가 refresh token 행을 삭제**해 재발급 차단, 프론트는 두 토큰 즉시 삭제 |
+| refresh token 탈취 | DB 에는 SHA-256 해시만 저장, 재발급 시 회전으로 이전 토큰 무효화, 만료 **1일**(`REFRESH_TOKEN_EXPIRE_DAYS=1`) |
 | XSS 로 localStorage 토큰 탈취 | React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용), 외부 스크립트 미삽입. **저장 위치(localStorage vs 메모리)는 프론트 담당이 최종 결정** ([03-api.md](03-api.md) §7) |
 | 관리자 권한 강등 후에도 토큰으로 접근 | 토큰에 role 을 넣지 않고 `require_admin` 이 **매 요청 DB 의 `users.role` 을 확인** |
 | `JWT_SECRET_KEY` 유출 시 전체 토큰 위조 | 키는 `.env` 로만 주입, 저장소 커밋 금지, Railway Variables 로 설정 |
@@ -279,13 +279,13 @@ sequenceDiagram
     C->>D: SELECT ... WHERE status='success' ORDER BY id DESC LIMIT 5
     S->>S: messages = [최근 Q/A ...(오래된 순)] + [현재 질문]
     S->>S: log ai_call_start
-    S->>G: ③ httpx.post(..., timeout=AI_TIMEOUT_SECONDS)
+    S->>G: ③ await client.post(...) — 전체 30초 상한
     alt 성공
         G-->>S: 응답 텍스트
         S->>S: log ai_call_success latency_ms
         S->>C: ④ chat_log.create(status="success", answer, latency_ms, request_id)
         R-->>B: code:200 {chat_id, question, answer, created_at}
-    else httpx.TimeoutException
+    else 30초 초과 (TimeoutError / httpx.TimeoutException)
         S->>S: log ai_call_failed reason=timeout
         S->>C: ④ chat_log.create(status="error", error_code="AI_TIMEOUT")
         R-->>B: code:504 {message}
@@ -305,10 +305,11 @@ sequenceDiagram
 | 서버 검증 | 프론트 검증과 **별개로 필수** | API 를 직접 호출하면 프론트 검증을 우회할 수 있음 ([features.md](features.md) B11) |
 | 컨텍스트 | 같은 사용자 최근 `AI_CONTEXT_TURNS`(5) **성공** Q/A | 토큰 비용 상한 고정, 실패 기록은 문맥에 의미 없음 |
 | 컨텍스트 초과 | **오래된 것부터 잘라냄** | 최근 맥락 우선 유지 |
-| 타임아웃 | `httpx.Timeout(AI_TIMEOUT_SECONDS)` | 무한 대기로 워커가 묶이는 것 방지 |
+| 타임아웃 | 호출 전체를 `asyncio.timeout(AI_TIMEOUT_SECONDS)`(30초)로 감싸고 httpx 타임아웃도 설정 | httpx 타임아웃은 연결·읽기 **단계별**로 적용되므로 전체 대기 상한을 따로 둔다 |
 | 예외 변환 | `TimeoutException`→504, 나머지→502 | 사용자에게는 두 코드만 노출, 상세 원인은 로그 `reason=` 으로 |
 | 실패 저장 | AI 실패도 `chat_logs` 에 `status=error` 로 저장 | 관리자 "AI 실패 기록"·통계 |
 | 서버 유지 | 예외를 잡아 봉투 응답으로 변환 | **AI 실패로 서버가 종료되면 안 됨** (mission §4-5) |
+| 재시도 | **서버 자동 재시도 없음.** 실패를 즉시 안내하고 사용자가 [다시 시도] 버튼으로 재요청 | 쿼터 중복 소모·대기시간 누적 방지, 사용자가 상황을 알고 선택 ([12-decisions.md](12-decisions.md)) |
 | 비동기 | `httpx.AsyncClient` + `await` | 대기 중 다른 요청 처리 |
 | 로그 내용 | 질문 **원문 미기록**, 길이/식별자만 | 로그 파일·`server_logs` 개인정보 노출 방지 |
 
@@ -350,7 +351,7 @@ sequenceDiagram
 | 항목 | 내용 |
 |------|------|
 | 엔드포인트 | `POST https://copa.codyssey.kr/v1/chat/completions` (OpenAI 호환 형식, 현재 `backend/main.py`) |
-| 호출 방식 | REST 직접 호출. HTTP 클라이언트(httpx vs 현재 코드의 requests)는 [11-open-issues.md](11-open-issues.md) A20 |
+| 호출 방식 | `httpx.AsyncClient` 로 REST 직접 호출 (`async def` 라우트에서 `await`, 클라이언트는 앱 시작 시 1개 생성해 재사용) |
 | 모델 | `gpt-5-mini` (현재 `backend/main.py` 값) |
 | 키 전달 | `Authorization: Bearer <COPA_API_KEY>`. **서버에서만 사용**, 응답·프론트 번들에 절대 포함하지 않음 |
 | 컨텍스트 형식 | `messages: [{role:"user"|"assistant", content}]` — 이전 Q/A 를 user/assistant 쌍으로 나열한 뒤 현재 질문 |
