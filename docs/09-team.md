@@ -15,7 +15,7 @@
 | R6 | API 키·비밀번호 등 **민감정보를 코드/문서에 직접 작성 금지** | §6 | `grep`, PR 리뷰 |
 | R7 | 모든 민감정보는 **환경변수(.env)** 로 관리, `.env` 는 **.gitignore** | §6 | `git ls-files` |
 | R8 | README 에 **환경변수 키 목록(이름)과 설정 방법** | §6 | README §5 |
-| R9 | AI 호출 **타임아웃** 설정 + 실패 시 **오류 안내** 반환 | §6 | `AI_TIMEOUT_SECONDS`, 504/502 응답 |
+| R9 | AI 호출 **타임아웃** 설정 + 실패 시 **오류 안내** 반환 | §6 | `AI_TIMEOUT_SECONDS`, `code` 504/502 응답 |
 | R10 | 요청 수신 · AI 호출/응답 · DB 저장 성공/실패 **로그** 유지 | §6 | `app.log` 이벤트 확인 |
 | R11 | 평가 시점 **외부 네트워크 접속 가능** 상태 유지 | §4-6 | 외부망에서 배포 URL 접속 |
 
@@ -36,7 +36,7 @@ main       ← 배포 브랜치. 직접 push 금지. develop → main PR 로만 
 | `feature/` | 기능 추가 | `feature/ai-context` |
 | `fix/` | 버그 수정 | `fix/token-refresh-redirect` |
 | `docs/` | 문서만 | `docs/api-spec` |
-| `chore/` | 설정·빌드·배포 | `chore/render-deploy` |
+| `chore/` | 설정·빌드·배포 | `chore/railway-deploy` |
 
 GitHub 설정: Settings → Branches → `main`, `develop` 에 **Require a pull request before merging** + **Require approvals: 1**.
 
@@ -98,7 +98,7 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 
 | 팀원 | 역할 | 담당 범위 (features.md #) | 주요 산출물 |
 |------|------|---------------------------|-------------|
-| **어썸체크** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Render/Vercel 배포, README |
+| **어썸체크** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Railway 배포, README |
 | **박성현A** | AI 파이프라인 | A1~A12 | `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구 |
 | **이성준** | 프론트엔드 (React) | F1~F18 | `src/api/`, `src/contexts/AuthContext`, `src/pages/{Login,Signup,Chat,Logs}`, `src/components/`, CSS Modules·디자인 토큰, 라우팅 가드 |
 
@@ -106,6 +106,8 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 
 1. 팀장이 **B1~B4(구조·설정·CORS·DB 세션) + B12(인증 dependency)** 를 먼저 올려야 나머지 두 트랙이 붙을 수 있다.
 2. 박성현A 는 인증 dependency 가 나오기 전에는 **mock 사용자**로 `POST /api/chat` 을 먼저 만들고, 이후 dependency 로 교체한다.
+> **관리자 기능(features.md B15~B19, F10~F14)은 필수로 확정됐지만 담당자가 아직 없다** — [11-open-issues.md](11-open-issues.md) G7 에서 결정 후 위 표와 §4 에 반영한다.
+
 3. 이성준은 백엔드보다 먼저 시작할 수 있다 — [03-api.md](03-api.md) 기준으로 **목 응답(msw 또는 로컬 stub)** 으로 화면을 만들고 나중에 실 API 로 교체한다.
 
 공통: 코드 리뷰는 **순환**(어썸체크 → 박성현A → 이성준 → 어썸체크), 최종 통합 확인·평가 리허설은 3명 함께.
@@ -120,7 +122,7 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 | `feature/be-db` | 4 `feat(db): SQLAlchemy 엔진·세션과 get_db 의존성` · 5 `feat(db): users·chat_logs 모델` · 6 `feat(crud): user·chat_log 리포지토리 계층 분리` |
 | `feature/be-auth-jwt` | 7 `feat(auth): bcrypt 해시·검증 유틸` · 8 `feat(auth): 회원가입 API 와 이메일 중복 409` · 9 `feat(auth): 로그인 JWT 발급` · 10 `feat(auth): get_current_user 인증 dependency` · 11 `feat(auth): /api/auth/me 로 상태 복원 지원` |
 | `feature/be-logs` | 12 `feat(logs): /api/me/chats 사용자 스코프 조회와 페이지네이션` · 13 `feat(log): DB 저장 성공/실패 로깅` |
-| `chore/deploy` | 14 `chore(deploy): Render·Vercel 배포 설정과 CORS 도메인` |
+| `chore/deploy` | 14 `chore(deploy): Railway 서비스 2개 배포 설정과 CORS 도메인` |
 | `docs/*` | 15 `docs: README 총괄 작성` |
 
 ### 박성현A — AI 파이프라인 (계획 12 커밋)
@@ -150,7 +152,7 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 |------|------|-----------|
 | 1 | 저장소·브랜치·골격, `03-api.md` 확정, DB 모델, 인증 API | develop 에서 가입→로그인→`/auth/me` curl 성공 |
 | 2 | 챗 파이프라인(컨텍스트·검증·타임아웃·로그), 프론트 4화면 | 로컬에서 가입→로그인→질문→응답→로그 전 흐름 동작 |
-| 3 | Render·Vercel 배포, CORS 정리, 실제 Codyssey AI API 연동 | 외부망에서 배포 URL 로 전 흐름 재현 |
+| 3 | Railway 배포(서비스 2개·Volume), CORS 정리, 관리자 화면, 실제 Codyssey AI API 연동 | 외부망에서 배포 URL 로 전 흐름 재현 |
 | 4 | 문서 마감, 역할 요약·커밋 수 반영, 평가 리허설 | docs/08 체크리스트 전부 체크 |
 
 ## 6. 개인별 작업 요약 (마감 시 실제 값으로 갱신)
