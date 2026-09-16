@@ -1,15 +1,24 @@
-annotated-doc==0.0.5
-annotated-types==0.8.0
-anyio==4.15.1
-certifi==2026.7.22
-charset-normalizer==3.5.1
+# 백엔드 런타임 의존성 (06-deployment §2 목표 구성). 설치: pip install -r requirements.txt
+# 버전을 고정해 로컬·Railway 에서 같은 환경으로 실행되게 한다.
+
+# 웹 프레임워크와 ASGI 서버 — uvicorn app.main:app 으로 실행
 fastapi==0.141.1
-idna==3.19
-pydantic==2.13.5
-pydantic_core==2.46.5
+uvicorn[standard]==0.53.0
+
+# DB — SQLite 를 SQLAlchemy 2.0 ORM 으로 사용
+sqlalchemy==2.0.54
+
+# 요청·응답 검증과 환경변수 로딩 — [email] 은 이메일 형식 검증용 email-validator 포함
+pydantic[email]==2.13.5
+pydantic-settings==2.15.0
 python-dotenv==1.2.3
+
+# 인증 — 비밀번호 해시(bcrypt)와 access token(JWT)
+bcrypt==5.0.0
+pyjwt==2.14.0
+
+# AI API 비동기 호출용 HTTP 클라이언트 (A20 확정)
+httpx==0.28.1
+
+# 기존 backend/main.py(AI PoC)가 사용 중 — AI 트랙이 httpx 로 이관하면 삭제
 requests==2.34.2
-starlette==1.6.0
-typing-inspection==0.4.4
-typing_extensions==4.16.0
-urllib3==2.8.0
