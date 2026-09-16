@@ -7,8 +7,9 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite --mode development",
+    "build": "tsc -b && vite build --mode production",
+    "build:dev": "tsc -b && vite build --mode development",
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview"
