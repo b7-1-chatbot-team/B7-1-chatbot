@@ -101,13 +101,17 @@ flowchart TD
 │   ├── .env.development.example # 개발 모드 (npm run dev / build:dev)
 │   ├── .env.production.example  # 운영 모드 (npm run build)
 │   └── src/
-│       ├── api/                 # axios 인스턴스, 인터셉터 (봉투 파싱), types.ts (API 응답 타입)
+│       ├── api/                 # axios 인스턴스, 인터셉터(봉투 파싱), types.ts (API 요청·응답 타입)
 │       ├── contexts/            # AuthContext
+│       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의)
 │       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
-│       └── components/          # 컴포넌트(*.tsx) + *.module.css
+│       ├── components/          # 컴포넌트(*.tsx) + *.module.css
+│       └── types/               # 여러 화면이 공유하는 타입 (user.ts, chat.ts)
 ├── .gitignore
 └── README.md
 ```
+
+프론트엔드 타입은 구현 파일과 섞지 않고 타입 파일로 분리한다. **여러 페이지·컴포넌트가 공유하는 타입은 `src/types/`** 에, **한 영역에서만 쓰는 타입은 그 폴더의 `types.ts`**(`routes/types.ts`, `api/types.ts`) 에 둔다. 한 컴포넌트 전용 props 는 그 컴포넌트 파일 안에 둔다.
 
 현재 저장소의 백엔드는 `backend/main.py` 단일 파일 골격이다 ([11-open-issues.md](11-open-issues.md) A22).
 
