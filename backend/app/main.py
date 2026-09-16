@@ -78,5 +78,6 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],  # 토큰 헤더와 JSON 본문 헤더만 허용
 )
 
+# 라우터 등록 — 각 파일의 경로(/api/auth/*, /api/me/*)를 앱에 연결
 app.include_router(auth.router)
 app.include_router(me.router)

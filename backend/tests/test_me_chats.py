@@ -5,12 +5,14 @@ from tests.conftest import auth_header, login, signup
 
 
 def _user(client, db, email):
+    """가입·로그인까지 마친 사용자 객체와 Authorization 헤더를 반환하는 헬퍼."""
     signup(client, email=email)
     token = login(client, email=email)["data"]["access_token"]
     return crud.user.get_by_email(db, email), auth_header(token)
 
 
 def _chat(db, user_id, n, status="success"):
+    """AI 호출 없이 CRUD 로 대화 기록을 직접 넣는 헬퍼. n 으로 질문을 구분하고, 실패면 answer 없이 AI_TIMEOUT."""
     return crud.chat_log.create(
         db,
         user_id=user_id,
@@ -24,10 +26,12 @@ def _chat(db, user_id, n, status="success"):
 
 
 def test_v09_requires_login(client):
+    """토큰 없이 조회 → 401"""
     assert client.get("/api/me/chats").json()["code"] == 401
 
 
 def test_v18_only_my_success_chats(client, db):
+    """내 성공 기록만 보이고, 다른 사용자 기록과 내 실패 기록은 보이지 않는다"""
     alice, alice_h = _user(client, db, "alice@example.com")
     bob, bob_h = _user(client, db, "bob@example.com")
     _chat(db, alice.id, 1)
@@ -45,6 +49,7 @@ def test_v18_only_my_success_chats(client, db):
 
 
 def test_v19_pagination_and_order(client, db):
+    """최신순 정렬, limit·offset 페이지 이동, 기본 20개, 101 요청 시 100개로 제한, 범위 오류 422"""
     user, h = _user(client, db, "user@example.com")
     for n in range(1, 106):
         _chat(db, user.id, n)
@@ -68,6 +73,7 @@ def test_v19_pagination_and_order(client, db):
 
 
 def test_context_query_oldest_first(client, db):
+    """챗 트랙용 컨텍스트 조회: 최근 성공 5개를 오래된 순으로 반환, 실패 기록 제외"""
     user, _ = _user(client, db, "user@example.com")
     for n in range(1, 8):
         _chat(db, user.id, n)
