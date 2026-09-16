@@ -43,13 +43,15 @@ uvicorn app.main:app --reload
 cd frontend
 nvm use                     # Node 24
 npm install                 # react · react-router-dom · axios · typescript (스타일은 CSS Modules, 설치 없음)
-cp .env.example .env
+cp .env.development.example .env.development
+cp .env.production.example  .env.production   # 배포용 값은 보통 Railway Variables 로 대체
 npm run dev
-# → http://localhost:5173
+# → http://localhost:5173  (development 모드)
 
-npm run typecheck           # tsc --noEmit (타입 검사)
+npm run typecheck           # tsc -b (타입 검사)
 npm run lint                # oxlint
-npm run build               # 타입 검사 + Vite 빌드 → dist
+npm run build               # 타입 검사 + production 모드 빌드 → dist
+npm run build:dev           # 타입 검사 + development 모드 빌드 (개발용 값으로 확인할 때)
 ```
 
 ## 3. 환경변수
@@ -90,11 +92,28 @@ ADMIN_NICKNAME=
 | `ADMIN_PASSWORD` | (없음) | 관리자 비밀번호 (8자 이상) | ✅ |
 | `ADMIN_NICKNAME` | (없음) | 관리자 닉네임 | |
 
-### `frontend/.env`
+### `frontend/.env.development` · `frontend/.env.production`
+
+프론트는 **Vite 모드(mode)** 에 따라 다른 파일을 읽는다. 저장소에는 값 예시 파일 두 개(`*.example`)만 두고, 실제 파일은 커밋하지 않는다.
+
+| 모드 | 사용 명령 | 읽는 파일 | 용도 |
+|------|-----------|-----------|------|
+| development | `npm run dev` · `npm run build:dev` | `.env.development` | 로컬 백엔드(`http://localhost:8000`) 연결 |
+| production | `npm run build` | `.env.production` | 배포용 백엔드 도메인 연결 |
 
 ```
+# .env.development
 VITE_API_BASE_URL=http://localhost:8000
+
+# .env.production
+VITE_API_BASE_URL=https://<backend>.up.railway.app
 ```
+
+| 키 | 설명 |
+|----|------|
+| `VITE_API_BASE_URL` | 백엔드 Base URL. axios `baseURL` 로 사용 |
+
+코드에서는 `import.meta.env.VITE_API_BASE_URL` 로 읽고, 현재 모드는 `import.meta.env.MODE`(`development` / `production`)로 확인한다. Node 생태계의 `NODE_ENV` 와 같은 역할이다.
 
 > **프론트 `.env` 에는 비밀값을 절대 넣지 않는다.** `VITE_` 접두어 변수는 빌드 결과물에 그대로 포함되어 브라우저에서 볼 수 있다. AI API 키(`COPA_API_KEY`)는 백엔드에만 둔다.
 > `VITE_` 변수는 **빌드 시점**에 박히므로, 값을 바꾸면 프론트를 다시 빌드·배포해야 한다.
@@ -250,8 +269,8 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 
 ## 9. 민감정보 관리 체크
 
-- `.gitignore` 에 `.env`, `*.db`, `__pycache__`, `node_modules`, `.venv`, `dist`
-- 저장소에는 `backend/.env.example`, `frontend/.env.example` 만 (키 이름 수준, 값 없음)
+- `.gitignore` 에 `.env`, `.env.*`(단 `*.example` 은 예외), `*.db`, `__pycache__`, `node_modules`, `.venv`, `dist`
+- 저장소에는 `backend/.env.example`, `frontend/.env.development.example`, `frontend/.env.production.example` 만 (키 이름 수준, 값은 예시)
 - API 키·JWT 비밀키·관리자 비밀번호는 Railway Variables 에만 입력
 
 ```bash

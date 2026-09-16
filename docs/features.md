@@ -170,7 +170,7 @@
 
 | # | 항목 | mission 근거 |
 |---|------|--------------|
-| C1 | 저장소 구조 `backend/`, `frontend/`, 각각 `.env.example`, 루트 `.gitignore`(`.env`, `node_modules`, `*.db`, `.venv`, `dist`) | §6 |
+| C1 | 저장소 구조 `backend/`, `frontend/`, `.env` 예시 파일(백엔드 `.env.example`, 프론트 `.env.development.example`·`.env.production.example`), 루트 `.gitignore`(`.env`, `node_modules`, `*.db`, `.venv`, `dist`) | §6 |
 | C2 | 배포 — Railway 프론트 URL 로 외부 네트워크 접속, 백엔드 CORS·Volume 설정 | §2-1, §4-6 |
 | C3 | README — 개요 / 구조 / API 명세(예시) / DB 구조 / 실행(백·프론트) / 환경변수 / 팀 역할 / 민감정보 관리 | §2-2 |
 | C4 | Git — `main`/`develop`/`feature/*`, PR merge, 팀원별 커밋 10회 이상, 문서-이력 일치 | §4-7 |

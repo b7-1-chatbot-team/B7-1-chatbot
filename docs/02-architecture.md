@@ -98,6 +98,8 @@ flowchart TD
 ├── frontend/
 │   ├── .nvmrc
 │   ├── tsconfig.json            # strict: true
+│   ├── .env.development.example # 개발 모드 (npm run dev / build:dev)
+│   ├── .env.production.example  # 운영 모드 (npm run build)
 │   └── src/
 │       ├── api/                 # axios 인스턴스, 인터셉터 (봉투 파싱), types.ts (API 응답 타입)
 │       ├── contexts/            # AuthContext
