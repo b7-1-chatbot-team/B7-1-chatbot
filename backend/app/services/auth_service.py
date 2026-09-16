@@ -1,5 +1,6 @@
-"""인증 비즈니스 로직 — 가입, 로그인, 토큰 발급·재발급·폐기."""
+"""인증 비즈니스 로직 — 가입, 로그인, 토큰 발급·재발급·폐기, 관리자 시드."""
 
+import logging
 from datetime import timedelta
 
 from sqlalchemy.exc import IntegrityError
@@ -18,6 +19,9 @@ from app.core.security import (
 )
 from app.core.timeutil import utcnow
 from app.models import User
+from app.schemas.auth import PASSWORD_MIN_LENGTH
+
+logger = logging.getLogger("app")
 
 
 def signup(db: Session, email: str, password: str, nickname: str) -> User:
@@ -84,3 +88,37 @@ def refresh(db: Session, refresh_token: str) -> dict:
 def logout(db: Session, refresh_token: str) -> None:
     """해당 refresh token 행만 삭제(이 기기만 로그아웃). 이미 없어도 성공으로 본다."""
     crud.refresh_token.delete(db, hash_refresh_token(refresh_token))
+
+
+def delete_expired_refresh_tokens(db: Session) -> int:
+    """스케줄러용. 만료 판단은 expires_at 컬럼으로만 한다."""
+    return crud.refresh_token.delete_expired(db, utcnow())
+
+
+def ensure_admin(db: Session) -> None:
+    """ADMIN_EMAIL/ADMIN_PASSWORD 로 관리자 계정을 만들거나, 이미 있으면 role=admin 으로 승격한다.
+
+    회원가입 API 로는 관리자를 만들 수 없고 이 시드가 유일한 경로다. 기존 계정의 비밀번호는 바꾸지 않는다.
+    """
+    email = settings.admin_email.strip().lower()
+    if not email or not settings.admin_password:
+        logger.info("admin_seed_skipped reason=not_configured")
+        return
+    if len(settings.admin_password) < PASSWORD_MIN_LENGTH:
+        logger.warning("admin_seed_skipped reason=password_too_short")
+        return
+
+    user = crud.user.get_by_email(db, email)
+    if user is None:
+        user = crud.user.create(
+            db,
+            email=email,
+            hashed_password=hash_password(settings.admin_password),
+            nickname=(settings.admin_nickname.strip() or "관리자")[:20],
+            role="admin",
+        )
+        logger.info("admin_seed_created user_id=%s", user.id)
+    elif user.role != "admin":
+        user.role = "admin"
+        db.commit()
+        logger.info("admin_seed_promoted user_id=%s", user.id)

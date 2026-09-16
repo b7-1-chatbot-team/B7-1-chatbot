@@ -3,7 +3,9 @@
 실행: uvicorn app.main:app --reload  (backend/ 에서)
 """
 
-from contextlib import asynccontextmanager
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,14 +13,43 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
 from app.core.responses import register_exception_handlers
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
 from app.routers import auth
+from app.services import auth_service
+
+logger = logging.getLogger("app")
+
+REFRESH_TOKEN_CLEANUP_INTERVAL_SECONDS = 24 * 60 * 60
+
+
+def _cleanup_expired_refresh_tokens() -> None:
+    with SessionLocal() as db:
+        deleted = auth_service.delete_expired_refresh_tokens(db)
+    logger.info("refresh_token_cleanup deleted=%s", deleted)
+
+
+async def _refresh_token_cleanup_loop() -> None:
+    """시작 시 1회 + 이후 24시간마다 만료 refresh token 행 삭제 (A7-6)."""
+    while True:
+        try:
+            await asyncio.to_thread(_cleanup_expired_refresh_tokens)
+        except Exception:
+            logger.exception("refresh_token_cleanup_failed")
+        await asyncio.sleep(REFRESH_TOKEN_CLEANUP_INTERVAL_SECONDS)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if not settings.jwt_secret_key:
+        raise RuntimeError("JWT_SECRET_KEY 가 설정되지 않았습니다. backend/.env 또는 Railway Variables 를 확인하세요.")
     Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        auth_service.ensure_admin(db)
+    cleanup_task = asyncio.create_task(_refresh_token_cleanup_loop())
     yield
+    cleanup_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await cleanup_task
 
 
 # 앱 생성. title·version 은 Swagger(/docs) 화면에 표시된다.
