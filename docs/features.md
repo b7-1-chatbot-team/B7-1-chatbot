@@ -13,6 +13,8 @@
 | 프론트 분리 허용 여부 | 허용. mission §3 "라우팅, 요청/응답, **템플릿 또는 프론트 연동**", §4-1 "형태 자유" |
 | 필수 제약 | 백엔드 Python + FastAPI, DB SQLite 권장 (§5) |
 | 인증 방식 | **JWT Bearer (PyJWT, HS256)** — 근거: docs/02-architecture.md §4 |
+| 토큰 저장 위치 | **localStorage** (access·refresh), refresh 는 요청 body 전송 — 근거·XSS 대응: docs/12-decisions.md §4 |
+| 프론트 언어 | **TypeScript (`strict: true`)** — 근거: docs/12-decisions.md §14 |
 | AI API | **Codyssey AI API (COPA)** — docs/02-architecture.md §6 |
 | 응답 형식 | **`{code, data}`, HTTP 항상 200** — 실패는 `data.message` (03-api.md §0) |
 | 결과 코드 | 401 로그인 실패·인증 없음 / 403 관리자 아님 / 404 / 409 이메일 중복 / **422 입력 검증** / 500 / **502 AI 호출 실패** / **504 AI 타임아웃** |
@@ -51,7 +53,7 @@
 
 | # | 기능 | 세부 | mission 근거 |
 |---|------|------|--------------|
-| F1 | 프로젝트 구성 | Vite + React Router + axios, Node 24(`.nvmrc`), CSS Modules, `VITE_API_BASE_URL` (키 없음) | §4-1 |
+| F1 | 프로젝트 구성 | **TypeScript(strict)** + Vite + React Router + axios, Node 24(`.nvmrc`), CSS Modules, `VITE_API_BASE_URL` (키 없음), API 응답 타입 정의 | §4-1 |
 | F2 | 회원가입 페이지 | email·password·nickname 폼, 성공 시 로그인 페이지 이동, 실패 `data.message` 표시 | §4-2 |
 | F3 | 로그인 페이지 | 폼, 성공 시 access·refresh token 저장 후 챗 페이지 이동, 실패 메시지 표시 | §4-2 |
 | F4 | 인증 상태 관리 | 앱 로드 시 `/api/auth/me`(role), 헤더 로그인/로그아웃 표시, 로그아웃 버튼(`/api/auth/logout` 후 토큰 삭제) | §4-2 |
@@ -177,7 +179,9 @@
 
 ## 6. 역할 분담
 
-**미확정** — 문서마다 버전이 달라 [11-open-issues.md](11-open-issues.md) C1~C3, G7 에서 결정한다. 관리자 기능(B15~B19, F10~F14) 담당도 함께 정한다.
+프론트엔드 **F1~F14 전체(관리자 화면 F10~F14 포함)는 이성준** 이 담당한다 ([09-team.md](09-team.md) §3, [11-open-issues.md](11-open-issues.md) G7).
+
+백엔드 트랙 분담과 팀원 이름 표기는 아직 정리 중이다 — [11-open-issues.md](11-open-issues.md) C1~C2, 관리자 백엔드(B15~B19) 담당은 G7.
 
 ---
 

@@ -45,6 +45,8 @@
 | A23 프론트 스타일 | CSS Modules | 위 참고 |
 | A24 Railway 배포 브랜치 | 백엔드·프론트 모두 `main` (문서 기준) | 06 §6-1 |
 | **AI 실패 재시도** | **서버 자동 재시도 없음.** 실패 즉시 안내 → 오류 말풍선 **[다시 시도] 버튼** → 같은 질문으로 `POST /api/chat` 새 요청 | 01 S3, 02 §5-4, 03 §2-1, 05 화면 3·§5, 07 B12·B12b, features.md B9·F7 |
+| **A15 토큰 저장 위치** | **`localStorage`** (access·refresh 같은 곳, refresh 는 body 전송). XSS 위험은 저장 방식이 아니라 **XSS 예방 + 피해 시간 단축**으로 대응 (12 §4) | 03 §0·§7, 05 화면 2, 12 §4, 02 §4 |
+| **프론트 언어** | **TypeScript (`strict: true`)** — 기존 JS(JSX) 에서 전환. 봉투 응답·결과 코드·관리자 응답 타입 고정 | 02 §1, 05 머리말, 06 §2·§6-2, 08 §3, 09 §3, features.md §0·F1, 12 §14 |
 | E3·E4·E5·E6 | 상태 표시·캡처 목록·슬립 모순 정리 | 07, 08 |
 
 ---
@@ -53,8 +55,9 @@
 
 | # | 항목 | 현재 문서 | 선택지 | 결정 |
 |---|------|-----------|--------|------|
-| A15 | 토큰 저장 위치 (access·refresh) | localStorage 유력 (03 §7, 05 화면 2, 12 §4) | 메모리 / localStorage / sessionStorage | **미정 — 프론트 구현 중 결정** |
-| A7-8 | 로그아웃 요청에 필요한 토큰 | body 의 refresh token 만 (03 §1-5 초안) | 아래 상세 | |
+| A7-8 | 로그아웃 요청에 필요한 토큰 | body 의 refresh token 만 (03 §1-5) | 아래 상세 | **① refresh token 만 — 확정**. 여러 기기 로그인 허용(A7-7)과 맞고, access 만료 후에도 로그아웃이 실패하지 않으며, refresh 를 가진 쪽이 할 수 있는 일은 그 토큰 폐기뿐이라 악용 여지가 작다 |
+
+> A15(토큰 저장 위치)는 **localStorage 로 확정**되어 §0 으로 옮겼다.
 
 ### A7-8 상세 — 로그아웃 요청에 어떤 토큰을 요구할까
 
@@ -91,10 +94,10 @@
 |---|------|------|------|
 | D3 | 프로젝트 README 가 루트에 없음 — `backend/README.md` 로 이동됐고, 로컬에서는 삭제된 상태(커밋 전) | 루트 / `backend/README.md` | 위치·존치 결정 필요 |
 | D4 | README 의 문서 링크가 루트 기준 → `backend/` 에서는 깨짐 | `backend/README.md` | D3 결정 후 |
-| D5 | `.github/pull_request_template.md` | 09 §2-3, 10 머리말 | 파일 없음 |
+| D5 | `.github/pull_request_template.md` | 09 §2-3, 10 머리말 | **해결** — PR 템플릿 추가(v1.5), 이슈 템플릿 `.github/ISSUE_TEMPLATE/issue_template.md` 도 추가(v1.6) |
 | D6 | PoC 코드 (`backend/app/`, `deploy/`, `e2e/`, `backend/scripts/e2e_flow.sh`) | 07 §4, 08 §3, 09 §7 | 이 저장소에 없음 |
 | D7 | `backend/scripts/check_logs.sql` | 04 DB 확인, 08 §1 | 구현 예정 |
-| D8 | `plan.md`, `theory.md`, 이전 경로 `chatbot/` | `handoff.md` | 이 저장소에 없음 |
+| D8 | `plan.md`, `theory.md`, 이전 경로 `chatbot/` | (이전 `handoff.md`) | **해결** — `handoff.md` 삭제됨(v1.5). E15 도 함께 해소 |
 | D9 | `backend/.env.example` | 06 §3·§9, features.md C1 | 없음 (`frontend/.env.example` 은 있음) |
 
 ---
@@ -111,7 +114,7 @@
 | E11 | 현재 챗 코드에 인증·검증·타임아웃 예외 처리·로그·DB 저장·봉투 응답 없음, 경로 `/chat` (스펙 `/api/chat`), `requests` 동기 호출(A20 과 다름) — 구현 전 골격 | `backend/main.py` |
 | E12 | `.gitignore` 에 `node_modules`, `dist`, `*.db`, `.env.*` 없음 (frontend 는 자체 .gitignore 있음) | `.gitignore` / 06 §9 |
 | E14 | `mission.md` 가 루트에 있지만 git 에 추적되지 않음 | 루트 |
-| E15 | handoff.md 전체가 세션·Claude·username·400/503 기준 — 현재 결정과 다름 | `handoff.md` |
+| E15 | handoff.md 전체가 세션·Claude·username·400/503 기준 — 현재 결정과 다름 | **해결** — `handoff.md` 삭제(v1.5) |
 | E17 | **백엔드에 `CORSMiddleware` 가 없음** → Railway 두 도메인 구성에서 브라우저 API 호출이 CORS 로 차단됨. **2026-09-15 로컬 재현 확인**: develop `backend/main.py` 에 preflight `OPTIONS /chat` (Origin: 프론트 도메인) → `405 Method Not Allowed`, `access-control-allow-origin` 헤더 없음. Railway 실배포 확인은 백엔드 기동(E9) 후 | `backend/main.py` / 06 §5·§7 |
 | E18 | 현재 코드 응답이 봉투 형식이 아님 (AI API 응답 JSON 을 그대로 반환) | `backend/main.py` / 03 §0 |
 
@@ -141,9 +144,9 @@
 | G2 | 관리자 계정 생성 | 가입으로 불가. 서버 시작 시 `.env` `ADMIN_EMAIL`/`ADMIN_PASSWORD`/`ADMIN_NICKNAME` 으로 생성, 이미 있으면 `role=admin` 승격 (03 §4-0, 06 §3). 관리자 여러 명 필요 여부 | |
 | G3 | 조회 전용 | 수정·삭제 API 없음 (03 §4-0) | |
 | G4 | `server_logs` 보관·정리 | 무기한 보관 (초안). refresh token 과 같은 하루 1회 스케줄러로 보관 기간(예 30일) 지난 행을 지울지 | |
-| G5 | 내 대화 로그에 AI 실패 기록 노출 | 성공만 노출 (03 §3-1). 사용자가 자기 실패 이력을 봐야 하는지 | |
+| G5 | 내 대화 로그에 AI 실패 기록 노출 | 성공만 노출 (03 §3-1). 사용자가 자기 실패 이력을 봐야 하는지 | **성공만 노출로 확정** — 실패 기록은 관리자 화면(F13 AI 실패 기록)에서 추적한다 |
 | G6 | 개인정보 | 관리자는 다른 사용자의 질문·응답 원문을 본다. 서비스 안내 문구·문서 명시 여부 | |
-| G7 | **담당자** | 미정 — 백엔드 B15~B19, 프론트 F10~F14 (C2 와 함께 결정) | |
+| G7 | **담당자** | 미정 — 백엔드 B15~B19, 프론트 F10~F14 (C2 와 함께 결정) | **프론트 F10~F14 = 이성준 (확정)** · 백엔드 B15~B19 = 미정 |
 | G8 | 감사 로그 범위 | `admin_access`(모든 관리자 API), `admin_forbidden`(403) 기록 (03 §6) | |
 | G9 | 노출 금지 필드 | `hashed_password`·API 키·토큰 미포함 (03 §4-0) | |
 | G10 | Railway 에서 SQL 확인 | Volume 안 SQLite 는 평가자가 직접 `sqlite3` 로 열기 어렵다. 관리자 화면·API 를 주 확인 수단으로 안내할지 | |

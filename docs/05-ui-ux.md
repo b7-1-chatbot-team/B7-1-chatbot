@@ -1,7 +1,7 @@
 # 05. UI / UX 설계
 
 > 담당: **이성준 (프론트엔드)** — [09-team.md](09-team.md) §3 (관리자 화면 담당은 [11-open-issues.md](11-open-issues.md) G7)
-> 스택: React · Vite · React Router · axios · Context API · **CSS Modules**
+> 스택: React · **TypeScript(strict)** · Vite · React Router · axios · Context API · **CSS Modules**
 > 디자인 기준 시안: `docs/design/AI Chat Service.html` (다크 톤 · 청록 포인트 · 기술 정보는 모노 폰트)
 
 ## 1. 디자인 시스템
@@ -120,15 +120,22 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 | `code: 401` | 결과 코드 칩 + `data.message`, **비밀번호 필드만 비움**. 로그인 API 의 401 은 전역 로그아웃 처리하지 않음 |
 | 접근성 | `label` 연결, `autocomplete=email / current-password / new-password`, 오류 `role="alert"` |
 
-**토큰 저장 위치** (access·refresh 모두): `localStorage` vs 메모리 — [03-api.md](03-api.md) §7 의 미확정 항목. 프론트 담당이 결정하고 확정 시 이 문서와 03-api.md 를 함께 갱신한다.
+**토큰 저장 위치 — `localStorage` 확정** (access·refresh 모두 같은 곳, refresh 는 요청 body 로 전송).
+"새로고침 시 로그인 상태 복원" 요구가 있어 메모리(Context) 저장으로는 충족할 수 없기 때문이다. 근거·대안 비교는 [12-decisions.md](12-decisions.md) §4.
 
-| 선택지 | 장점 | 단점 |
-|--------|------|------|
-| `localStorage` | 새로고침·탭 재방문에도 로그인 유지 | XSS 시 탈취 가능 |
-| 메모리(Context) | XSS 노출면 최소 | **새로고침하면 로그아웃** → "새로고침 시 로그인 상태 복원" 요구사항과 충돌 |
+| 키 | 값 |
+|----|----|
+| `chatlog_access_token` | access token (JWT, 15분) |
+| `chatlog_refresh_token` | refresh token (1일, 재발급 시 회전) |
 
-> 요구사항에 "새로고침 시 로그인 상태 복원(`GET /api/auth/me` 호출)" 이 있으므로, 메모리 저장만으로는 충족할 수 없다. 현재 유력안은 **localStorage + 짧은 access 만료(15분)**. 위험성·대안 비교는 [12-decisions.md](12-decisions.md) §4.
-> refresh token 은 수명이 길어 탈취 시 영향이 크다. 쿠키(HttpOnly)로 옮기면 크로스 도메인이라 CORS `credentials`·`SameSite=None` 설정이 추가로 필요하다 ([11-open-issues.md](11-open-issues.md) A7 세부).
+**XSS 대응 — 저장 방식이 아니라 아래 두 축으로 막는다.** (해시·암호화 저장은 방어가 되지 않는다: 해시는 되돌릴 수 없어 서버에 보낼 수 없고, 암호화는 복호화 키도 브라우저에 있어야 하며, 스크립트를 실행할 수 있는 공격자는 저장된 토큰 없이도 로그인된 상태로 요청을 보낼 수 있다.)
+
+| 축 | 조치 |
+|----|------|
+| XSS 를 만들지 않기 | `dangerouslySetInnerHTML` 사용 금지 — **AI 답변도 텍스트로만 렌더링** · 외부 스크립트(CDN·분석 태그) 미삽입 · 의존성 최소화 · 사용자 입력을 `href`/`src` 에 그대로 넣지 않기 |
+| 터졌을 때 피해 줄이기 | access **15분** · refresh **회전**(재발급 시 이전 토큰 무효 → 탈취된 토큰의 수명이 "다음 재발급까지"로 줄고, 공격자와 사용자 중 한쪽이 튕겨 **탈취가 드러남**) · 로그아웃 시 서버에서 refresh 폐기 — 회전 이유 상세: [12-decisions.md](12-decisions.md) §9 |
+
+> refresh token 을 HttpOnly 쿠키로 옮기면 XSS 노출은 줄지만, 프론트·백엔드가 다른 도메인이라 CORS `credentials`·`SameSite=None` 설정과 서드파티 쿠키 정책 문제가 생긴다 ([11-open-issues.md](11-open-issues.md) A7 세부, [12-decisions.md](12-decisions.md) §4 대안).
 
 ### 화면 3: 챗 (`/chat`) — 로그인 필수
 
@@ -272,6 +279,12 @@ client.interceptors.response.use(
 
 `auth:unauthorized` → `AuthContext` 가 두 토큰 삭제 + `user=null` → 가드가 `/login` 으로 이동.
 로그인 API 의 401 은 폼에서, 재발급 API 의 401 은 위 `catch` 에서 로그아웃으로 처리된다.
+
+**`refreshing` 변수 = 재발급 single-flight (중요).** refresh token 은 재발급마다 **회전**(이전 토큰 즉시 폐기)하므로,
+동시에 401 을 받은 요청들이 각자 재발급하면 뒤늦은 쪽이 이미 폐기된 토큰을 써서 **사용자가 로그아웃된다.**
+`refreshing` 에 진행 중인 Promise 를 담아 **재발급은 1회만 호출하고 나머지 요청은 그 결과를 함께 기다린다.**
+챗 화면 진입(`/auth/me` + `/me/chats`)이나 관리자 화면(stats + users)처럼 한 화면에서 API 를 2개 이상 호출할 때 실제로 발생한다.
+근거·대안·한계: [12-decisions.md](12-decisions.md) §15 · 검증: [07-verification.md](07-verification.md) B17c
 
 ## 5. 결과 코드별 사용자 메시지
 

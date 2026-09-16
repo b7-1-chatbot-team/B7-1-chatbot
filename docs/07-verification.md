@@ -135,6 +135,7 @@ curl -s -H "Authorization: Bearer $ATOKEN" $BASE/api/admin/failures
 | B16 | 로그아웃 → 뒤로가기 | Network 에 `POST /api/auth/logout`, 두 토큰 삭제, `/login` 유지 (보호 페이지 재진입 차단) |
 | B17 | access token 만료 후 요청 (`JWT_EXPIRE_MINUTES=1` 로 테스트) | 화면 이동 없이 refresh 후 요청 성공 |
 | B17b | refresh token 까지 무효인 상태로 요청 | 로그인 화면으로 이동 |
+| B17c | access 만료 상태에서 **API 를 2개 이상 동시에 호출하는 화면 진입**(챗: `/auth/me`+`/me/chats`, 관리자: stats+users) | Network 에 `POST /api/auth/refresh` **1회만** 기록(single-flight), 두 요청 모두 재시도 성공, 로그아웃되지 않음 ([12-decisions.md](12-decisions.md) §15) |
 | B18 | 375px 폭 | 가로 스크롤 0, 1열 |
 | B19 | 백엔드 중지 상태에서 질문 | "서버에 연결할 수 없습니다" 말풍선 |
 | B20 | 일반 사용자가 `/admin` 직접 입력 | `/chat` 으로 이동 |

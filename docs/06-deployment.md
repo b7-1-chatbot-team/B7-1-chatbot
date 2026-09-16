@@ -42,10 +42,14 @@ uvicorn app.main:app --reload
 ```bash
 cd frontend
 nvm use                     # Node 24
-npm install                 # react · react-router-dom · axios (스타일은 CSS Modules, 설치 없음)
+npm install                 # react · react-router-dom · axios · typescript (스타일은 CSS Modules, 설치 없음)
 cp .env.example .env
 npm run dev
 # → http://localhost:5173
+
+npm run typecheck           # tsc --noEmit (타입 검사)
+npm run lint                # oxlint
+npm run build               # 타입 검사 + Vite 빌드 → dist
 ```
 
 ## 3. 환경변수
@@ -181,7 +185,7 @@ Railway Project
 | 항목 | 값 |
 |------|-----|
 | Root Directory | `/frontend` |
-| Build | Railpack 자동 감지 (Node 버전은 `.nvmrc`·`engines`, `npm run build` → `dist`) |
+| Build | Railpack 자동 감지 (Node 버전은 `.nvmrc`·`engines`, `npm run build` → `dist`). `build` 는 `tsc -b` 로 **타입 검사를 먼저** 수행하므로 타입 오류가 있으면 배포 빌드가 실패한다 |
 | 도메인 | **Generate Domain** |
 | Variables | `VITE_API_BASE_URL=https://<backend>.up.railway.app` |
 

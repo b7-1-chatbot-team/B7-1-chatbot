@@ -100,13 +100,13 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 |------|------|---------------------------|-------------|
 | **어썸체크** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Railway 배포, README |
 | **박성현A** | AI 파이프라인 | A1~A12 | `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구 |
-| **이성준** | 프론트엔드 (React) | F1~F18 | `src/api/`, `src/contexts/AuthContext`, `src/pages/{Login,Signup,Chat,Logs}`, `src/components/`, CSS Modules·디자인 토큰, 라우팅 가드 |
+| **이성준** | 프론트엔드 (React + TypeScript) | **F1~F14 전체** ([features.md](features.md) 기준, **관리자 화면 F10~F14 포함**) | `tsconfig.json`(strict), `src/api/`(인터셉터·응답 타입), `src/contexts/AuthContext`, `src/pages/{Login,Signup,Chat,Logs,Admin}`, `src/components/`, CSS Modules·디자인 토큰, 라우팅 가드(`RequireAuth`·`RequireAdmin`) |
 
 **의존 관계 / 순서**
 
 1. 팀장이 **B1~B4(구조·설정·CORS·DB 세션) + B12(인증 dependency)** 를 먼저 올려야 나머지 두 트랙이 붙을 수 있다.
 2. 박성현A 는 인증 dependency 가 나오기 전에는 **mock 사용자**로 `POST /api/chat` 을 먼저 만들고, 이후 dependency 로 교체한다.
-> **관리자 기능(features.md B15~B19, F10~F14)은 필수로 확정됐지만 담당자가 아직 없다** — [11-open-issues.md](11-open-issues.md) G7 에서 결정 후 위 표와 §4 에 반영한다.
+> 관리자 기능 담당 ([11-open-issues.md](11-open-issues.md) G7): **프론트 F10~F14 는 이성준(프론트 담당)으로 확정**. **백엔드 B15~B19 는 아직 미정** — 인증·DB 트랙(어썸체크)과 AI 트랙(박성현A) 중 어디서 맡을지 정해 위 표와 §4 에 반영한다.
 
 3. 이성준은 백엔드보다 먼저 시작할 수 있다 — [03-api.md](03-api.md) 기준으로 **목 응답(msw 또는 로컬 stub)** 으로 화면을 만들고 나중에 실 API 로 교체한다.
 
@@ -135,16 +135,19 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 | `feature/ai-logging` | 11 `feat(log): request_id 와 AI 호출 이벤트 로그 4종` |
 | `docs/*` | 12 `docs(api): 챗 엔드포인트 명세·에러 코드 정리` |
 
-### 이성준 — 프론트엔드 (계획 14 커밋)
+### 이성준 — 프론트엔드 (계획 19 커밋)
 
 | 브랜치 | 커밋 |
 |--------|------|
+| `chore/fe-typescript` | 0-1 `chore(fe): TypeScript 전환과 strict 설정` · 0-2 `chore(fe): API 응답 타입 정의와 타입 검사 스크립트` |
 | `chore/fe-init` | 1 `chore(fe): Vite+React+Router 초기 설정` · 2 `chore(fe): 전역 CSS 변수(디자인 토큰)와 CSS Modules 규칙` |
 | `feature/fe-api` | 3 `feat(fe): axios 인스턴스와 Authorization 인터셉터` · 4 `feat(fe): 공통 에러 파싱과 401 전역 처리` |
 | `feature/fe-auth` | 5 `feat(fe): 회원가입 화면과 에러 코드 분기` · 6 `feat(fe): 로그인 화면과 토큰 저장` · 7 `feat(fe): AuthContext 로 인증 상태 전역 관리` · 8 `feat(fe): /auth/me 로 새로고침 상태 복원` · 9 `feat(fe): 로그아웃과 라우팅 가드` |
 | `feature/fe-chat` | 10 `feat(fe): 질문 입력과 대화 말풍선 UI` · 11 `feat(fe): 로딩 상태와 클라이언트 입력 검증` · 12 `feat(fe): 에러 코드별 안내 말풍선` |
 | `feature/fe-logs` | 13 `feat(fe): 내 대화 로그 화면과 더 보기` |
 | `fix/*` | 14 `fix(fe): 한글 IME 조합 중 Enter 전송 방지` |
+| `feature/fe-admin` | 15 `feat(fe): 관리자 가드와 전용 메뉴 노출` · 16 `feat(fe): 관리자 요약 통계 카드` · 17 `feat(fe): 사용자 목록·검색과 사용자별 대화 조회` · 18 `feat(fe): AI 실패 기록과 요청 흐름 타임라인` |
+| `refactor/fe-responsive` | 19 `refactor(fe): 반응형·접근성 마감` |
 
 ## 5. 일정 (120시간 기준)
 

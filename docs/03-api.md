@@ -569,7 +569,7 @@ WARN  admin_forbidden    request_id=def457 user_id=12 path=/api/admin/stats
 | access token 만료 시간 | **15분** (`JWT_EXPIRE_MINUTES=15`) | 확정 |
 | 로그아웃 API · refresh token | **access + refresh token, `POST /api/auth/refresh`·`/logout` 제공** | 확정 (A7) |
 | refresh token 수명 · 회전 · 형식 · 정리 | **1일** (`REFRESH_TOKEN_EXPIRE_DAYS=1`) · 재발급 시 회전 · 무작위 문자열 SHA-256 해시 저장 · 하루 1회 스케줄러 삭제 | 확정 |
-| 로그아웃 요청에 필요한 토큰 | body 의 refresh token 만 (초안) | 합의 필요 (A7-8) |
+| 로그아웃 요청에 필요한 토큰 | **body 의 refresh token 만** | 확정 (A7-8) — 기기별 로그아웃, access 만료 후에도 동작 |
 | 컨텍스트 유지 개수 N | **5** (`AI_CONTEXT_TURNS=5`) | 확정 |
 | AI API 타임아웃 | **30초, 호출 전체 대기 상한** (`AI_TIMEOUT_SECONDS=30`) | 확정 |
 | AI 실패 재시도 | 서버 자동 재시도 없음, 사용자 [다시 시도] 버튼 | 확정 |
@@ -577,4 +577,4 @@ WARN  admin_forbidden    request_id=def457 user_id=12 path=/api/admin/stats
 | 사용할 AI API 제공자 | **Codyssey AI API (COPA)** | 확정 |
 | 응답 형식 | `{code, data}`, HTTP 항상 200 | 확정 |
 | 배포 | **Railway 서비스 2개 (프론트·백엔드 별도 도메인)** | 확정 |
-| 토큰 저장 위치 | localStorage vs 메모리 (access·refresh 같은 곳, refresh 는 body 전송) | **미정 — 프론트 구현 중 결정** (A15) |
+| 토큰 저장 위치 | **`localStorage`** (access·refresh 같은 곳, refresh 는 body 전송) | 확정 (A15) — 근거·XSS 대응 [12-decisions.md](12-decisions.md) §4 |

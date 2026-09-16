@@ -140,7 +140,7 @@
 
 | 항목 | features.md | 상태 |
 |------|-------------|:----:|
-| 프로젝트 구성 (Vite·React·Router·axios·CSS Modules·Node 24) | F1 | 🟡 라이브러리 셋업 (PR #4) |
+| 프로젝트 구성 (TypeScript·Vite·React·Router·axios·CSS Modules·Node 24) | F1 | 🟡 라이브러리 셋업 (PR #4), TypeScript 전환 예정 |
 | 회원가입 화면 | F2 | ⬜ |
 | 로그인 화면 | F3 | ⬜ |
 | 인증 상태 관리 | F4 | ⬜ |
@@ -201,6 +201,7 @@
 | 백엔드 구조 | `app/*.py` 평면 | **`routers/ services/ crud/ models/ schemas/ core/`** |
 | 프론트 HTTP | `fetch` 래퍼 | **axios + 인터셉터** |
 | 프론트 스타일 | 자체 CSS (`styles.css`) | **CSS Modules** |
+| 프론트 언어 | JavaScript (JSX) | **TypeScript (strict)** |
 | 배포 | Ubuntu VM + Nginx + systemd + certbot | **Railway 서비스 2개 (프론트·백엔드 별도 도메인, Volume)** |
 | CORS | 동일 도메인이라 사실상 불필요 | **필수** (도메인 분리) |
 

@@ -26,6 +26,7 @@
 | 구분 | 기술 |
 |------|------|
 | 라이브러리 | **React 19** |
+| 언어 | **TypeScript** (`strict: true`, `tsc --noEmit` 로 빌드 전 검사) |
 | 빌드 도구 | **Vite** (Node 24, `.nvmrc`) |
 | 라우팅 | **React Router** |
 | HTTP | **axios** |
@@ -45,7 +46,7 @@
 ```mermaid
 flowchart TD
     subgraph client["브라우저"]
-        React["React SPA<br/>Vite · React Router · axios · CSS Modules"]
+        React["React SPA<br/>TypeScript · Vite · React Router · axios · CSS Modules"]
     end
 
     subgraph railway["Railway 프로젝트"]
@@ -96,11 +97,12 @@ flowchart TD
 │   └── .env.example
 ├── frontend/
 │   ├── .nvmrc
+│   ├── tsconfig.json            # strict: true
 │   └── src/
-│       ├── api/                 # axios 인스턴스, 인터셉터 (봉투 파싱)
+│       ├── api/                 # axios 인스턴스, 인터셉터 (봉투 파싱), types.ts (API 응답 타입)
 │       ├── contexts/            # AuthContext
-│       ├── pages/               # Login, Signup, Chat, Logs, Admin
-│       └── components/          # 컴포넌트 + *.module.css
+│       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
+│       └── components/          # 컴포넌트(*.tsx) + *.module.css
 ├── .gitignore
 └── README.md
 ```
@@ -172,7 +174,7 @@ flowchart TD
 |------|------|
 | 로그아웃 후에도 access token 이 만료 전까지 유효 | access token 수명을 **15분**으로 짧게(`JWT_EXPIRE_MINUTES=15`), 로그아웃 시 **서버가 refresh token 행을 삭제**해 재발급 차단, 프론트는 두 토큰 즉시 삭제 |
 | refresh token 탈취 | DB 에는 SHA-256 해시만 저장, 재발급 시 회전으로 이전 토큰 무효화, 만료 **1일**(`REFRESH_TOKEN_EXPIRE_DAYS=1`) |
-| XSS 로 localStorage 토큰 탈취 | React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용), 외부 스크립트 미삽입. **저장 위치(localStorage vs 메모리)는 프론트 담당이 최종 결정** ([03-api.md](03-api.md) §7) |
+| XSS 로 localStorage 토큰 탈취 | 저장 위치는 **`localStorage` 확정**(A15). 해시·암호화 저장은 방어가 되지 않으므로 ① XSS 예방 — React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용, AI 답변도 텍스트 렌더링), 외부 스크립트 미삽입, 의존성 최소화 ② 피해 축소 — access 15분·refresh 회전·로그아웃 시 서버 폐기 ([12-decisions.md](12-decisions.md) §4) |
 | 관리자 권한 강등 후에도 토큰으로 접근 | 토큰에 role 을 넣지 않고 `require_admin` 이 **매 요청 DB 의 `users.role` 을 확인** |
 | `JWT_SECRET_KEY` 유출 시 전체 토큰 위조 | 키는 `.env` 로만 주입, 저장소 커밋 금지, Railway Variables 로 설정 |
 | 알고리즘 혼동 공격(`alg:none` 등) | 디코드 시 `algorithms=["HS256"]` 을 **명시적으로 고정** |
