@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import { BrowserRouter } from 'react-router-dom'
+
 import App from './App'
+import './index.css'
 
 // strict 모드에서는 getElementById 가 null 을 반환할 수 있으므로 명시적으로 확인한다
 const rootElement = document.getElementById('root')
@@ -11,6 +13,8 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 )
