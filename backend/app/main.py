@@ -14,7 +14,7 @@ from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
 from app.core.responses import register_exception_handlers
 from app.database import Base, SessionLocal, engine
-from app.routers import auth
+from app.routers import auth, me
 from app.services import auth_service
 
 logger = logging.getLogger("app")
@@ -79,3 +79,4 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(me.router)
