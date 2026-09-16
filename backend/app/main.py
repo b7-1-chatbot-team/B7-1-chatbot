@@ -7,8 +7,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.core.responses import register_exception_handlers
 
 app = FastAPI(title="Chatlog API", version="0.1.0")
+register_exception_handlers(app)
 
 # 프론트·백엔드가 Railway 에서 서로 다른 도메인이므로 CORS 필수 (06-deployment §5)
 # JWT 를 Authorization 헤더로 보내므로 쿠키(credentials)는 쓰지 않는다.
