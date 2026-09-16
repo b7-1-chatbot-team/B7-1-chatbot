@@ -1,0 +1,80 @@
+/* CSS Reset — Josh Comeau's Custom CSS Reset 기반 (2024 개정판)
+   https://www.joshwcomeau.com/css/custom-css-reset/
+
+   브라우저 기본 스타일만 정리한다. 색·폰트·간격 등 프로젝트 고유 값은
+   여기에 넣지 않고 global.css 에서 다룬다. */
+
+/* 1. 더 직관적인 box-sizing 모델 사용 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 2. 기본 margin 제거 (dialog 는 브라우저 중앙 정렬에 margin 을 쓰므로 제외) */
+*:not(dialog) {
+  margin: 0;
+}
+
+/* 3. 키워드 애니메이션 허용 — height: auto 등으로의 transition 을 가능하게 한다
+      (지원 브라우저에서만 적용되며, 모션 최소화 설정이면 켜지 않는다) */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    interpolate-size: allow-keywords;
+  }
+}
+
+body {
+  /* 4. 읽기 편한 행간 */
+  line-height: 1.5;
+  /* 5. 텍스트 렌더링 개선 */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 6. 미디어 요소 기본값 개선 — inline 기본값의 여백 문제 제거, 컨테이너 밖으로 나가지 않게 */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 7. 폼 컨트롤이 폰트를 상속하도록 */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* 8. 긴 단어로 인한 오버플로 방지 */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* 9. 줄바꿈 품질 개선 — 본문은 고아 단어 방지, 제목은 줄 길이 균형 */
+p {
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+/* 10. 루트 stacking context 생성 — 앱 바깥 요소와의 z-index 충돌 차단 */
+#root {
+  isolation: isolate;
+}

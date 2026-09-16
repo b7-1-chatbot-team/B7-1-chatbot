@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 
 import App from './App'
-import './index.css'
+// reset 이 먼저, 그 위에 프로젝트 전역 스타일을 얹는다
+import './styles/reset.css'
+import './styles/global.css'
 
 // strict 모드에서는 getElementById 가 null 을 반환할 수 있으므로 명시적으로 확인한다
 const rootElement = document.getElementById('root')

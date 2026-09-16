@@ -49,6 +49,9 @@ src/
 ├── components/  # 공용 컴포넌트 + *.module.css
 ├── contexts/    # AuthContext 등 전역 상태
 ├── pages/       # 라우트 단위 화면
+├── styles/      # 전역 CSS
+│   ├── reset.css  # 브라우저 기본값 정리 (Josh Comeau Custom CSS Reset 기반)
+│   └── global.css # :root 토큰 + 프로젝트 공통 기본값
 ├── routes/      # 라우팅
 │   ├── paths.ts # 경로 상수 PATHS
 │   ├── types.ts # 경로 관련 타입
@@ -70,4 +73,6 @@ src/
 - 처음에는 좁은 범위(해당 폴더 `types.ts`)에 두고, 다른 영역에서도 쓰게 되면 `src/types/` 로 옮긴다
 - 타입 전용 import 는 `import type { ... }` 로 쓴다 (`verbatimModuleSyntax` 적용)
 
-스타일은 **CSS Modules**(`*.module.css`)를 사용하고, 색·폰트 등 공통 값은 `index.css` 의 CSS 변수로 관리합니다.
+스타일은 **CSS Modules**(`*.module.css`)를 사용하고, 색·폰트 등 공통 값은 `styles/global.css` 의 `:root` CSS 변수로 관리합니다.
+전역 CSS 는 `styles/` 의 두 파일뿐이며, `main.tsx` 에서 `reset.css` → `global.css` 순서로 로드합니다.
+디자인 토큰은 기능 구현을 끝낸 뒤 스타일링 단계에서 채웁니다 (`docs/05-ui-ux.md` §1).

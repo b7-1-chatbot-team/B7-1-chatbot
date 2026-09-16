@@ -1,0 +1,18 @@
+/* 전역 스타일 — 루트 토큰과 프로젝트 공통 기본값을 둔다.
+   브라우저 기본값 정리는 reset.css 가 담당한다 (main.tsx 에서 reset → global 순서로 로드).
+
+   색·간격·타이포 등 디자인 토큰(docs/05-ui-ux.md §1)은
+   기능 구현을 끝낸 뒤 스타일링 단계에서 :root 에 채운다.
+   지금은 화면 확인에 필요한 최소값만 둔다. */
+
+:root {
+  /* 다크 톤 단일 디자인이므로 브라우저 기본 UI(스크롤바·폼 컨트롤)도 다크로 맞춘다 */
+  color-scheme: dark;
+
+  --font-sans: 'IBM Plex Sans KR', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+}
