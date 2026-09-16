@@ -1,23 +1,21 @@
-# Python
+# Python — 가상환경·바이트코드·테스트 캐시는 각자 PC에서 생성되므로 커밋하지 않는다
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 
-# 환경변수 (예시 파일만 커밋)
+# 환경변수 — 실제 값이 들어 있는 .env 류는 절대 커밋 금지
 .env
 .env.*
-!.env.example
-!.env.*.example
 
-# SQLite
+# SQLite — 로컬 DB 파일과 저널, 기본 DB 폴더(backend/data)는 커밋하지 않는다
 *.db
 *.db-journal
 backend/data/
 
-# Node / 빌드 결과
+# Node / 빌드 결과 — npm install·npm run build 로 다시 만들 수 있는 파일
 node_modules/
 dist/
 
-# OS
+# OS — macOS 가 폴더마다 만드는 메타데이터 파일
 .DS_Store
