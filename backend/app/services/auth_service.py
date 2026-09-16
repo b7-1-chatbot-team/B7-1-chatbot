@@ -63,3 +63,24 @@ def login(db: Session, email: str, password: str) -> dict:
     if not verify_password(password, user.hashed_password):
         raise AppError(401, LOGIN_FAILED_MESSAGE)
     return _issue_tokens(db, user.id)
+
+
+def refresh(db: Session, refresh_token: str) -> dict:
+    """회전: 유효한 기존 행을 지우고 새 토큰 쌍을 발급한다. 삭제·추가는 한 트랜잭션."""
+    token_hash = hash_refresh_token(refresh_token)
+    row = crud.refresh_token.get_valid(db, token_hash, utcnow())
+    if row is None:
+        raise AppError(401)
+    user_id = row.user_id
+    # 동시에 같은 토큰으로 두 번 요청하면 한쪽만 삭제에 성공한다 → 나머지는 401
+    if crud.refresh_token.delete(db, token_hash, commit=False) != 1:
+        db.rollback()
+        raise AppError(401)
+    tokens = _issue_tokens(db, user_id, commit=False)
+    db.commit()
+    return tokens
+
+
+def logout(db: Session, refresh_token: str) -> None:
+    """해당 refresh token 행만 삭제(이 기기만 로그아웃). 이미 없어도 성공으로 본다."""
+    crud.refresh_token.delete(db, hash_refresh_token(refresh_token))

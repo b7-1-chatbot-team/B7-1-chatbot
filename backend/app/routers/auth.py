@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.responses import ok
 from app.core.timeutil import to_kst_iso
 from app.database import get_db
-from app.schemas.auth import LoginRequest, SignupRequest
+from app.schemas.auth import LoginRequest, RefreshTokenRequest, SignupRequest
 from app.services import auth_service
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -24,3 +24,14 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
 @router.post("/login")
 def login(body: LoginRequest, db: Session = Depends(get_db)):
     return ok(auth_service.login(db, body.email, body.password))
+
+
+@router.post("/refresh")
+def refresh(body: RefreshTokenRequest, db: Session = Depends(get_db)):
+    return ok(auth_service.refresh(db, body.refresh_token))
+
+
+@router.post("/logout")
+def logout(body: RefreshTokenRequest, db: Session = Depends(get_db)):
+    auth_service.logout(db, body.refresh_token)
+    return ok({})

@@ -56,3 +56,16 @@ class LoginRequest(BaseModel):
         if not v:
             raise ValueError("비밀번호를 입력해 주세요.")
         return v
+
+
+class RefreshTokenRequest(BaseModel):
+    """재발급·로그아웃 공용. refresh token 은 쿠키가 아닌 body 로 받는다."""
+
+    refresh_token: str
+
+    @field_validator("refresh_token")
+    @classmethod
+    def token_required(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("refresh_token 이 필요합니다.")
+        return v.strip()
