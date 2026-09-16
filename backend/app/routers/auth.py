@@ -3,9 +3,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user
 from app.core.responses import ok
 from app.core.timeutil import to_kst_iso
 from app.database import get_db
+from app.models import User
 from app.schemas.auth import LoginRequest, RefreshTokenRequest, SignupRequest
 from app.services import auth_service
 
@@ -35,3 +37,8 @@ def refresh(body: RefreshTokenRequest, db: Session = Depends(get_db)):
 def logout(body: RefreshTokenRequest, db: Session = Depends(get_db)):
     auth_service.logout(db, body.refresh_token)
     return ok({})
+
+
+@router.get("/me")
+def me(user: User = Depends(get_current_user)):
+    return ok({"id": user.id, "email": user.email, "nickname": user.nickname, "role": user.role})
