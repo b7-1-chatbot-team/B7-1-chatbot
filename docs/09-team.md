@@ -1,7 +1,7 @@
 # 09. 팀 규칙 · 역할 분담
 
 > 기준 문서: [features.md](features.md) · 팀원 이름·역할·규칙 불일치: [11-open-issues.md](11-open-issues.md) §C
-> 팀: **어썸체크(팀장) · 이성준 · 박성현A** (3인, 120시간 Term Project)
+> 팀: **성원모(팀장) · 이성준 · 박성현** (3인, 120시간 Term Project)
 
 ## 1. mission 이 강제하는 필수 규칙 (위반 시 감점)
 
@@ -24,21 +24,35 @@
 ### 2-1. 브랜치
 
 ```
-main       ← 배포 브랜치. 직접 push 금지. develop → main PR 로만 병합
- └ develop ← 통합 브랜치. 코드는 직접 push 금지(feature → develop PR). docs/ 문서 수정만 직접 push 허용
+main       ← 배포 브랜치. 직접 push 금지. develop → main PR 로만 병합 (긴급 수정은 hotfix/ 가 main 에서 분기)
+ └ develop ← 통합 브랜치. 코드는 직접 push 금지(작업 브랜치 → develop PR). docs/ 문서 수정만 직접 push 허용
     ├ feature/be-auth-jwt
-    ├ feature/ai-chat-pipeline
-    └ feature/fe-chat-ui
+    ├ feature/be-ai-chat
+    ├ feature/fe-chat-ui
+    └ refactor/fe-typescript
 ```
 
-| 접두어 | 용도 | 예 |
-|--------|------|----|
-| `feature/` | 기능 추가 | `feature/ai-context` |
-| `fix/` | 버그 수정 | `fix/token-refresh-redirect` |
-| `docs/` | 문서만 | `docs/api-spec` |
-| `chore/` | 설정·빌드·배포 | `chore/railway-deploy` |
+| 접두어 | 용도 | 분기 기준 → 병합 대상 | 예 |
+|--------|------|----------------------|----|
+| `feature/` | 기능 추가 | develop → develop | `feature/ai-context` |
+| `fix/` | 버그 수정 | develop → develop | `fix/token-refresh-redirect` |
+| `refactor/` | 동작 변경 없는 구조 개선 · UI/CSS 변경 · 파일 이름 변경/삭제 | develop → develop | `refactor/fe-typescript` |
+| `test/` | 테스트 추가·수정 | develop → develop | `test/auth-flow` |
+| `docs/` | 문서만 (브랜치를 쓸 경우) | develop → develop | `docs/api-spec` |
+| `chore/` | 설정·빌드·배포 | develop → develop | `chore/railway-deploy` |
+| `hotfix/` | 배포 환경 긴급 수정 | **main → main** (머지 후 develop 에도 반영) | `hotfix/cors-origin` |
 
-GitHub 설정: Settings → Branches → `main`, `develop` 에 **Require a pull request before merging** + **Require approvals: 1**.
+브랜치 이름은 `<접두어>/<작업-요약>` 형식이며, 요약은 영문 소문자 + 하이픈(kebab-case)으로 쓴다.
+접두어는 커밋 타입과 맞춘다 (`feature/` ↔ `feat`, `refactor/` ↔ `refactor`).
+
+**GitHub 보호 규칙 (팀 합의)**
+
+| 브랜치 | 설정 |
+|--------|------|
+| `main` | Require a pull request before merging + **Require approvals: 1**. 직접 push 금지 (예외 없음) |
+| `develop` | Require a pull request before merging + **Require approvals: 1**. 단 **`docs/` 문서만 수정하는 커밋은 직접 push 허용** → 보호 규칙에 팀원 bypass 를 지정한다 |
+
+Settings → Branches (또는 Rulesets) 에서 위와 같이 설정하고, develop 규칙에는 bypass 대상으로 팀원을 추가한다.
 
 **docs 직접 push 규칙 (팀 합의)**
 
@@ -57,31 +71,48 @@ mission 이 "유의미한" 커밋을 요구하므로 아래는 **커밋으로 �
 
 **좋은 커밋 = 하나의 논리적 변경 + 동작하는 상태 + 설명 가능한 메시지**
 
-메시지 형식 (Conventional Commits):
-```
-<type>(<scope>): <무엇을 왜>
+**메시지 형식 (확정 — [11-open-issues.md](11-open-issues.md) C4)**
 
-feat(auth): 로그인 시 JWT 발급과 만료 시간 적용
-feat(chat): 최근 N턴 컨텍스트를 AI 요청에 포함
-fix(fe): 401 수신 시 토큰 삭제 후 로그인 화면으로 이동
-docs(api): /api/me/chats 요청·응답 예시 추가
 ```
-type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
+<type>(<scope>): <내용> #<이슈번호>
+
+<본문(선택): 무엇을 왜 바꿨는지. 설명할 내용이 있으면 반드시 적는다>
+```
+
+| 요소 | 규칙 |
+|------|------|
+| `type` | `feat` `fix` `hotfix` `refactor` `docs` `test` `style` `chore` |
+| `scope` | **`be`(백엔드) · `fe`(프론트) 두 가지만 사용**. 문서 등 어느 쪽도 아닌 작업은 scope 없이 `docs: 내용` 처럼 쓴다 |
+| 내용 | 한국어, 50자 이내, 마침표 없음 |
+| `#이슈번호` | 연결된 이슈가 있으면 **끝에 `#5` 형식**(앞자리 0 없음). 이슈 없는 문서·설정 작업은 생략 |
+| 본문 | 제목만으로 이유가 드러나지 않으면 빈 줄 뒤에 작성. 무엇을·왜 중심으로 |
+
+예시:
+```
+feat(be): 로그인 시 JWT 발급과 만료 시간 적용 #12
+feat(be): 최근 N턴 컨텍스트를 AI 요청에 포함 #9
+fix(fe): 401 수신 시 토큰 삭제 후 로그인 화면으로 이동 #6
+refactor(fe): TypeScript 전환과 strict 설정 #5
+docs: v1.7 update
+```
+
+본문(디스크립션)이 있는 경우:
+```
+fix(fe): 한글 입력 중 Enter 중복 전송 수정 #14
+
+IME 조합 중에는 keydown 이 두 번 발생해 마지막 글자가 중복 전송되던 문제.
+composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
+```
 
 - 커밋 author 이메일은 **본인 GitHub 계정 이메일**로 설정 (`git config user.email`) → shortlog 집계 정확성
 - 페어 작업 시 `Co-authored-by:` 트레일러 사용
 
 ### 2-3. PR
 
-- 제목: 커밋 규칙과 동일 형식
-- 본문 템플릿 (`.github/pull_request_template.md`):
-  ```
-  ## 변경 내용
-  ## 관련 요구사항 (mission §, features.md #)
-  ## 검증 (실행한 확인 절차 / 스크린샷)
-  ## 체크
-  - [ ] 로컬 실행 확인  - [ ] 민감정보 없음  - [ ] 문서 갱신 필요 여부 확인
-  ```
+- 제목: 커밋 규칙과 동일 형식 (`<type>(<scope>): <내용> #<이슈번호>`)
+- 본문: `.github/pull_request_template.md` 가 PR 생성 시 자동으로 채워진다 (작업 내용 · 관련 Issue · 관련 요구사항 · 변경 유형 · 주요 변경 사항 · 스크린샷 · 테스트 · 확인 방법 · API 변경 사항 · 체크리스트 · Reviewer 참고 사항)
+- 이슈 생성 시에는 `.github/ISSUE_TEMPLATE/issue_template.md` 를 사용하고, 제목은 `[FEAT]` · `[FIX]` · `[REFACTOR]` 로 시작한다
+- 작성 규칙 상세: [10-pull-request.md](10-pull-request.md)
 - **리뷰어 1명 승인** 후 작성자가 머지. 머지 방식은 **Merge commit** (Squash 금지 → 개인 커밋 수와 머지 기록이 모두 남도록)
 - PR 크기: 변경 400줄 이하 권장, 1 PR = 1 기능
 
@@ -98,48 +129,48 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 
 | 팀원 | 역할 | 담당 범위 (features.md #) | 주요 산출물 |
 |------|------|---------------------------|-------------|
-| **어썸체크** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Railway 배포, README |
-| **박성현A** | AI 파이프라인 | A1~A12 | `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구 |
+| **성원모** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Railway 배포, README |
+| **박성현** | AI 파이프라인 | A1~A12 | `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구 |
 | **이성준** | 프론트엔드 (React + TypeScript) | **F1~F14 전체** ([features.md](features.md) 기준, **관리자 화면 F10~F14 포함**) | `tsconfig.json`(strict), `src/api/`(인터셉터·응답 타입), `src/contexts/AuthContext`, `src/pages/{Login,Signup,Chat,Logs,Admin}`, `src/components/`, CSS Modules·디자인 토큰, 라우팅 가드(`RequireAuth`·`RequireAdmin`) |
 
 **의존 관계 / 순서**
 
 1. 팀장이 **B1~B4(구조·설정·CORS·DB 세션) + B12(인증 dependency)** 를 먼저 올려야 나머지 두 트랙이 붙을 수 있다.
-2. 박성현A 는 인증 dependency 가 나오기 전에는 **mock 사용자**로 `POST /api/chat` 을 먼저 만들고, 이후 dependency 로 교체한다.
-> 관리자 기능 담당 ([11-open-issues.md](11-open-issues.md) G7): **프론트 F10~F14 는 이성준(프론트 담당)으로 확정**. **백엔드 B15~B19 는 아직 미정** — 인증·DB 트랙(어썸체크)과 AI 트랙(박성현A) 중 어디서 맡을지 정해 위 표와 §4 에 반영한다.
+2. 박성현 는 인증 dependency 가 나오기 전에는 **mock 사용자**로 `POST /api/chat` 을 먼저 만들고, 이후 dependency 로 교체한다.
+> 관리자 기능 담당 ([11-open-issues.md](11-open-issues.md) G7): **프론트 F10~F14 는 이성준(프론트 담당)으로 확정**. **백엔드 B15~B19 는 아직 미정** — 인증·DB 트랙(성원모)과 AI 트랙(박성현) 중 어디서 맡을지 정해 위 표와 §4 에 반영한다.
 
 3. 이성준은 백엔드보다 먼저 시작할 수 있다 — [03-api.md](03-api.md) 기준으로 **목 응답(msw 또는 로컬 stub)** 으로 화면을 만들고 나중에 실 API 로 교체한다.
 
-공통: 코드 리뷰는 **순환**(어썸체크 → 박성현A → 이성준 → 어썸체크), 최종 통합 확인·평가 리허설은 3명 함께.
+공통: 코드 리뷰는 **순환**(성원모 → 박성현 → 이성준 → 성원모), 최종 통합 확인·평가 리허설은 3명 함께.
 
 ## 4. 브랜치·커밋 계획 (팀원별 10회 이상 보장)
 
-### 어썸체크 — 인증 / DB / 인프라 (계획 15 커밋)
+### 성원모 — 인증 / DB / 인프라 (계획 15 커밋)
 
 | 브랜치 | 커밋 |
 |--------|------|
 | `chore/init` | 1 `chore: 저장소 구조·.gitignore·.env.example` · 2 `chore(be): FastAPI 앱 골격과 라우터 등록` · 3 `chore(be): CORS 설정과 환경변수 로딩` |
-| `feature/be-db` | 4 `feat(db): SQLAlchemy 엔진·세션과 get_db 의존성` · 5 `feat(db): users·chat_logs 모델` · 6 `feat(crud): user·chat_log 리포지토리 계층 분리` |
-| `feature/be-auth-jwt` | 7 `feat(auth): bcrypt 해시·검증 유틸` · 8 `feat(auth): 회원가입 API 와 이메일 중복 409` · 9 `feat(auth): 로그인 JWT 발급` · 10 `feat(auth): get_current_user 인증 dependency` · 11 `feat(auth): /api/auth/me 로 상태 복원 지원` |
-| `feature/be-logs` | 12 `feat(logs): /api/me/chats 사용자 스코프 조회와 페이지네이션` · 13 `feat(log): DB 저장 성공/실패 로깅` |
-| `chore/deploy` | 14 `chore(deploy): Railway 서비스 2개 배포 설정과 CORS 도메인` |
+| `feature/be-db` | 4 `feat(be): SQLAlchemy 엔진·세션과 get_db 의존성` · 5 `feat(be): users·chat_logs 모델` · 6 `feat(be): user·chat_log 리포지토리 계층 분리` |
+| `feature/be-auth-jwt` | 7 `feat(be): bcrypt 해시·검증 유틸` · 8 `feat(be): 회원가입 API 와 이메일 중복 409` · 9 `feat(be): 로그인 JWT 발급` · 10 `feat(be): get_current_user 인증 dependency` · 11 `feat(be): /api/auth/me 로 상태 복원 지원` |
+| `feature/be-logs` | 12 `feat(be): /api/me/chats 사용자 스코프 조회와 페이지네이션` · 13 `feat(be): DB 저장 성공/실패 로깅` |
+| `chore/deploy` | 14 `chore(be): Railway 서비스 2개 배포 설정과 CORS 도메인` |
 | `docs/*` | 15 `docs: README 총괄 작성` |
 
-### 박성현A — AI 파이프라인 (계획 12 커밋)
+### 박성현 — AI 파이프라인 (계획 12 커밋)
 
 | 브랜치 | 커밋 |
 |--------|------|
-| `feature/ai-client` | 1 `feat(ai): httpx Codyssey AI API 클라이언트 모듈 분리` · 2 `feat(ai): API 키 환경변수 로드` · 3 `feat(ai): 호출 타임아웃 설정` |
-| `feature/ai-chat` | 4 `feat(chat): /api/chat 엔드포인트와 인증 적용` · 5 `feat(chat): 요청·응답 Pydantic 스키마` · 6 `feat(chat): 서버 측 입력 검증 422` · 7 `feat(chat): 최근 N턴 컨텍스트 구성` · 8 `feat(chat): 컨텍스트 길이 초과 시 오래된 턴 제거` |
-| `feature/ai-errors` | 9 `feat(chat): 타임아웃 시 AI_TIMEOUT 504 반환` · 10 `feat(chat): 호출 실패 시 AI_CALL_FAILED 502 반환` |
-| `feature/ai-logging` | 11 `feat(log): request_id 와 AI 호출 이벤트 로그 4종` |
-| `docs/*` | 12 `docs(api): 챗 엔드포인트 명세·에러 코드 정리` |
+| `feature/ai-client` | 1 `feat(be): httpx Codyssey AI API 클라이언트 모듈 분리` · 2 `feat(be): API 키 환경변수 로드` · 3 `feat(be): 호출 타임아웃 설정` |
+| `feature/ai-chat` | 4 `feat(be): /api/chat 엔드포인트와 인증 적용` · 5 `feat(be): 요청·응답 Pydantic 스키마` · 6 `feat(be): 서버 측 입력 검증 422` · 7 `feat(be): 최근 N턴 컨텍스트 구성` · 8 `feat(be): 컨텍스트 길이 초과 시 오래된 턴 제거` |
+| `feature/ai-errors` | 9 `feat(be): 타임아웃 시 AI_TIMEOUT 504 반환` · 10 `feat(be): 호출 실패 시 AI_CALL_FAILED 502 반환` |
+| `feature/ai-logging` | 11 `feat(be): request_id 와 AI 호출 이벤트 로그 4종` |
+| `docs/*` | 12 `docs: 챗 엔드포인트 명세·에러 코드 정리` |
 
 ### 이성준 — 프론트엔드 (계획 19 커밋)
 
 | 브랜치 | 커밋 |
 |--------|------|
-| `chore/fe-typescript` | 0-1 `chore(fe): TypeScript 전환과 strict 설정` · 0-2 `chore(fe): API 응답 타입 정의와 타입 검사 스크립트` |
+| `refactor/fe-typescript` | 0-1 `refactor(fe): TypeScript 전환과 strict 설정 #5` · 0-2 `refactor(fe): 타입 검사 스크립트와 환경변수 타입 선언 #5` |
 | `chore/fe-init` | 1 `chore(fe): Vite+React+Router 초기 설정` · 2 `chore(fe): 전역 CSS 변수(디자인 토큰)와 CSS Modules 규칙` |
 | `feature/fe-api` | 3 `feat(fe): axios 인스턴스와 Authorization 인터셉터` · 4 `feat(fe): 공통 에러 파싱과 401 전역 처리` |
 | `feature/fe-auth` | 5 `feat(fe): 회원가입 화면과 에러 코드 분기` · 6 `feat(fe): 로그인 화면과 토큰 저장` · 7 `feat(fe): AuthContext 로 인증 상태 전역 관리` · 8 `feat(fe): /auth/me 로 새로고침 상태 복원` · 9 `feat(fe): 로그아웃과 라우팅 가드` |
@@ -162,8 +193,8 @@ type: `feat` `fix` `test` `docs` `refactor` `chore` `style`
 
 | 팀원 | 역할 | 주요 작업 | 커밋 수 | PR |
 |------|------|-----------|:------:|:--:|
-| 어썸체크 | 인증·DB·인프라 | _(실제 작업 기입)_ | _ | _ |
-| 박성현A | AI 파이프라인 | _(실제 작업 기입)_ | _ | _ |
+| 성원모 | 인증·DB·인프라 | _(실제 작업 기입)_ | _ | _ |
+| 박성현 | AI 파이프라인 | _(실제 작업 기입)_ | _ | _ |
 | 이성준 | 프론트엔드 | _(실제 작업 기입)_ | _ | _ |
 
 ```bash
