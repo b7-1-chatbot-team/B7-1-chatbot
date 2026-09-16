@@ -18,20 +18,29 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
+    # bearer_scheme 이 Authorization 헤더를 읽어 scheme('Bearer')과 credentials(토큰)로 나눠 준다
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """Authorization: Bearer <access_token> 을 검증해 현재 사용자를 반환한다. 실패는 모두 code:401.
+
+    사용 예) def my_chats(user: User = Depends(get_current_user)): ... user.id 만 사용
+    """
+    # ① 헤더 없음 / Bearer 방식이 아님
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise AppError(401)
+    # ② 토큰 만료·위조·형식 오류
     user_id = decode_access_token(credentials.credentials)
     if user_id is None:
         raise AppError(401)
+    # ③ 토큰은 유효하지만 사용자가 DB 에 없음 (삭제된 계정 등)
     user = crud.user.get(db, user_id)
     if user is None:
         raise AppError(401)
     return user
 
 
+# 관리자 API 에 사용: Depends(require_admin) → 먼저 get_current_user 로 로그인(401)을, 그다음 role(403)을 검사
 def require_admin(user: User = Depends(get_current_user)) -> User:
     """토큰에 role 을 넣지 않고 매 요청 DB 의 role 로 확인한다 → 권한 회수가 즉시 반영된다."""
     if user.role != "admin":

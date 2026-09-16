@@ -4,6 +4,7 @@
 호출한 쪽에서 db.commit() 한다.
 """
 
+# `from app import crud` 후 crud.user.get(...) 처럼 모듈 이름으로 호출할 수 있게 하위 모듈을 불러온다
 from app.crud import chat_log, refresh_token, server_log, user
 
 __all__ = ["user", "chat_log", "refresh_token", "server_log"]
