@@ -39,3 +39,20 @@ class SignupRequest(BaseModel):
         if not 1 <= len(v) <= NICKNAME_MAX_LENGTH:
             raise ValueError(f"닉네임은 1~{NICKNAME_MAX_LENGTH}자로 입력해 주세요.")
         return v
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def email_format(cls, v: str) -> str:
+        return _check_email(v)
+
+    @field_validator("password")
+    @classmethod
+    def password_required(cls, v: str) -> str:
+        if not v:
+            raise ValueError("비밀번호를 입력해 주세요.")
+        return v
