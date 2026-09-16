@@ -1,15 +1,11 @@
-annotated-doc==0.0.5
-annotated-types==0.8.0
-anyio==4.15.1
-certifi==2026.7.22
-charset-normalizer==3.5.1
 fastapi==0.141.1
-idna==3.19
-pydantic==2.13.5
-pydantic_core==2.46.5
+uvicorn[standard]==0.53.0
+sqlalchemy==2.0.54
+pydantic[email]==2.13.5
+pydantic-settings==2.15.0
 python-dotenv==1.2.3
+bcrypt==5.0.0
+pyjwt==2.14.0
+httpx==0.28.1
+# 기존 backend/main.py(AI PoC)가 사용 중 — AI 트랙이 httpx 로 이관하면 삭제
 requests==2.34.2
-starlette==1.6.0
-typing-inspection==0.4.4
-typing_extensions==4.16.0
-urllib3==2.8.0
