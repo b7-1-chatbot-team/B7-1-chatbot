@@ -12,6 +12,7 @@ from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
 from app.core.responses import register_exception_handlers
 from app.database import Base, engine
+from app.routers import auth
 
 
 @asynccontextmanager
@@ -35,3 +36,5 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],  # 우리 API 가 쓰는 메서드 + preflight(OPTIONS)
     allow_headers=["Authorization", "Content-Type"],  # 토큰 헤더와 JSON 본문 헤더만 허용
 )
+
+app.include_router(auth.router)
