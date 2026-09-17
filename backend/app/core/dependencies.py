@@ -1,4 +1,4 @@
-"""인증·권한 의존성 (02-architecture §5-3).
+"""인증·권한 의존성 (02-architecture).
 
 라우터는 Depends(get_current_user) 로 받은 user.id 만 사용하고, 클라이언트가 보낸 user_id 는 쓰지 않는다.
 """

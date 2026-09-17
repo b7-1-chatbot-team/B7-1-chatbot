@@ -23,7 +23,7 @@ from app.schemas.auth import PASSWORD_MIN_LENGTH
 
 logger = logging.getLogger("app")
 
-# 라우터는 요청·응답만 다루고, 판단 로직은 이 서비스 계층에 둔다 (02-architecture §3).
+# 라우터는 요청·응답만 다루고, 판단 로직은 이 서비스 계층에 둔다 (02-architecture).
 # 실패는 AppError 를 raise 하면 responses.py 가 {code, data:{message}} 로 변환한다.
 
 
@@ -39,7 +39,7 @@ def signup(db: Session, email: str, password: str, nickname: str) -> User:
         raise AppError(409) from None
 
 
-# 로그인 실패 문구는 하나로 통일 — 무엇이 틀렸는지 알려주면 가입된 이메일을 알아낼 수 있다 (12-decisions §7)
+# 로그인 실패 문구는 하나로 통일 — 무엇이 틀렸는지 알려주면 가입된 이메일을 알아낼 수 있다 (12-decisions)
 LOGIN_FAILED_MESSAGE = "이메일 또는 비밀번호가 올바르지 않습니다."
 
 
@@ -53,7 +53,7 @@ def _issue_tokens(db: Session, user_id: int, commit: bool = True) -> dict:
         expires_at=utcnow() + timedelta(days=settings.refresh_token_expire_days),
         commit=commit,  # 재발급(회전)에서는 False 로 받아 기존 행 삭제와 한 트랜잭션으로 묶는다
     )
-    # 03-api §1-2 로그인 응답 data 형태. expires_in 은 초 단위
+    # 03-api 로그인 응답 data 형태. expires_in 은 초 단위
     return {
         "access_token": create_access_token(user_id),
         "refresh_token": refresh,
@@ -93,7 +93,7 @@ def refresh(db: Session, refresh_token: str) -> dict:
 
 def logout(db: Session, refresh_token: str) -> None:
     """해당 refresh token 행만 삭제(이 기기만 로그아웃). 이미 없어도 성공으로 본다."""
-    # 반환값(삭제 행 수)을 보지 않는다 — 같은 로그아웃 요청을 여러 번 보내도 결과가 같아야 하므로 (03-api §1-5)
+    # 반환값(삭제 행 수)을 보지 않는다 — 같은 로그아웃 요청을 여러 번 보내도 결과가 같아야 하므로 (03-api)
     crud.refresh_token.delete(db, hash_refresh_token(refresh_token))
 
 

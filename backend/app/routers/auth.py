@@ -1,4 +1,4 @@
-"""인증 API — /api/auth/* (03-api §1)."""
+"""인증 API — /api/auth/* (03-api)."""
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session

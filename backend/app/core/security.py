@@ -1,4 +1,4 @@
-"""비밀번호 해시와 토큰 유틸 (02-architecture §4, 12-decisions §9)."""
+"""비밀번호 해시와 토큰 유틸 (02-architecture, 12-decisions)."""
 
 import hashlib
 import secrets

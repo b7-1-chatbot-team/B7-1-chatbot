@@ -3,8 +3,8 @@
 from pydantic import BaseModel, field_validator
 from pydantic.networks import validate_email
 
-# 계정 규칙 (03-api §1-1). 서비스·관리자 시드에서도 같은 값을 쓰도록 상수로 둔다
-PASSWORD_MIN_LENGTH = 8  # NIST SP 800-63B 권고 최소 길이 (12-decisions §7)
+# 계정 규칙 (03-api). 서비스·관리자 시드에서도 같은 값을 쓰도록 상수로 둔다
+PASSWORD_MIN_LENGTH = 8  # NIST SP 800-63B 권고 최소 길이 (12-decisions)
 NICKNAME_MAX_LENGTH = 20
 
 
