@@ -1,4 +1,4 @@
-"""내 대화 로그 API — /api/me/* (03-api §3)."""
+"""내 대화 로그 API — /api/me/* (03-api)."""
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from app.models import User
 # 이 파일의 모든 경로 앞에 /api/me 가 붙는다 (로그인한 '나' 기준 API)
 router = APIRouter(prefix="/api/me", tags=["me"])
 
-# 한 번에 조회할 수 있는 최대 개수 (03-api §3-1) — 큰 값으로 DB·응답이 무거워지는 것을 막는다
+# 한 번에 조회할 수 있는 최대 개수 (03-api) — 큰 값으로 DB·응답이 무거워지는 것을 막는다
 MAX_LIMIT = 100
 
 
