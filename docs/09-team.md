@@ -172,9 +172,12 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 | 브랜치 | 커밋 |
 |--------|------|
 | `refactor/fe-typescript` | 0-1 `refactor(fe): TypeScript 전환과 strict 설정 #5` · 0-2 `refactor(fe): 타입 검사 스크립트와 환경변수 타입 선언 #5` |
-| `chore/fe-init` | 1 `chore(fe): Vite+React+Router 초기 설정` · 2 `chore(fe): 전역 CSS 변수(디자인 토큰)와 CSS Modules 규칙` |
-| `feature/fe-api` | 3 `feat(fe): axios 인스턴스와 Authorization 인터셉터` · 4 `feat(fe): 공통 에러 파싱과 401 전역 처리` |
-| `feature/fe-auth` | 5 `feat(fe): 회원가입 화면과 에러 코드 분기` · 6 `feat(fe): 로그인 화면과 토큰 저장` · 7 `feat(fe): AuthContext 로 인증 상태 전역 관리` · 8 `feat(fe): /auth/me 로 새로고침 상태 복원` · 9 `feat(fe): 로그아웃과 라우팅 가드` |
+| `feature/fe-routing` | 1 `chore(fe): Vite 템플릿 데모 화면과 에셋 제거 #7` · 2 `feat(fe): React Router 라우팅 골격과 페이지 구조 추가 #7` |
+| `refactor/fe-css-reset` | 3 `refactor(fe): 전역 CSS 를 reset.css 와 global.css 로 분리 #13` |
+| `chore/fe-path-alias` | 4 `chore(fe): import 경로 alias(@/) 설정 #20` |
+| `feature/fe-api-layer` | 5 `chore(fe): vitest·msw·happy-dom 테스트 환경 구성` · 6 `feat(fe): 응답 형식·엔드포인트 타입과 ApiError 정의` · 7 `feat(fe): 토큰 저장소와 변경 구독` · 8 `test(fe): 토큰 저장소 테스트` · 9 `feat(fe): axios 인스턴스와 응답 정규화 인터셉터` · 10 `test(fe): 응답 정규화·네트워크 오류·요청 취소 테스트` · 11 `feat(fe): 토큰 재발급 인터셉터와 single-flight` · 12 `test(fe): 재발급 single-flight 와 원요청 재시도 테스트` · 13 `feat(fe): 엔드포인트 함수(auth·chat·logs)` · 14 `test(fe): 엔드포인트 함수 테스트` |
+| `feature/fe-auth-context` | 15 `feat(fe): AuthContext 와 인증 상태(AuthStatus) 관리` · 16 `feat(fe): 라우팅 가드(RequireAuth·RequireAdmin)` · 17 `test(fe): 인증 상태·가드 테스트` |
+| `feature/fe-auth` | 18 `feat(fe): 회원가입 화면과 에러 코드 분기` · 19 `feat(fe): 로그인 화면` |
 | `feature/fe-chat` | 10 `feat(fe): 질문 입력과 대화 말풍선 UI` · 11 `feat(fe): 로딩 상태와 클라이언트 입력 검증` · 12 `feat(fe): 에러 코드별 안내 말풍선` |
 | `feature/fe-logs` | 13 `feat(fe): 내 대화 로그 화면과 더 보기` |
 | `fix/*` | 14 `fix(fe): 한글 IME 조합 중 Enter 전송 방지` |

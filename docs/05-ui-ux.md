@@ -56,8 +56,19 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 | `/admin` | 관리자 | **관리자 필수** (`role=admin`, 아니면 `/chat` 으로) |
 | `*` | `/chat` 또는 `/login` 으로 리다이렉트 | |
 
-라우팅 가드는 `AuthContext` 의 상태(`user`, `user.role`)로 판정한다. 앱 로드 시 `GET /api/auth/me` 응답 전에는 로딩 화면을 보여주고, 그 전에 판정하지 않는다(새로고침 시 로그인 화면이 잠깐 깜빡이는 문제 방지).
-프론트 가드는 화면 이동용이며, **권한 검사는 서버 `require_admin` 이 최종**이다.
+라우팅 가드는 `AuthContext` 가 계산한 **`AuthStatus` 한 값**으로 판정한다. 토큰 유무와 사용자 정보 유무를 가드가 각각 검사하지 않는다.
+
+| `AuthStatus` | 조건 | 가드 동작 |
+|--------------|------|-----------|
+| `anonymous` | localStorage 에 access token 이 없음 | **즉시** 로그인으로 이동 (서버에 묻지 않음) |
+| `checking` | 토큰은 있고 `GET /api/auth/me` 응답 대기 중 | **판정 보류** (화면을 가리지 않고 아무것도 렌더하지 않음) |
+| `authenticated` | 토큰이 있고 사용자 정보를 받아옴 | 통과. `RequireAdmin` 은 여기에 `role === 'admin'` 을 더한다 |
+
+- `anonymous` 를 **토큰 유무로 동기 판정**하는 이유: 토큰이 없는데도 화면을 먼저 그리면, 첫 API 호출이 401 로 실패한 뒤에야 로그인으로 튕겨 **화면이 깜빡인다.**
+- `checking` 에서 판정을 미루는 이유: `user` 초기값이 `null` 이라 응답 전에 판정하면 **새로고침할 때마다 로그인 화면이 한 번 번쩍인다.**
+- 이 상태는 앱이 전체 로드될 때(새로고침·주소 직접 입력·탭 재실행) 한 번만 거치며, SPA 내부 화면 이동에서는 다시 발생하지 않는다.
+
+프론트 가드는 화면 이동용이며, **권한 검사는 서버 `require_admin` 이 최종**이다. 사용자가 `AuthContext` 값을 직접 조작해도 관리자 메뉴만 보일 뿐 관리자 API 는 서버가 403 으로 막는다.
 
 ## 3. 화면 구성
 
@@ -65,8 +76,8 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ [C] Chatlog (FastAPI · SQLite)  [챗|내 대화 로그|관리자]  어썸체크 [로그아웃] │  ← 관리자
-│ [C] Chatlog (FastAPI · SQLite)  [챗|내 대화 로그]         어썸체크 [로그아웃] │  ← 로그인
+│ [C] Chatlog (FastAPI · SQLite)  [챗|내 대화 로그|관리자]  <닉네임> [로그아웃] │  ← 관리자
+│ [C] Chatlog (FastAPI · SQLite)  [챗|내 대화 로그]         <닉네임> [로그아웃] │  ← 로그인
 │ [C] Chatlog (FastAPI · SQLite)                        [로그인] [회원가입]  │  ← 비로그인
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -125,8 +136,12 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 
 | 키 | 값 |
 |----|----|
-| `chatlog_access_token` | access token (JWT, 15분) |
-| `chatlog_refresh_token` | refresh token (1일, 재발급 시 회전) |
+| `auth:access_token` | access token (JWT, 15분) |
+| `auth:refresh_token` | refresh token (1일, 재발급 시 회전) |
+
+키 접두어는 **관심사(`auth:`)** 로 나눈다. `localStorage` 는 이미 도메인 단위로 격리되므로 서비스명을 접두어로 붙이지 않는다. 이후 키가 늘어나면 `ui:` 등으로 같은 규칙을 따른다.
+
+토큰 읽기·쓰기·삭제는 `src/utils/tokenStorage.ts` 한 곳에서만 한다. 이 모듈은 **토큰이 바뀌면 구독자에게 알리고**, React 쪽은 `useSyncExternalStore` 기반 `useAccessToken` 훅으로 그 변화를 받는다. 덕분에 인터셉터가 재발급 실패로 토큰을 지우면 **`clearTokens()` 호출만으로** 화면이 로그인 상태에서 빠져나온다 (인터셉터는 `AuthContext` 를 알지 못한다).
 
 **XSS 대응 — 저장 방식이 아니라 아래 두 축으로 막는다.** (해시·암호화 저장은 방어가 되지 않는다: 해시는 되돌릴 수 없어 서버에 보낼 수 없고, 암호화는 복호화 키도 브라우저에 있어야 하며, 스크립트를 실행할 수 있는 공격자는 저장된 토큰 없이도 로그인된 상태로 요청을 보낼 수 있다.)
 
@@ -229,56 +244,88 @@ GET /api/me/chats — 로그인한 사용자 본인의 기록만    │   42   �
 
 Authorization 헤더 자동 첨부와 `{code, data}` 판단을 한 모듈에서 처리한다. 서버 응답은 **항상 HTTP 200** 이므로 axios 는 에러를 던지지 않고, 인터셉터가 `code` 를 보고 실패로 바꾼다.
 
-```js
-// src/api/client.js
+파일은 역할별로 나눈다. `instance.ts` 는 **기본 설정과 인터셉터 등록만** 담고, 호출 함수는 두지 않는다.
+
+```
+src/
+├── api/
+│   ├── instance.ts          # axios.create + 인터셉터 등록
+│   ├── interceptors/        # attachToken · normalize · refresh
+│   ├── auth.ts / chat.ts / logs.ts   # 엔드포인트 함수
+│   ├── ApiError.ts
+│   └── types.ts
+├── utils/tokenStorage.ts    # 토큰 읽기·쓰기·삭제 + 변경 구독 (아무것도 import 하지 않음)
+├── hooks/useAccessToken.ts  # useSyncExternalStore 로 토큰 구독
+└── store/AuthContext.tsx
+```
+
+```ts
+// src/api/instance.ts
 import axios from 'axios'
 
-export const client = axios.create({
+export const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 35_000,          // 서버 AI 타임아웃 30초 + 여유
 })
 
 // 요청: 토큰 자동 첨부
-client.interceptors.request.use((config) => {
-  const token = getToken()
+instance.interceptors.request.use((config) => {
+  const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-const UNREACHABLE = { code: 0, message: '서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.' }
-
+const UNREACHABLE = new ApiError(0, '서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.')
 const AUTH_PATHS = ['/api/auth/login', '/api/auth/refresh', '/api/auth/logout']
-let refreshing = null   // 동시에 여러 요청이 401 을 받아도 재발급은 1번만
 
-client.interceptors.response.use(
-  async (res) => {
+let refreshing: Promise<TokenPair> | null = null   // 재발급 single-flight
+
+// (1) 응답 형식 정규화 — code 를 보고 성공/실패를 가른다
+instance.interceptors.response.use(
+  (res) => {
     const body = res.data
-    // 봉투가 아닌 응답 → 서버에 닿지 못함
-    if (typeof body?.code !== 'number') return Promise.reject(UNREACHABLE)
-    if (body.code < 400) return body.data                     // 성공: data 만 반환
-
-    const isAuthApi = AUTH_PATHS.some((p) => res.config.url.endsWith(p))
-    // 인증 API 가 아닌 요청의 401 → refresh 1회 후 재시도
-    if (body.code === 401 && !isAuthApi && !res.config._retried) {
-      try {
-        refreshing ??= client.post('/api/auth/refresh', { refresh_token: getRefreshToken() })
-        saveTokens(await refreshing)                           // 새 access·refresh 저장
-        return client({ ...res.config, _retried: true })       // 원래 요청 재시도
-      } catch {
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'))
-      } finally {
-        refreshing = null
-      }
-    }
-    return Promise.reject({ code: body.code, message: body.data?.message ?? '요청을 처리하지 못했습니다.' })
+    if (typeof body?.code !== 'number') throw UNREACHABLE   // 응답 형식이 아님 = 서버에 닿지 못함
+    if (body.code < 400) return body.data                   // 성공: data 만 반환
+    throw new ApiError(body.code, body.data?.message ?? '요청을 처리하지 못했습니다.')
   },
-  // 네트워크 끊김, Railway 앞단 502/503 등 실제 HTTP 오류
-  () => Promise.reject(UNREACHABLE),
+  (error) => {
+    if (axios.isCancel(error)) throw error                  // 요청 취소는 오류로 바꾸지 않는다
+    throw UNREACHABLE                                       // 네트워크 끊김, Railway 앞단 502/503
+  },
 )
+
+// (2) 401 → 재발급 1회 후 원요청 재시도
+instance.interceptors.response.use(undefined, async (error) => {
+  const config = error.config
+  const isAuthApi = AUTH_PATHS.some((p) => config?.url?.endsWith(p))
+  if (!(error instanceof ApiError) || error.code !== 401 || isAuthApi || config._retried) throw error
+
+  try {
+    refreshing ??= instance.post('/api/auth/refresh', { refresh_token: getRefreshToken() })
+    const tokens = await refreshing
+    saveTokens(tokens.access_token, tokens.refresh_token)    // 회전된 토큰 2개 저장
+    return instance({ ...config, _retried: true })
+  } catch {
+    clearTokens()            // 저장소가 구독자에게 알림 → AuthContext 가 로그아웃 상태로 전환
+    throw error
+  } finally {
+    refreshing = null
+  }
+})
 ```
 
-`auth:unauthorized` → `AuthContext` 가 두 토큰 삭제 + `user=null` → 가드가 `/login` 으로 이동.
-로그인 API 의 401 은 폼에서, 재발급 API 의 401 은 위 `catch` 에서 로그아웃으로 처리된다.
+**실패는 모두 `ApiError`(= `Error` 파생) 로 던진다.** 화면은 `catch (err)` 에서 `err.code` 로 분기한다.
+인터셉터는 **형식 변환과 재발급까지만** 하고, "어떤 화면을 띄울지" 같은 비즈니스 분기는 하지 않는다.
+
+**인터셉터 등록 순서가 중요하다.** 응답 인터셉터는 등록한 순서대로 실행되므로, (1) 정규화가 먼저 `code` 를 해석해야 (2) 재발급이 401 을 알아본다.
+
+**재발급 실패 시 로그아웃 전달 방식.** 인터셉터는 `clearTokens()` 만 호출한다. `tokenStorage` 가 변경을 구독자에게 알리고, `useAccessToken`(`useSyncExternalStore`)이 이를 받아 `AuthContext` 의 `AuthStatus` 를 `anonymous` 로 바꿔 가드가 `/login` 으로 보낸다.
+이 방식을 쓰는 이유는 **`api/` 가 `store/AuthContext` 를 import 하면 순환 참조가 생기기 때문**이다(`AuthContext → api/auth → instance → interceptors → AuthContext`). `tokenStorage` 는 아무것도 import 하지 않는 끝점이라 양쪽이 안전하게 참조할 수 있다.
+
+로그인 API 의 401 은 폼에서 처리하고, 재발급 API 의 401 은 위 `catch` 에서 로그아웃으로 처리된다.
+
+**요청 취소.** 엔드포인트 함수는 선택적 `signal?: AbortSignal` 을 받아 axios 에 넘긴다. 화면을 벗어나면 진행 중인 요청을 취소하고, 취소는 위 (1) 에서 오류로 바꾸지 않아 사용자에게 에러가 보이지 않는다. 화면에서는 `useAbortableRequest` 훅으로 감싸 쓴다.
 
 **`refreshing` 변수 = 재발급 single-flight (중요).** refresh token 은 재발급마다 **회전**(이전 토큰 즉시 폐기)하므로,
 동시에 401 을 받은 요청들이 각자 재발급하면 뒤늦은 쪽이 이미 폐기된 토큰을 써서 **사용자가 로그아웃된다.**

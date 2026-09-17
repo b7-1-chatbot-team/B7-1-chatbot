@@ -29,7 +29,7 @@
 3. 서버 로그에 `request_received → ai_call_start → ai_call_success → db_save_success` 가 순서대로 남음
 
 ### S3. AI 장애 (타임아웃 / 호출 실패)
-1. AI API 응답이 `AI_TIMEOUT_SECONDS`(초안 30초)를 넘김
+1. AI API 응답이 `AI_TIMEOUT_SECONDS`(**30초**, A16 확정)를 넘김
 2. **504 `AI_TIMEOUT`** → 오류 말풍선: "현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요."
 3. 쿼터 초과·키 오류·5xx 등은 **502 `AI_CALL_FAILED`** → "AI 응답을 가져오지 못했습니다."
 4. **서버는 종료되지 않는다.** 입력창은 즉시 다시 사용 가능하고, 이어지는 정상 질문은 200 으로 처리된다.

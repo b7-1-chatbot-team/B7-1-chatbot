@@ -50,6 +50,8 @@ npm run dev
 
 npm run typecheck           # tsc -b (타입 검사)
 npm run lint                # oxlint
+npm run test                # vitest run (단위 테스트)
+npm run test:watch          # vitest (변경 감지)
 npm run build               # 타입 검사 + production 모드 빌드 → dist
 npm run build:dev           # 타입 검사 + development 모드 빌드 (개발용 값으로 확인할 때)
 ```

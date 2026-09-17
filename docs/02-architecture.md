@@ -30,8 +30,11 @@
 | 빌드 도구 | **Vite** (Node 24, `.nvmrc`) |
 | 라우팅 | **React Router** |
 | HTTP | **axios** |
-| 상태 관리 | **Context API** |
+| 상태 관리 | **Context API** (전역 상태가 `user`·인증 상태뿐이라 별도 라이브러리를 쓰지 않는다) |
+| 서버 데이터 | **직접 관리** (TanStack Query 미도입 — [12-decisions.md](12-decisions.md) §17) |
 | 스타일 | **CSS Modules** (`*.module.css`, Vite 기본 지원) + 전역 CSS 변수 |
+| 테스트 | **Vitest** + **MSW**(네트워크 모킹) + **happy-dom**(DOM·localStorage 환경) |
+| import 경로 | alias **`@/`** → `src` (`tsconfig.app.json` 의 `paths` + `vite.config.ts` 의 `resolve.alias`) |
 
 ### 외부 서비스
 
@@ -97,15 +100,20 @@ flowchart TD
 │   └── .env.example
 ├── frontend/
 │   ├── .nvmrc
-│   ├── tsconfig.json            # strict: true
+│   ├── tsconfig.app.json        # strict: true, 경로 alias paths(@/* → ./src/*)
+│   ├── vite.config.ts           # resolve.alias(@ → ./src) — tsconfig 의 paths 와 함께 수정
 │   ├── .env.development.example # 개발 모드 (npm run dev / build:dev)
 │   ├── .env.production.example  # 운영 모드 (npm run build)
 │   └── src/
-│       ├── api/                 # axios 인스턴스, 인터셉터(봉투 파싱), types.ts (API 요청·응답 타입)
-│       ├── contexts/            # AuthContext
-│       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의)
+│       ├── api/                 # instance.ts(기본 설정·인터셉터 등록), interceptors/, auth·chat·logs.ts,
+│       │                        # ApiError.ts, types.ts (요청·응답 타입)
+│       ├── store/               # AuthContext (인증 상태 AuthStatus)
+│       ├── utils/               # tokenStorage.ts (토큰 읽기·쓰기·삭제 + 변경 구독)
+│       ├── hooks/               # useAccessToken, useAuth, useAbortableRequest
+│       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의), guards.tsx
 │       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
 │       ├── components/          # 컴포넌트(*.tsx) + *.module.css
+│       ├── styles/              # reset.css(브라우저 기본값), global.css(:root 토큰·공통 기본값)
 │       └── types/               # 여러 화면이 공유하는 타입 (user.ts, chat.ts)
 ├── .gitignore
 └── README.md

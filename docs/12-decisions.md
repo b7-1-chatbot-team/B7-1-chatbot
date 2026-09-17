@@ -24,6 +24,10 @@
 | 14 | 프론트 **TypeScript (strict)** | 봉투 응답·결과 코드·관리자 응답의 형태를 타입으로 고정해 백엔드 계약 불일치를 빌드 단계에서 잡는다 |
 | 15 | 토큰 재발급을 **1건으로 묶음 (single-flight)** | refresh 회전 때문에, 동시에 401 을 받은 요청들이 각자 재발급하면 뒤늦은 쪽이 폐기된 토큰을 써서 사용자가 튕긴다 |
 | 16 | **refresh token 회전** (§9 상세) | 토큰을 localStorage 에 두는 이상 XSS 탈취를 0 으로 만들 수 없다. 회전은 탈취된 토큰의 수명을 "다음 재발급까지" 로 줄이고, 탈취 사실을 **드러나게** 만드는 유일한 장치다 |
+| 17 | 토큰 변경을 **`useSyncExternalStore` 로 구독** (§17) | 인터셉터가 토큰을 지워도 React 는 알지 못한다. 저장소가 구독자에게 알리면 인터셉터는 `clearTokens()` 만 부르면 되고, `api/` 가 `AuthContext` 를 import 하지 않아 순환 참조도 생기지 않는다 |
+| 18 | 상태 관리 **Context API**, Zustand 미도입 (§18) | 전역 상태가 `user` 하나뿐이고 세션당 2~3번만 바뀐다. access token 은 Context 가 아니라 `localStorage` 에 있어 15분 주기 교체가 리렌더를 일으키지 않는다 |
+| 19 | **TanStack Query 미도입** (§19) | 인터셉터·토큰 작업량이 전혀 줄지 않는다. 캐시·무효화가 필요할 만큼 조회 화면이 복잡하지 않고, 로그아웃 시 캐시 삭제 누락 같은 새 사고 지점이 생긴다 |
+| 20 | **React Compiler 미도입** (§20) | 메모이제이션이 필요한 지점이 Context value 한 곳뿐이라 `useMemo` 한 줄로 끝난다 |
 
 ---
 
@@ -94,7 +98,9 @@
 
 ### 결정
 **`localStorage`** (확정 — [11-open-issues.md](11-open-issues.md) §0 A15). access·refresh token 을 같은 곳에 두고, refresh token 은 요청 body 로 보낸다.
-키 이름: `chatlog_access_token` · `chatlog_refresh_token`
+키 이름: `auth:access_token` · `auth:refresh_token`
+접두어는 **관심사**(`auth:`)로 나눈다. `localStorage` 는 이미 도메인 단위로 격리되므로 서비스명을 접두어로 쓰지 않는다.
+읽기·쓰기·삭제는 `src/utils/tokenStorage.ts` 한 곳에서만 하고, 변경은 구독으로 알린다 (§17).
 
 ### 왜 브라우저에 저장해야 하나
 JWT 는 서버가 세션을 보관하지 않으므로, 클라이언트가 토큰을 들고 있다가 요청마다 보내야 한다. 저장 위치의 선택지는 아래 세 가지다.
@@ -386,7 +392,7 @@ single-flight 없음                         single-flight 적용
 | 합류 | 이미 있으면 그 Promise 를 `await` 해서 결과를 공유 |
 | 정리 | 성공·실패와 무관하게 `finally` 에서 `refreshing = null` |
 | 재시도 | 재발급 성공 시 원래 요청을 **1회만** 재시도 (`_retried` 플래그로 무한 루프 방지) |
-| 실패 | 재발급이 실패하면 두 토큰 삭제 + `auth:unauthorized` → 로그인 화면 |
+| 실패 | 재발급이 실패하면 `clearTokens()` 호출 → 저장소 구독자에게 전파 → `AuthStatus` 가 `anonymous` → 가드가 로그인 화면으로 (§17) |
 | 제외 | 로그인·재발급·로그아웃 API 의 401 은 이 흐름을 타지 않는다 (로그인 실패는 폼에서 처리) |
 
 ### 버린 대안
@@ -397,4 +403,97 @@ single-flight 없음                         single-flight 적용
 | 서버가 폐기 직후 이전 토큰을 몇 초간 허용(유예) | 서버 구현이 늘고 탈취 토큰의 유효 시간이 생긴다. 프론트에서 해결되는 문제라 범위 밖 — 필요해지면 팀 논의 |
 
 ### 한계
-- **탭 간에는 공유되지 않는다.** 서로 다른 탭이 동시에 재발급하면 한쪽은 로그인 화면으로 갈 수 있다. 빈도가 낮고, 다시 로그인하면 복구되므로 현재 범위에서는 감수한다 (필요 시 `BroadcastChannel` 또는 `storage` 이벤트로 확장).
+- **재발급 자체는 탭 간에 공유되지 않는다.** `refreshing` 은 모듈 스코프 변수라 탭마다 따로 존재한다. 서로 다른 탭이 동시에 재발급하면 한쪽은 로그인 화면으로 갈 수 있다. 빈도가 낮고 다시 로그인하면 복구되므로 현재 범위에서는 감수한다 (필요 시 `BroadcastChannel` 로 확장).
+- 다만 **결과 반영은 탭 간에 동기화된다.** `tokenStorage.subscribe` 가 `storage` 이벤트를 함께 구독하므로, 한 탭에서 로그아웃하면 다른 탭도 즉시 로그인 화면으로 이동한다 (§17).
+
+---
+
+## 17. 토큰 변경을 useSyncExternalStore 로 구독
+
+### 결정
+`utils/tokenStorage.ts` 가 토큰을 저장·삭제할 때 **구독자에게 알리고**, React 쪽은 `hooks/useAccessToken.ts`(`useSyncExternalStore`)로 그 변화를 받는다.
+
+### 문제
+인터셉터는 재발급이 최종 실패하면 토큰을 지워야 한다. 그런데 **토큰만 지우면 화면은 그대로다.** 헤더에 닉네임이 남고 가드는 여전히 통과시킨다. React 는 상태가 바뀌어야 다시 그리는데, `localStorage` 조작은 React 입장에서 아무 일도 아니기 때문이다.
+`storage` 이벤트도 답이 되지 못한다. **같은 탭에서 바꾼 경우에는 발생하지 않는다.**
+
+### 왜 인터셉터가 AuthContext 를 직접 부르면 안 되는가
+`setUser` 는 `AuthContext` 안에만 있다. 이를 쓰려고 `api/interceptors/refresh.ts` 에서 `store/AuthContext` 를 import 하면 순환 참조가 된다.
+
+```
+AuthContext → api/auth → api/instance → interceptors → AuthContext
+```
+
+모듈이 서로를 기다리다 한쪽이 **미완성 상태(`undefined`)로 평가**된다. 타입 검사와 빌드는 통과하고 실행 시점에만 깨지며, 에러 메시지가 원인을 가리키지 않아 추적이 어렵다. `useAuth` 는 훅이라 컴포넌트 밖인 인터셉터에서 호출할 수도 없다.
+
+### 채택한 구조
+`tokenStorage` 를 **아무것도 import 하지 않는 끝점**으로 두고 양쪽이 이것만 참조한다.
+
+```
+interceptors ──→ tokenStorage ←── AuthContext
+```
+
+인터셉터는 `clearTokens()` 만 호출하고 `AuthContext` 의 존재를 모른다.
+
+### 주의
+`getSnapshot` 은 **원시값**(문자열·`null`)을 반환해야 한다. 매번 새 객체를 반환하면 `Object.is` 비교가 항상 거짓이라 무한 리렌더에 빠진다. 토큰 두 개를 함께 봐야 하면 훅을 나눈다.
+
+### 버린 대안
+| 대안 | 버린 이유 |
+|------|-----------|
+| `window.dispatchEvent(new CustomEvent(...))` | 동작하지만 이벤트 이름이 문자열이라 오타가 조용히 실패하고, 테스트에 DOM 환경이 필요하며, 누가 구독하는지 코드로 추적되지 않는다 |
+| 콜백 등록 모듈(`setUnauthorizedHandler`) 분리 | 순환은 피하지만 파일이 하나 더 생긴다. 상태의 근원이 토큰 하나라 저장소가 직접 알리는 편이 단순하다 |
+| `useState` + `useEffect` 로 구독 | 첫 렌더와 `useEffect` 실행 사이의 변경을 놓친다 |
+
+---
+
+## 18. 상태 관리는 Context API — Zustand 미도입
+
+### 결정
+전역 상태는 **Context API** 로 관리한다 ([02-architecture.md](02-architecture.md) §1).
+
+### 근거
+Context 가 들고 있는 것은 `user`(id·email·nickname·role)와 `AuthStatus` 뿐이고, **로그인·로그아웃·재발급 최종 실패 시점에만** 바뀐다. 세션당 2~3회다.
+**access token 은 Context 에 넣지 않는다.** `localStorage` 에 두고 인터셉터가 직접 읽고 쓰므로, 15분 주기 교체가 Context 를 건드리지 않는다.
+
+### 버린 대안
+| 대안 | 버린 이유 |
+|------|-----------|
+| Zustand 등 전역 상태 라이브러리 | 스토어가 하나뿐이고 갱신 빈도가 낮다. 컴포넌트 밖에서 값을 읽어야 하는 요구도 `tokenStorage` 로 해결된다 |
+
+### 한계와 보완
+Context 는 **값의 참조가 바뀌면 구독 컴포넌트를 모두 리렌더**한다(`Object.is` 비교). selector 가 없어 일부 값만 골라 구독할 수 없고 `React.memo` 로도 막히지 않는다.
+→ Provider 의 `value` 를 `useMemo` 로, 액션 함수를 `useCallback` 으로 고정한다. 구독 컴포넌트가 적고 갱신이 드물어 현재 범위에서는 이것으로 충분하다.
+
+---
+
+## 19. TanStack Query 미도입
+
+### 결정
+서버 데이터 캐싱 라이브러리를 쓰지 않고, 조회는 `useAbortableRequest` 훅으로 직접 다룬다.
+
+### 근거
+1. **통신 계층 작업량이 줄지 않는다.** TanStack Query 는 캐시 층이고 실제 요청은 우리 함수(axios)가 보낸다. 응답 형식 정규화·토큰 첨부·재발급 single-flight 는 그대로 만들어야 한다.
+2. **요청 취소도 이점이 아니다.** 엔드포인트가 `signal` 을 받는 것과 인터셉터가 취소를 통과시키는 것은 어느 쪽이든 필요하다. 컴포넌트의 반복 코드는 `useAbortableRequest` 훅 하나로 제거된다.
+3. **캐시가 필요할 만큼 복잡하지 않다.** 대화 로그는 무한 스크롤이 아니라 **[더 보기] 버튼**이라 `offset` 누적으로 충분하다.
+
+### 버린 대안
+| 대안 | 버린 이유 |
+|------|-----------|
+| TanStack Query 도입 | 위 근거 외에, 로그아웃 시 `queryClient.clear()` 를 빠뜨리면 **다른 계정으로 로그인했을 때 이전 사용자 데이터가 보이는** 사고가 생긴다. 얻는 것에 비해 위험이 크다 |
+
+### 한계
+관리자 화면처럼 조회 지점이 늘면 컴포넌트마다 로딩·에러 상태를 다루게 된다. 화면 구현 중 반복이 과해지면 그 시점에 다시 판단한다.
+
+---
+
+## 20. React Compiler 미도입
+
+### 결정
+React Compiler 를 빌드에 넣지 않고, 필요한 곳에만 `useMemo`·`useCallback` 을 쓴다.
+
+### 근거
+컴파일러는 자동 메모이제이션을 넣어 주지만 **자동으로 켜지지 않고** 별도 설정이 필요하다. 그런데 이 앱에서 메모이제이션이 필요한 지점은 **Context value 한 곳뿐**이라 `useMemo` 한 줄로 끝난다. 화면 5개에 상태 변화도 적어 성능 차이가 체감되지 않는다.
+
+### 한계
+챗 화면에서 메시지 목록이 길어져 리렌더가 실제로 문제가 되면 그때 도입을 재검토한다. 도입하면 손으로 넣은 `useMemo`·`useCallback` 은 제거할 수 있다.

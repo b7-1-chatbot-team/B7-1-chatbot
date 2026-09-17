@@ -124,7 +124,7 @@ DELETE FROM refresh_tokens WHERE expires_at < :now;
 SELECT question, answer FROM chat_logs
 WHERE user_id = :user_id AND status = 'success'
 ORDER BY id DESC
-LIMIT :context_turns;   -- AI_CONTEXT_TURNS (초안 5)
+LIMIT :context_turns;   -- AI_CONTEXT_TURNS (5, A16 확정)
 ```
 조회 후 **오래된 순으로 뒤집어** 프롬프트에 배치한다.
 
