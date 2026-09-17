@@ -7,6 +7,12 @@
     "jsx": "react-jsx",
     "types": ["vite/client"],
 
+    /* import 경로 alias — paths 는 이 파일 위치 기준으로 해석된다 (TS 7 에서 baseUrl 제거됨).
+       번들 쪽 설정은 vite.config.ts 의 resolve.alias 에 함께 둔다 */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* 빌드는 Vite 가 담당하고 tsc 는 타입 검사만 한다 */
     "noEmit": true,
     "allowImportingTsExtensions": true,

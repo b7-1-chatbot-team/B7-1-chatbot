@@ -1,10 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import AdminPage from '../pages/AdminPage'
-import ChatPage from '../pages/ChatPage'
-import LoginPage from '../pages/LoginPage'
-import LogsPage from '../pages/LogsPage'
-import SignupPage from '../pages/SignupPage'
+import AdminPage from '@/pages/AdminPage'
+import ChatPage from '@/pages/ChatPage'
+import LoginPage from '@/pages/LoginPage'
+import LogsPage from '@/pages/LogsPage'
+import SignupPage from '@/pages/SignupPage'
 import { PATHS } from './paths'
 
 /**
