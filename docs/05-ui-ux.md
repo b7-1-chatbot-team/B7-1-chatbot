@@ -17,11 +17,13 @@ Google Fonts 로드 + `system-ui` 폴백.
 
 ### 색상 토큰
 
-전역 `index.css` 의 `:root` 에 CSS 변수로 선언하고, 컴포넌트별 `*.module.css` 에서 `var(--color-surface)` 처럼 사용한다.
+전역 `src/styles/global.css` 의 `:root` 에 CSS 변수로 선언하고, 컴포넌트별 `*.module.css` 에서 `var(--color-surface)` 처럼 사용한다.
+전역 CSS 는 `styles/` 두 파일뿐이다 — 브라우저 기본값 정리는 `reset.css`, 프로젝트 고유 값은 `global.css` 이며 `main.tsx` 에서 이 순서로 로드한다.
+**아래 토큰은 기능 구현을 마친 뒤 스타일링 단계에서 채운다.** 현재 `global.css` 에는 `color-scheme: dark` 와 폰트 변수만 들어 있다.
 CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래스 이름은 파일 단위로 격리된다 (`import styles from './Chat.module.css'` → `className={styles.bubble}`).
 
 ```css
-/* frontend/src/index.css */
+/* frontend/src/styles/global.css */
 :root {
   --color-bg:          #0e1113;   /* 페이지 배경 */
   --color-surface:     #14181a;   /* 카드·패널 */
@@ -242,7 +244,7 @@ GET /api/me/chats — 로그인한 사용자 본인의 기록만    │   42   �
 
 ## 4. API 호출 공통 모듈
 
-Authorization 헤더 자동 첨부와 `{code, data}` 판단을 한 모듈에서 처리한다. 서버 응답은 **항상 HTTP 200** 이므로 axios 는 에러를 던지지 않고, 인터셉터가 `code` 를 보고 실패로 바꾼다.
+Authorization 헤더 자동 첨부와 `{code, data}` 판단을 한 계층에서 처리한다. 서버 응답은 **항상 HTTP 200** 이므로 axios 는 에러를 던지지 않고, 인터셉터가 `code` 를 보고 실패로 바꾼다.
 
 파일은 역할별로 나눈다. `instance.ts` 는 **기본 설정과 인터셉터 등록만** 담고, 호출 함수는 두지 않는다.
 
@@ -252,71 +254,126 @@ src/
 │   ├── instance.ts          # axios.create + 인터셉터 등록
 │   ├── interceptors/        # attachToken · normalize · refresh
 │   ├── auth.ts / chat.ts / logs.ts   # 엔드포인트 함수
-│   ├── ApiError.ts
-│   └── types.ts
+│   ├── ApiError.ts          # code · 안내 문구 · 재시도용 config
+│   ├── types.ts             # 요청·응답 타입 (03-api.md 와 1:1)
+│   └── axios.d.ts           # _retried 플래그 모듈 확장
 ├── utils/tokenStorage.ts    # 토큰 읽기·쓰기·삭제 + 변경 구독 (아무것도 import 하지 않음)
 ├── hooks/useAccessToken.ts  # useSyncExternalStore 로 토큰 구독
-└── store/AuthContext.tsx
+├── store/AuthContext.tsx
+└── test/                    # server.ts(MSW) · setup.ts
 ```
+
+### 인스턴스
 
 ```ts
 // src/api/instance.ts
 import axios from 'axios'
 
+import { attachToken } from './interceptors/attachToken'
+import { normalizeError, normalizeResponse } from './interceptors/normalize'
+import { createRefreshInterceptor } from './interceptors/refresh'
+
 export const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 35_000,          // 서버 AI 타임아웃 30초 + 여유
+  timeout: 35_000,   // 서버 AI 상한 30초보다 넉넉히. 짧으면 정상 응답을 클라이언트가 먼저 끊는다
 })
 
-// 요청: 토큰 자동 첨부
-instance.interceptors.request.use((config) => {
-  const token = getAccessToken()
+instance.interceptors.request.use(attachToken)
+
+// 응답 인터셉터는 등록 순서대로 실행된다.
+// 정규화가 먼저 code 를 해석해야 재발급이 401 을 알아본다.
+instance.interceptors.response.use(normalizeResponse, normalizeError)
+
+// 재발급은 실패 경로에서만 동작하므로 성공 핸들러를 넘기지 않는다.
+// 인스턴스를 인자로 넘기는 이유는 refresh.ts 가 이 파일을 import 하면 순환 참조가 되기 때문이다.
+instance.interceptors.response.use(undefined, createRefreshInterceptor(instance))
+```
+
+### 요청 — 토큰 첨부
+
+```ts
+// src/api/interceptors/attachToken.ts
+export function attachToken(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
+  const token = getAccessToken()   // 매 요청마다 읽는다. 한 번 읽어두면 회전 후 옛 토큰을 보낸다
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
-})
+}
+```
 
-const UNREACHABLE = new ApiError(0, '서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.')
+### 응답 — 형식 정규화
+
+```ts
+// src/api/interceptors/normalize.ts
+function unreachable(): ApiError {
+  // 상수로 재사용하지 않는다. 매번 만들어야 스택 추적이 실제 발생 지점을 가리킨다
+  return new ApiError(RESULT_CODE.unreachable, UNREACHABLE_MESSAGE)
+}
+
+export function normalizeResponse(response: AxiosResponse): AxiosResponse {
+  const body: unknown = response.data
+
+  // body 에 code 가 없음 = 서버가 준 응답이 아님 (Railway 앞단 502/503 등)
+  if (!isEnvelope(body)) throw unreachable()
+
+  if (body.code < 400) {
+    response.data = body.data      // 봉투를 벗겨 안쪽 data 로 교체하고 AxiosResponse 형태는 유지
+    return response
+  }
+
+  const message = (body.data as ApiFailureData | undefined)?.message ?? FALLBACK_MESSAGE
+  // config 를 함께 싣는다. 오류로 바꾸는 순간 요청 정보가 사라져 재시도할 수 없기 때문이다
+  throw new ApiError(body.code, message, response.config)
+}
+
+export function normalizeError(error: unknown): never {
+  if (axios.isCancel(error)) throw error        // 요청 취소는 오류로 바꾸지 않는다
+  if (error instanceof ApiError) throw error
+  throw unreachable()                           // 네트워크 끊김, 타임아웃
+}
+```
+
+### 응답 — 토큰 재발급 (single-flight)
+
+```ts
+// src/api/interceptors/refresh.ts
 const AUTH_PATHS = ['/api/auth/login', '/api/auth/refresh', '/api/auth/logout']
 
-let refreshing: Promise<TokenPair> | null = null   // 재발급 single-flight
+let refreshing: Promise<TokenPair> | null = null   // 진행 중인 재발급 (single-flight)
 
-// (1) 응답 형식 정규화 — code 를 보고 성공/실패를 가른다
-instance.interceptors.response.use(
-  (res) => {
-    const body = res.data
-    if (typeof body?.code !== 'number') throw UNREACHABLE   // 응답 형식이 아님 = 서버에 닿지 못함
-    if (body.code < 400) {
-      res.data = body.data        // 봉투를 벗겨 안쪽 data 로 교체하고 AxiosResponse 형태는 유지
-      return res
-    }
-    // config 를 함께 싣는다. 오류로 바꾸는 순간 요청 정보가 사라져 재시도할 수 없기 때문이다
-    throw new ApiError(body.code, body.data?.message ?? '요청을 처리하지 못했습니다.', res.config)
-  },
-  (error) => {
-    if (axios.isCancel(error)) throw error                  // 요청 취소는 오류로 바꾸지 않는다
-    throw UNREACHABLE                                       // 네트워크 끊김, Railway 앞단 502/503
-  },
-)
+// instance 를 import 하지 않고 인자로 받는다. import 하면 instance -> refresh -> instance 순환이 된다
+export function createRefreshInterceptor(client: AxiosInstance) {
+  async function requestNewTokens(): Promise<TokenPair> {
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) throw new Error('refresh token 이 없어 재발급할 수 없습니다.')
 
-// (2) 401 → 재발급 1회 후 원요청 재시도
-instance.interceptors.response.use(undefined, async (error) => {
-  const config = error.config
-  const isAuthApi = AUTH_PATHS.some((p) => config?.url?.endsWith(p))
-  if (!(error instanceof ApiError) || error.code !== 401 || isAuthApi || config._retried) throw error
-
-  try {
-    refreshing ??= instance.post('/api/auth/refresh', { refresh_token: getRefreshToken() })
-    const tokens = await refreshing
-    saveTokens(tokens.access_token, tokens.refresh_token)    // 회전된 토큰 2개 저장
-    return instance({ ...config, _retried: true })
-  } catch {
-    clearTokens()            // 저장소가 구독자에게 알림 → AuthContext 가 로그아웃 상태로 전환
-    throw error
-  } finally {
-    refreshing = null
+    const response = await client.post<TokenPair>('/api/auth/refresh', {
+      refresh_token: refreshToken,
+    })
+    return response.data
   }
-})
+
+  return async function refreshInterceptor(error: unknown): Promise<AxiosResponse> {
+    if (!isApiError(error) || error.code !== RESULT_CODE.unauthorized) throw error
+
+    const config = error.config
+    if (!config || isAuthPath(config.url) || config._retried) throw error
+
+    try {
+      refreshing ??= requestNewTokens()          // 이미 진행 중이면 그 결과를 함께 기다린다
+      const tokens = await refreshing
+      saveTokens(tokens.access_token, tokens.refresh_token)   // 회전된 토큰 2개 저장
+    } catch {
+      clearTokens()   // 저장소가 구독자에게 알림 → AuthContext 가 로그아웃 상태로 전환
+      throw error
+    } finally {
+      refreshing = null
+    }
+
+    // client(config) 가 아니라 client.request(config) 를 쓴다 (아래 주의 참고)
+    return client.request<unknown, AxiosResponse>({ ...config, _retried: true })
+  }
+}
 ```
 
 **실패는 모두 `ApiError`(= `Error` 파생) 로 던진다.** 화면은 `catch (err)` 에서 `err.code` 로 분기한다.
@@ -339,17 +396,15 @@ export async function login(body: LoginRequest, signal?: AbortSignal): Promise<T
 
 **`_retried` 플래그는 axios 모듈 확장이 필요하다.** `InternalAxiosRequestConfig`(인터셉터가 받는 타입)와
 `AxiosRequestConfig`(`client.request()` 에 넘기는 타입) **두 곳 모두**에 선언해야 한다 (`src/api/axios.d.ts`).
-재시도할 때 `client(config)` 대신 `client.request(config)` 를 쓰는 이유는, 인스턴스 호출 시그니처가
+재시도에 `client(config)` 대신 `client.request(config)` 를 쓰는 이유는, 인스턴스 호출 시그니처가
 `(url, config)` 와 `(config)` 두 가지라 객체 리터럴이 `url` 쪽 오버로드와 대조되어 타입 오류가 나기 때문이다.
-
-**인터셉터 등록 순서가 중요하다.** 응답 인터셉터는 등록한 순서대로 실행되므로, (1) 정규화가 먼저 `code` 를 해석해야 (2) 재발급이 401 을 알아본다.
 
 **재발급 실패 시 로그아웃 전달 방식.** 인터셉터는 `clearTokens()` 만 호출한다. `tokenStorage` 가 변경을 구독자에게 알리고, `useAccessToken`(`useSyncExternalStore`)이 이를 받아 `AuthContext` 의 `AuthStatus` 를 `anonymous` 로 바꿔 가드가 `/login` 으로 보낸다.
 이 방식을 쓰는 이유는 **`api/` 가 `store/AuthContext` 를 import 하면 순환 참조가 생기기 때문**이다(`AuthContext → api/auth → instance → interceptors → AuthContext`). `tokenStorage` 는 아무것도 import 하지 않는 끝점이라 양쪽이 안전하게 참조할 수 있다.
 
 로그인 API 의 401 은 폼에서 처리하고, 재발급 API 의 401 은 위 `catch` 에서 로그아웃으로 처리된다.
 
-**요청 취소.** 엔드포인트 함수는 선택적 `signal?: AbortSignal` 을 받아 axios 에 넘긴다. 화면을 벗어나면 진행 중인 요청을 취소하고, 취소는 위 (1) 에서 오류로 바꾸지 않아 사용자에게 에러가 보이지 않는다. 화면에서는 `useAbortableRequest` 훅으로 감싸 쓴다.
+**요청 취소.** 엔드포인트 함수는 선택적 `signal?: AbortSignal` 을 받아 axios 에 넘긴다. 화면을 벗어나면 진행 중인 요청을 취소하고, 취소는 정규화 단계에서 오류로 바꾸지 않아 사용자에게 에러가 보이지 않는다. 화면에서는 `useAbortableRequest` 훅으로 감싸 쓴다.
 
 **`refreshing` 변수 = 재발급 single-flight (중요).** refresh token 은 재발급마다 **회전**(이전 토큰 즉시 폐기)하므로,
 동시에 401 을 받은 요청들이 각자 재발급하면 뒤늦은 쪽이 이미 폐기된 토큰을 써서 **사용자가 로그아웃된다.**
