@@ -60,6 +60,18 @@ src/
 └── main.tsx     # 진입점
 ```
 
+**import 경로 규칙**
+
+`src` 를 가리키는 alias `@/` 를 사용한다. `../../` 로 거슬러 올라가지 않는다.
+
+```ts
+import { getAccessToken } from '@/utils/tokenStorage'   // O
+import { getAccessToken } from '../../utils/tokenStorage' // X
+```
+
+같은 폴더 안의 파일은 `./paths` 처럼 상대 경로를 그대로 쓴다.
+alias 설정은 **`tsconfig.app.json` 의 `paths`(타입 검사)와 `vite.config.ts` 의 `resolve.alias`(번들) 두 곳**에 있으며, 항상 같이 수정한다.
+
 **타입·인터페이스 규칙**
 
 타입은 상수·구현 파일과 섞지 않고 **타입 파일로 분리**한다. 두는 위치는 사용 범위로 정한다.
