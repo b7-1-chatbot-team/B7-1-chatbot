@@ -2,6 +2,7 @@ import axios from 'axios'
 
 import { attachToken } from './interceptors/attachToken'
 import { normalizeError, normalizeResponse } from './interceptors/normalize'
+import { createRefreshInterceptor } from './interceptors/refresh'
 
 /**
  * 프로젝트 공용 axios 인스턴스.
@@ -24,3 +25,7 @@ instance.interceptors.request.use(attachToken)
 // 응답 인터셉터는 등록한 순서대로 실행된다.
 // 형식 정규화가 먼저 code 를 해석해야, 뒤에 붙는 재발급 인터셉터가 401 을 알아본다.
 instance.interceptors.response.use(normalizeResponse, normalizeError)
+
+// 재발급은 실패 경로에서만 동작하므로 성공 핸들러를 넘기지 않는다.
+// 인스턴스를 인자로 넘기는 이유는 refresh.ts 가 이 파일을 import 하면 순환 참조가 되기 때문이다.
+instance.interceptors.response.use(undefined, createRefreshInterceptor(instance))

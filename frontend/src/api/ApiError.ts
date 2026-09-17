@@ -1,3 +1,5 @@
+import type { InternalAxiosRequestConfig } from 'axios'
+
 import { RESULT_CODE } from './types'
 
 /**
@@ -14,10 +16,20 @@ export class ApiError extends Error {
   /** 결과 코드. 서버에 닿지 못한 경우는 0 (RESULT_CODE.unreachable) */
   readonly code: number
 
-  constructor(code: number, message: string) {
+  /**
+   * 실패한 요청의 설정.
+   *
+   * 재발급 인터셉터가 401 을 받았을 때 **원래 요청을 그대로 다시 보내려면** 필요하다.
+   * 오류로 바꾸는 순간 요청 정보가 사라지므로 여기에 실어 전달한다.
+   * 화면에서는 쓰지 않는다.
+   */
+  readonly config?: InternalAxiosRequestConfig
+
+  constructor(code: number, message: string, config?: InternalAxiosRequestConfig) {
     super(message)
     this.name = 'ApiError'
     this.code = code
+    this.config = config
   }
 
   /** 서버에 닿지 못한 실패인가 (네트워크 끊김, 응답 형식이 아닌 경우) */

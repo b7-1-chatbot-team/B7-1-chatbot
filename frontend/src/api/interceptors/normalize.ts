@@ -39,7 +39,8 @@ export function normalizeResponse(response: AxiosResponse): AxiosResponse {
   }
 
   const message = (body.data as ApiFailureData | undefined)?.message ?? FALLBACK_MESSAGE
-  throw new ApiError(body.code, message)
+  // config 를 함께 싣는다. 재발급 인터셉터가 401 을 받았을 때 원래 요청을 다시 보내려면 필요하다
+  throw new ApiError(body.code, message, response.config)
 }
 
 /**
