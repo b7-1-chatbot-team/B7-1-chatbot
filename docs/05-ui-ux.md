@@ -286,8 +286,12 @@ instance.interceptors.response.use(
   (res) => {
     const body = res.data
     if (typeof body?.code !== 'number') throw UNREACHABLE   // 응답 형식이 아님 = 서버에 닿지 못함
-    if (body.code < 400) return body.data                   // 성공: data 만 반환
-    throw new ApiError(body.code, body.data?.message ?? '요청을 처리하지 못했습니다.')
+    if (body.code < 400) {
+      res.data = body.data        // 봉투를 벗겨 안쪽 data 로 교체하고 AxiosResponse 형태는 유지
+      return res
+    }
+    // config 를 함께 싣는다. 오류로 바꾸는 순간 요청 정보가 사라져 재시도할 수 없기 때문이다
+    throw new ApiError(body.code, body.data?.message ?? '요청을 처리하지 못했습니다.', res.config)
   },
   (error) => {
     if (axios.isCancel(error)) throw error                  // 요청 취소는 오류로 바꾸지 않는다
@@ -317,6 +321,26 @@ instance.interceptors.response.use(undefined, async (error) => {
 
 **실패는 모두 `ApiError`(= `Error` 파생) 로 던진다.** 화면은 `catch (err)` 에서 `err.code` 로 분기한다.
 인터셉터는 **형식 변환과 재발급까지만** 하고, "어떤 화면을 띄울지" 같은 비즈니스 분기는 하지 않는다.
+
+**성공 응답은 `AxiosResponse` 형태를 유지한다.** `data` 만 꺼내 반환하면 axios 의 선언 타입
+(`post<T>(): Promise<AxiosResponse<T>>`)과 실제 반환값이 어긋나, **타입 검사를 통과한 코드가 실행에서 깨지고**
+올바른 코드가 타입 오류로 막힌다. 피하려면 호출마다 캐스팅을 넣어야 한다.
+그래서 봉투만 벗기고 형태는 그대로 두며, 엔드포인트 함수가 `.data` 로 꺼내 화면에 넘긴다.
+
+```ts
+// src/api/auth.ts — 화면은 instance 를 직접 쓰지 않고 이 함수만 쓴다
+export async function login(body: LoginRequest, signal?: AbortSignal): Promise<TokenPair> {
+  const response = await instance.post<TokenPair>('/api/auth/login', body, { signal })
+  return response.data
+}
+```
+
+화면에서 쓰는 모습은 `const tokens = await login(...)` 로 동일하다. 차이는 통신 계층 안에만 있다.
+
+**`_retried` 플래그는 axios 모듈 확장이 필요하다.** `InternalAxiosRequestConfig`(인터셉터가 받는 타입)와
+`AxiosRequestConfig`(`client.request()` 에 넘기는 타입) **두 곳 모두**에 선언해야 한다 (`src/api/axios.d.ts`).
+재시도할 때 `client(config)` 대신 `client.request(config)` 를 쓰는 이유는, 인스턴스 호출 시그니처가
+`(url, config)` 와 `(config)` 두 가지라 객체 리터럴이 `url` 쪽 오버로드와 대조되어 타입 오류가 나기 때문이다.
 
 **인터셉터 등록 순서가 중요하다.** 응답 인터셉터는 등록한 순서대로 실행되므로, (1) 정규화가 먼저 `code` 를 해석해야 (2) 재발급이 401 을 알아본다.
 

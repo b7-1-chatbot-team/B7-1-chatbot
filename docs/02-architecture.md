@@ -105,16 +105,22 @@ flowchart TD
 │   ├── .env.development.example # 개발 모드 (npm run dev / build:dev)
 │   ├── .env.production.example  # 운영 모드 (npm run build)
 │   └── src/
-│       ├── api/                 # instance.ts(기본 설정·인터셉터 등록), interceptors/, auth·chat·logs.ts,
-│       │                        # ApiError.ts, types.ts (요청·응답 타입)
+│       ├── api/
+│       │   ├── instance.ts      # 기본 설정(baseURL·headers·timeout) + 인터셉터 등록만
+│       │   ├── interceptors/    # attachToken · normalize · refresh(single-flight)
+│       │   ├── auth.ts          # signup·login·refresh·logout·me (chat.ts, logs.ts 동일 구조)
+│       │   ├── ApiError.ts      # code·안내 문구·재시도용 config 를 담는 Error 파생
+│       │   ├── types.ts         # 요청·응답 타입 (docs/03-api.md 와 1:1)
+│       │   └── axios.d.ts       # _retried 플래그 모듈 확장
 │       ├── store/               # AuthContext (인증 상태 AuthStatus)
-│       ├── utils/               # tokenStorage.ts (토큰 읽기·쓰기·삭제 + 변경 구독)
-│       ├── hooks/               # useAccessToken, useAuth, useAbortableRequest
+│       ├── utils/               # tokenStorage.ts (토큰 읽기·쓰기·삭제 + 변경 구독, 아무것도 import 안 함)
+│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth, useAbortableRequest
 │       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의), guards.tsx
 │       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
 │       ├── components/          # 컴포넌트(*.tsx) + *.module.css
 │       ├── styles/              # reset.css(브라우저 기본값), global.css(:root 토큰·공통 기본값)
-│       └── types/               # 여러 화면이 공유하는 타입 (user.ts, chat.ts)
+│       ├── types/               # 여러 화면이 공유하는 타입 (user.ts, chat.ts)
+│       └── test/                # server.ts(MSW), setup.ts — 테스트는 *.test.ts 로 대상 옆에 둔다
 ├── .gitignore
 └── README.md
 ```
