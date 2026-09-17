@@ -181,7 +181,7 @@
 
 프론트엔드 **F1~F14 전체(관리자 화면 F10~F14 포함)는 이성준** 이 담당한다 ([09-team.md](09-team.md) §3, [11-open-issues.md](11-open-issues.md) G7).
 
-백엔드 트랙 분담과 팀원 이름 표기는 아직 정리 중이다 — [11-open-issues.md](11-open-issues.md) C1~C2, 관리자 백엔드(B15~B19) 담당은 G7.
+백엔드는 **성원모 = 인증·DB·인프라**(B1~B6, B12, B14, C1~C4, `require_admin`·관리자 계정 시드 포함), **박성현 = AI 파이프라인·관리자 API**(B7~B11, B13 로그 기록, **B15~B19 관리자 API 5종 + 관리자 조회 CRUD**)가 담당한다 ([09-team.md](09-team.md), [11-open-issues.md](11-open-issues.md) C2·G7).
 
 ---
 

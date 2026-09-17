@@ -1,16 +1,15 @@
 # Backend 프로젝트 구조 (담당별)
 
 > FastAPI · SQLAlchemy 2.0 · SQLite · JWT · httpx
-> 기준 문서: [docs/02-architecture.md](../docs/02-architecture.md) · [docs/09-team.md](../docs/09-team.md) · [docs/11-open-issues.md](../docs/11-open-issues.md) G7
-> 상태 기준일: 2026-09-17
+> 기준 문서: [docs/02-architecture.md](../docs/02-architecture.md) · [docs/09-team.md](../docs/09-team.md) · [docs/11-open-issues.md](../docs/11-open-issues.md)
+> 관리자 API(B15~B19)는 박성현 담당으로 조정 (기존 담당 미정 G7)
 
 ## 범례
 
 | 표시 | 담당 |
 |:----:|------|
 | 🟦 | **성원모** — 인증 · DB · 인프라 |
-| 🟩 | **박성현** — AI 파이프라인 |
-| ⬜ | 담당 미정 — 관리자 API (G7) |
+| 🟩 | **박성현** — AI 파이프라인 · 관리자 API |
 | 🟨 | 공용 파일 — 수정 시 채널 공지 (09-team) |
 
 | 상태 | 의미 |
@@ -45,27 +44,27 @@ backend/
 │   │   └── refresh_token.py     🟦 refresh_tokens
 │   │
 │   ├── crud/                    ── DB 질의 전담 (라우터는 DB 직접 접근 금지)
-│   │   ├── user.py              🟦 get · get_by_email · create   (+ ⬜ list_with_stats · count)
+│   │   ├── user.py              🟦 get · get_by_email · create   (+ 🟩 list_with_stats · count)
 │   │   ├── chat_log.py          🟦 create · recent_success_for_context · 내 로그 count/list
-│   │   │                           (+ ⬜ list_for_user · list_failures · stats)
+│   │   │                           (+ 🟩 list_for_user · list_failures · stats)
 │   │   ├── refresh_token.py     🟦 create · get_valid · delete · delete_expired
-│   │   └── server_log.py        🟦 create   (+ ⬜ list_by_request)
+│   │   └── server_log.py        🟦 create   (+ 🟩 list_by_request)
 │   │
 │   ├── schemas/                 ── 요청·응답 검증 (Pydantic)
 │   │   ├── auth.py              🟦 SignupRequest · LoginRequest · RefreshTokenRequest
 │   │   ├── chat.py              🟩 ChatRequest(1~1000자) · 챗 응답
-│   │   └── admin.py             ⬜ 관리자 응답
+│   │   └── admin.py             🟩 관리자 응답
 │   │
 │   ├── services/                ── 비즈니스 로직
 │   │   ├── auth_service.py      🟦 가입 · 로그인 · 재발급(회전) · 로그아웃 · 관리자 시드 · 만료 토큰 정리
 │   │   ├── ai_service.py        🟩 컨텍스트 구성 · Codyssey AI 호출 · 타임아웃 504 / 실패 502
-│   │   └── admin_service.py     ⬜ 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름
+│   │   └── admin_service.py     🟩 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름
 │   │
 │   └── routers/                 ── HTTP 엔드포인트
 │       ├── auth.py              🟦 /api/auth/signup · login · refresh · logout · me
 │       ├── me.py                🟦 /api/me/chats
 │       ├── chat.py              🟩 /api/chat
-│       └── admin.py             ⬜ /api/admin/*
+│       └── admin.py             🟩 /api/admin/*
 │
 ├── scripts/
 │   └── check_logs.sql           🟦 평가자용 DB 확인 SQL
@@ -92,13 +91,13 @@ backend/
 | 영역 | 파일 | 이슈 / 브랜치 | 상태 |
 |------|------|---------------|:----:|
 | 기본 구성 | `main.py`(CORS·예외 핸들러), `config.py`, `core/responses.py`, `requirements.txt`, 루트 `.gitignore` | #10 · PR #15 | ✅ |
-| DB | `database.py`, `core/timeutil.py`, `models/*`, `crud/*`, `scripts/check_logs.sql` | #11 · `feature/be-db` | 🔄 |
+| DB | `database.py`, `core/timeutil.py`, `models/*`, `crud/*`, `scripts/check_logs.sql` | #11 · PR #17 | 🔄 |
 | 인증 | `core/security.py`, `core/dependencies.py`, `schemas/auth.py`, `services/auth_service.py`, `routers/auth.py`, `main.py`(lifespan), `tests/test_auth.py` | #16 · `feature/be-auth-jwt` | 🔄 |
-| 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #18 · `feature/be-logs` | 🔄 |
+| 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #20 · `feature/be-logs` | 🔄 |
 | 배포 | Railway 서비스 설정, `CORS_ORIGINS`, Volume `/data` | `chore/deploy` | ⏳ |
 | 문서 | 루트 README 총괄 | `docs/*` | ⏳ |
 
-### 🟩 박성현 — AI 파이프라인
+### 🟩 박성현 — AI 파이프라인 · 관리자 API
 
 | 영역 | 파일 | 상태 |
 |------|------|:----:|
@@ -108,14 +107,10 @@ backend/
 | 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | ⏳ |
 | 로깅 | `core/logging.py` — `request_id`, 이벤트 4종을 로그 + `server_logs` 에 기록 | ⏳ |
 | PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | ⏳ |
+| 관리자 API | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | ⏳ |
+| 관리자 조회 CRUD | `crud.user.list_with_stats`·`count`, `crud.chat_log.list_for_user`·`list_failures`·`stats`, `crud.server_log.list_by_request` | ⏳ |
 
-### ⬜ 담당 미정 — 관리자 API (11-open-issues G7)
-
-| API | 파일 |
-|-----|------|
-| `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py`, crud 관리자 조회 함수 |
-
-> `require_admin` 의존성과 관리자 계정 시드(`ensure_admin`)는 인증 트랙(🟦)에서 이미 구현됨.
+> 관리자 API 는 `require_admin` 의존성(403)과 관리자 계정 시드(`ensure_admin`)를 사용한다 — 이 두 가지는 인증 트랙(🟦)에서 이미 구현됨.
 
 ---
 
@@ -127,6 +122,7 @@ flowchart LR
         CH[routers/chat.py]
         AI[services/ai_service.py]
         LG[core/logging.py]
+        AD[routers/admin.py<br/>services/admin_service.py]
     end
     subgraph 성원모["🟦 인증 · DB"]
         DEP[core/dependencies.py<br/>get_current_user]
@@ -142,6 +138,9 @@ flowchart LR
     AI -->|컨텍스트 조회·대화 저장| CR
     AI -->|AI_TIMEOUT_SECONDS 등| CFG
     LG -->|이벤트 저장| SL
+    AD -->|관리자만| DEP
+    AD -->|실패 기록·통계 조회| CR
+    AD -->|요청 흐름 조회| SL
 ```
 
 박성현 님이 가져다 쓰는 것:
@@ -158,6 +157,8 @@ flowchart LR
 | 서버 로그 저장 | `crud.server_log.create(db, request_id=…, level="INFO", event="ai_call_start", user_id=…, detail="…")` | `crud/server_log.py` |
 | 설정값 | `settings.copa_api_key` · `ai_timeout_seconds` · `ai_context_turns` · `max_message_length` | `config.py` |
 | 응답 시각 형식 | `to_kst_iso(log.created_at)` | `core/timeutil.py` |
+| 관리자 권한 | `admin: User = Depends(require_admin)` → 비로그인 401 · 일반 사용자 403 | `core/dependencies.py` |
+| 관리자 계정 | 백엔드 `.env` 의 `ADMIN_EMAIL`·`ADMIN_PASSWORD` 로 서버 시작 시 자동 생성 | `services/auth_service.py` |
 
 ---
 
@@ -165,7 +166,7 @@ flowchart LR
 
 | 파일 | 누가 무엇을 추가하나 | 충돌 방지 |
 |------|----------------------|-----------|
-| `app/main.py` | 🟦 CORS·lifespan·`auth`/`me` 라우터 · 🟩 `app.include_router(chat.router)` · ⬜ `admin.router` · 🟩 request_id 미들웨어 | 라우터 등록 줄만 추가, 수정 전 채널 공지 |
+| `app/main.py` | 🟦 CORS·lifespan·`auth`/`me` 라우터 · 🟩 `chat.router`·`admin.router` 등록 · 🟩 request_id 미들웨어 | 라우터 등록 줄만 추가, 수정 전 채널 공지 |
 | `requirements.txt` | 🟦 기본 의존성 · 🟩 PoC 삭제 시 `requests` 제거 | 버전 변경 시 공지 |
 | `.env` 키 | 🟦 JWT·DB·CORS·ADMIN_* · 🟩 COPA_API_KEY·AI_* | 키 목록은 docs/06-deployment 이 기준 |
 
@@ -181,7 +182,7 @@ flowchart LR
                    ├─ /api/chat     ─▶ routers/chat.py ─(get_current_user)─▶ services/ai_service.py       🟩
                    │                                         ├─▶ crud.chat_log (컨텍스트·저장) ─▶ SQLite
                    │                                         └─▶ Codyssey AI API (httpx, 30초)
-                   └─ /api/admin/*  ─▶ routers/admin.py ─(require_admin)─▶ services/admin_service.py      ⬜
+                   └─ /api/admin/*  ─▶ routers/admin.py ─(require_admin)─▶ services/admin_service.py      🟩
 ```
 
 ---
