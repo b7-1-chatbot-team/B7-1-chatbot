@@ -1,2 +1,0 @@
-# 여러 페이지·컴포넌트가 공유하는 타입을 두는 폴더 (예: user.ts, chat.ts)
-# 한 영역에서만 쓰는 타입은 그 폴더의 types.ts 에 둔다 (routes/types.ts, api/types.ts)

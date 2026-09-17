@@ -25,9 +25,26 @@ npm run dev                                    # http://localhost:5173
 | `npm run dev` | 개발 서버 (development 모드) |
 | `npm run build` | 타입 검사 + production 모드 빌드 → `dist` |
 | `npm run build:dev` | 타입 검사 + development 모드 빌드 |
+| `npm run test` | 단위 테스트 1회 실행 (`vitest run`) |
+| `npm run test:watch` | 단위 테스트 감시 모드 |
 | `npm run typecheck` | 타입 검사만 (`tsc -b`) |
 | `npm run lint` | oxlint |
 | `npm run preview` | 빌드 결과 미리보기 |
+
+## 테스트
+
+**Vitest** + **MSW**(네트워크 모킹) + **happy-dom**(DOM·localStorage 환경) 구성입니다.
+
+| 파일 | 역할 |
+|------|------|
+| `src/test/server.ts` | MSW 가짜 서버. 기본 핸들러 없이, 각 테스트가 `server.use(...)` 로 필요한 응답만 등록 |
+| `src/test/setup.ts` | 서버 기동·정리, 테스트마다 핸들러와 `localStorage` 초기화 |
+| `src/test/environment.test.ts` | 테스트 환경 자체 점검 (실패 시 개별 테스트가 아니라 설정을 먼저 확인) |
+
+- 테스트 파일은 `src/**/*.test.ts(x)` 로 두어 **검증 대상 옆에** 둡니다
+- `describe`·`it`·`expect` 는 전역으로 두지 않고 `vitest` 에서 직접 import 합니다
+- 등록하지 않은 요청은 **오류로 처리**합니다. 실제 네트워크로 나가 테스트가 조용히 통과하는 것을 막기 위해서입니다
+- 네트워크 계층에서 가로채는 MSW 를 쓰는 이유는, axios 어댑터를 바꿔치기하는 방식과 달리 **인터셉터를 실제로 통과**시킨 뒤 검증할 수 있기 때문입니다
 
 ## 환경변수
 
