@@ -53,9 +53,41 @@ npm run dev                                    # http://localhost:5173
 | 키 | 설명 |
 |----|------|
 | `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`) |
+| `VITE_ENABLE_MOCK` | `true` 면 백엔드 없이 MSW 로 API 를 모킹 (개발 모드 전용) |
 
 모드별로 읽는 파일이 다릅니다 — `npm run dev`·`build:dev` 는 `.env.development`, `npm run build` 는 `.env.production`.
 실제 `.env.*` 파일은 커밋하지 않고, 저장소에는 `*.example` 만 둡니다.
+
+## 백엔드 없이 화면 확인하기 (API 모킹)
+
+`.env.development` 에서 켜고 끕니다.
+
+```
+VITE_ENABLE_MOCK=true    # 백엔드 없이 프론트만 확인
+VITE_ENABLE_MOCK=false   # 실제 백엔드에 연결
+```
+
+켜면 `src/mocks/handlers.ts` 의 가짜 백엔드가 응답합니다. **고정 응답이 아니라 메모리에 상태를 두므로, 방금 가입한 계정으로 실제 로그인이 됩니다.**
+
+| 동작 | 비고 |
+|------|------|
+| 가입·로그인·로그아웃·내 정보 | `docs/03-api.md` 형식 그대로 |
+| access token 수명 | **30초** — 재발급과 single-flight 를 눈으로 확인하려고 짧게 두었습니다 |
+| refresh token 회전 | 재발급 시 이전 토큰을 폐기합니다 |
+| 첫 번째로 가입한 계정 | `role: admin` — 관리자 화면을 보려면 가장 먼저 가입하세요 |
+
+**오류 상황은 이메일 접두어로 강제합니다.** 실제 백엔드로는 재현이 번거로운 경우를 위한 것입니다.
+
+| 이메일 | 결과 |
+|--------|------|
+| `slow@example.com` | 응답 2초 지연 (로딩 표시 확인) |
+| `error500@example.com` | `code: 500` |
+| `error422@example.com` | `code: 422` |
+| `offline@example.com` | 네트워크 오류 → "서버에 연결할 수 없습니다" |
+
+모킹은 **개발 모드에서만** 동작합니다. `import.meta.env.DEV` 로 감싸 두어 운영 빌드에서는 코드 자체가 제거됩니다. `public/mockServiceWorker.js` 는 msw 가 생성한 파일이므로 직접 수정하지 않습니다.
+
+테스트(vitest)는 별도로 `src/test/server.ts`(`msw/node`)를 쓰며, 각 테스트가 직접 핸들러를 등록합니다.
 
 ## 구조
 
