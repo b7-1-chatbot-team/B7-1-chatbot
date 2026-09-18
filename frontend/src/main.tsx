@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 
+import { AuthProvider } from '@/store/AuthProvider'
 import App from './App'
 // reset 이 먼저, 그 위에 프로젝트 전역 스타일을 얹는다
 import './styles/reset.css'
@@ -16,7 +17,10 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      {/* 가드가 AuthStatus 를 읽어야 하므로 라우터 안쪽에서 인증 상태를 공급한다 */}
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )
