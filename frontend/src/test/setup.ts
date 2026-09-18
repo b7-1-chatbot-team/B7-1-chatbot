@@ -1,3 +1,5 @@
+// toBeDisabled·toHaveFocus 같은 DOM 단언을 expect 에 추가한다
+import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 
