@@ -2,11 +2,21 @@ import { useCallback, useRef, useState } from 'react'
 
 import { ApiError, isApiError } from '@/api/ApiError'
 
+/**
+ * 제출 결과.
+ *
+ * 성공·실패를 반환값의 모양으로 구분한다. 성공 여부를 별도 상태(error)로 판단하면
+ * 그 값이 **이전 렌더의 클로저**라 방금 실패를 알아채지 못한다.
+ * 반환 타입이 void 인 작업(로그인)도 이 형태면 안전하게 구분된다.
+ */
+export type SubmitResult<Result> =
+  | { ok: true; data: Result }
+  | { ok: false; error: ApiError | null }
+
 export interface Submission<Args extends unknown[], Result> {
-  /** 실행한다. 이미 진행 중이거나 실패하면 undefined 를 돌려준다 */
-  submit: (...args: Args) => Promise<Result | undefined>
+  submit: (...args: Args) => Promise<SubmitResult<Result>>
   isSubmitting: boolean
-  /** 마지막 실패. 화면은 error.code 로 분기한다 */
+  /** 마지막 실패. 화면 하단 안내처럼 렌더 중에 쓸 때 사용한다 */
   error: ApiError | null
   reset: () => void
 }
@@ -31,19 +41,20 @@ export function useSubmit<Args extends unknown[], Result>(
   const inFlight = useRef(false)
 
   const submit = useCallback(
-    async (...args: Args): Promise<Result | undefined> => {
-      if (inFlight.current) return undefined
+    async (...args: Args): Promise<SubmitResult<Result>> => {
+      // 이미 보내는 중이다. 오류가 아니므로 error 를 채우지 않는다
+      if (inFlight.current) return { ok: false, error: null }
 
       inFlight.current = true
       setIsSubmitting(true)
       setError(null)
 
       try {
-        return await action(...args)
+        return { ok: true, data: await action(...args) }
       } catch (caught) {
         if (!isApiError(caught)) throw caught
         setError(caught)
-        return undefined
+        return { ok: false, error: caught }
       } finally {
         inFlight.current = false
         setIsSubmitting(false)

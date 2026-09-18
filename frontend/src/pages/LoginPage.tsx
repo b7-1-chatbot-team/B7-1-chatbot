@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
@@ -39,19 +38,19 @@ export default function LoginPage() {
 
   const canSubmit = email.isValid && password.isValid
 
-  // 비밀번호가 틀렸으니 그 필드만 비운다. 이메일까지 지우면 다시 입력해야 한다
-  useEffect(() => {
-    if (error?.code !== RESULT_CODE.unauthorized) return
-    password.setValue('')
-  }, [error, password])
-
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (!canSubmit) return
 
+    // 성공 여부는 반환값으로 판단한다. login 은 성공 시 void 라 값으로는 구분할 수 없고,
+    // error 상태는 이전 렌더의 값이라 방금 실패를 알아채지 못한다
     const result = await submit(email.value.trim(), password.value)
-    // useSubmit 은 실패 시 undefined 를 돌려준다. login 은 성공 시 void 이므로 error 로 판단한다
-    if (result === undefined && error) return
+
+    if (!result.ok) {
+      // 비밀번호가 틀렸으니 그 필드만 비운다. 이메일까지 지우면 다시 입력해야 한다
+      if (result.error?.code === RESULT_CODE.unauthorized) password.setValue('')
+      return
+    }
 
     // 원래 가려던 경로가 있으면 그곳으로, 없으면 챗으로
     navigate(state.from?.pathname ?? PATHS.chat, { replace: true })

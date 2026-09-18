@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { RESULT_CODE } from '@/api/types'
 import { signup } from '@/api/auth'
+import { RESULT_CODE } from '@/api/types'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
 import { useField } from '@/hooks/useField'
@@ -28,26 +28,29 @@ export default function SignupPage() {
 
   const canSubmit = email.isValid && password.isValid && nickname.isValid
 
-  // 이메일 중복은 이메일 필드의 문제다. 폼 전체 오류로 두면 어디를 고쳐야 할지 알기 어렵다
-  useEffect(() => {
-    if (error?.code !== RESULT_CODE.conflict) return
-    email.setServerError(error.message)
-    emailInputRef.current?.focus()
-  }, [error, email])
-
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (!canSubmit) return
 
-    const created = await submit({
+    const result = await submit({
       email: email.value.trim(),
       password: password.value,
       nickname: nickname.value.trim(),
     })
-    if (!created) return
+
+    if (!result.ok) {
+      // 이메일 중복은 이메일 필드의 문제다. 폼 전체 오류로 두면 어디를 고쳐야 할지 알기 어렵다.
+      // effect 가 아니라 여기서 처리한다. effect 로 두면 값을 고쳐 오류를 지워도
+      // 의존성이 바뀌며 다시 실행되어 오류가 되살아난다.
+      if (result.error?.code === RESULT_CODE.conflict) {
+        email.setServerError(result.error.message)
+        emailInputRef.current?.focus()
+      }
+      return
+    }
 
     // 방금 가입한 이메일을 로그인 화면에 넘겨 다시 입력하지 않게 한다
-    navigate(PATHS.login, { replace: true, state: { signedUpEmail: created.email } })
+    navigate(PATHS.login, { replace: true, state: { signedUpEmail: result.data.email } })
   }
 
   return (
