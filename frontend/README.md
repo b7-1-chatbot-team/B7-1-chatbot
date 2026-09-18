@@ -61,21 +61,32 @@ npm run dev                                    # http://localhost:5173
 
 ```
 src/
-├── api/         # axios 인스턴스 · 인터셉터 · API 호출 함수
-│   └── types.ts # API 요청·응답 타입 (docs/03-api.md 와 1:1)
-├── components/  # 공용 컴포넌트 + *.module.css
-├── contexts/    # AuthContext 등 전역 상태
-├── pages/       # 라우트 단위 화면
-├── styles/      # 전역 CSS
-│   ├── reset.css  # 브라우저 기본값 정리 (Josh Comeau Custom CSS Reset 기반)
-│   └── global.css # :root 토큰 + 프로젝트 공통 기본값
-├── routes/      # 라우팅
-│   ├── paths.ts # 경로 상수 PATHS
-│   ├── types.ts # 경로 관련 타입
-│   └── index.tsx# 라우트 정의 (경로 - 페이지 연결)
-├── App.tsx      # 앱 껍데기 (라우트는 routes 에서 가져옴)
-└── main.tsx     # 진입점
+├── api/             # 통신 계층
+│   ├── instance.ts  # axios.create + 인터셉터 등록만 (호출 함수는 두지 않는다)
+│   ├── interceptors/# attachToken · normalize · refresh(single-flight)
+│   ├── auth.ts      # 엔드포인트 함수 (chat.ts, logs.ts 동일)
+│   ├── ApiError.ts  # code · 안내 문구 · 재시도용 config
+│   ├── types.ts     # API 요청·응답 타입 (docs/03-api.md 와 1:1)
+│   └── axios.d.ts   # _retried 플래그 모듈 확장
+├── utils/           # tokenStorage.ts — 토큰 읽기·쓰기·삭제 + 변경 구독
+├── hooks/           # useAccessToken(토큰 구독) · useAuth(인증 상태 소비)
+├── store/           # authContext.ts · AuthProvider.tsx · types.ts (AuthStatus)
+├── components/      # 공용 컴포넌트 + *.module.css
+├── pages/           # 라우트 단위 화면
+├── styles/          # 전역 CSS
+│   ├── reset.css    # 브라우저 기본값 정리 (Josh Comeau Custom CSS Reset 기반)
+│   └── global.css   # :root 토큰 + 프로젝트 공통 기본값
+├── routes/          # 라우팅
+│   ├── paths.ts     # 경로 상수 PATHS
+│   ├── types.ts     # 경로 관련 타입
+│   ├── guards.tsx   # RequireAuth · RequireAdmin · GuestOnly
+│   └── index.tsx    # 라우트 정의 (경로 - 페이지 연결)
+├── test/            # server.ts(MSW) · setup.ts — 테스트는 *.test.ts 로 대상 옆에
+├── App.tsx          # 앱 껍데기 (라우트는 routes 에서 가져옴)
+└── main.tsx         # 진입점 (BrowserRouter → AuthProvider → App)
 ```
+
+**`api/` 는 `store/` 를 import 하지 않습니다.** 인터셉터가 `AuthContext` 를 직접 부르면 `AuthContext → api/auth → instance → interceptors → AuthContext` 순환 참조가 됩니다. 재발급이 최종 실패하면 `clearTokens()` 만 호출하고, 토큰 변경 구독을 통해 인증 상태가 정리됩니다 (`docs/12-decisions.md` §17).
 
 **import 경로 규칙**
 

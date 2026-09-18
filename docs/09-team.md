@@ -131,7 +131,7 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 |------|------|---------------------------|-------------|
 | **성원모** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Railway 배포, README |
 | **박성현** | AI 파이프라인 · 관리자 API | A1~A12, 관리자 API(features.md B15~B19) | `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구, `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py`, 관리자 조회 CRUD |
-| **이성준** | 프론트엔드 (React + TypeScript) | **F1~F14 전체** ([features.md](features.md) 기준, **관리자 화면 F10~F14 포함**) | `tsconfig.json`(strict), `src/api/`(인터셉터·응답 타입), `src/contexts/AuthContext`, `src/pages/{Login,Signup,Chat,Logs,Admin}`, `src/components/`, CSS Modules·디자인 토큰, 라우팅 가드(`RequireAuth`·`RequireAdmin`) |
+| **이성준** | 프론트엔드 (React + TypeScript) | **F1~F14 전체** ([features.md](features.md) 기준, **관리자 화면 F10~F14 포함**) | `tsconfig.app.json`(strict)·`vite.config.ts`(alias·test), `src/api/`(인스턴스·인터셉터·엔드포인트·응답 타입), `src/utils/tokenStorage.ts`, `src/hooks/`, `src/store/`(AuthProvider·AuthStatus), `src/routes/`(경로 상수·가드), `src/pages/{Login,Signup,Chat,Logs,Admin}`, `src/components/`, `src/styles/`(reset·global), `src/test/`(vitest·MSW), CSS Modules·디자인 토큰 |
 
 **의존 관계 / 순서**
 

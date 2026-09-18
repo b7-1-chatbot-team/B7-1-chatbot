@@ -112,18 +112,23 @@ flowchart TD
 │       │   ├── ApiError.ts      # code·안내 문구·재시도용 config 를 담는 Error 파생
 │       │   ├── types.ts         # 요청·응답 타입 (docs/03-api.md 와 1:1)
 │       │   └── axios.d.ts       # _retried 플래그 모듈 확장
-│       ├── store/               # AuthContext (인증 상태 AuthStatus)
+│       ├── store/
+│       │   ├── authContext.ts   # Context 객체 (컴포넌트와 파일을 나눈다)
+│       │   ├── AuthProvider.tsx # 토큰 구독·사용자 복원·login/logout
+│       │   └── types.ts         # AuthStatus, AuthContextValue
 │       ├── utils/               # tokenStorage.ts (토큰 읽기·쓰기·삭제 + 변경 구독, 아무것도 import 안 함)
-│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth, useAbortableRequest
+│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth
 │       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의), guards.tsx
 │       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
 │       ├── components/          # 컴포넌트(*.tsx) + *.module.css
 │       ├── styles/              # reset.css(브라우저 기본값), global.css(:root 토큰·공통 기본값)
-│       ├── types/               # 여러 화면이 공유하는 타입 (user.ts, chat.ts)
+│       ├── types/               # 여러 화면이 공유하는 타입 (user.ts)
 │       └── test/                # server.ts(MSW), setup.ts — 테스트는 *.test.ts 로 대상 옆에 둔다
 ├── .gitignore
 └── README.md
 ```
+
+아직 만들지 않은 것: `hooks/useAbortableRequest`(요청 취소 공통 훅)와 `types/chat.ts` 는 화면 이슈에서 추가한다.
 
 프론트엔드 타입은 구현 파일과 섞지 않고 타입 파일로 분리한다. **여러 페이지·컴포넌트가 공유하는 타입은 `src/types/`** 에, **한 영역에서만 쓰는 타입은 그 폴더의 `types.ts`**(`routes/types.ts`, `api/types.ts`) 에 둔다. 한 컴포넌트 전용 props 는 그 컴포넌트 파일 안에 둔다.
 
@@ -160,8 +165,11 @@ flowchart TD
 | `app/routers/chat.py` | `POST /api/chat` |
 | `app/routers/me.py` | `GET /api/me/chats` |
 | `app/routers/admin.py` | `GET /api/admin/*` |
-| `frontend/src/api/` | axios 인스턴스 + 인터셉터 (Authorization 자동 첨부, `code` 판단, 401 처리, 봉투 없는 응답 처리) |
-| `frontend/src/contexts/AuthContext` | 인증 상태 전역 관리, 앱 로드 시 `/api/auth/me` (role 포함) |
+| `frontend/src/api/` | axios 인스턴스 + 인터셉터 (Authorization 자동 첨부, `code` 판단, 401 재발급 single-flight, 봉투 없는 응답 처리) |
+| `frontend/src/utils/tokenStorage.ts` | 토큰 읽기·쓰기·삭제 + **변경 구독**. 아무것도 import 하지 않는 끝점 |
+| `frontend/src/hooks/` | `useAccessToken`(토큰 구독) · `useAuth`(인증 상태 소비) |
+| `frontend/src/store/AuthProvider.tsx` | 인증 상태 전역 관리, 앱 로드 시 `/api/auth/me` (role 포함). Context 객체는 `store/authContext.ts` 에 분리 |
+| `frontend/src/routes/guards.tsx` | `RequireAuth` · `RequireAdmin` · `GuestOnly` |
 | `frontend/src/pages/` | Login · Signup · Chat · Logs · Admin |
 
 ## 4. 인증 방식 결정: JWT vs 서버 측 세션
