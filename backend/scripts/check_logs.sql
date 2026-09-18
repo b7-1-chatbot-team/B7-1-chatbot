@@ -1,4 +1,4 @@
--- DB 확인용 SQL (04-database §DB 확인 방법)
+-- DB 확인용 SQL (04-database DB 확인 방법)
 -- 평가자·팀원이 API 없이 SQLite 파일을 직접 열어 저장 상태를 확인할 때 사용한다.
 -- 실행: sqlite3 data/app.db < scripts/check_logs.sql      (backend/ 에서)
 -- 결과에 컬럼 이름을 표시하고 표 형태로 정렬해서 출력 (sqlite3 CLI 설정)

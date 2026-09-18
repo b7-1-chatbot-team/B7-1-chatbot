@@ -1,4 +1,4 @@
-# 백엔드 런타임 의존성 (06-deployment §2 목표 구성). 설치: pip install -r requirements.txt
+# 백엔드 런타임 의존성 (06-deployment 목표 구성). 설치: pip install -r requirements.txt
 # 버전을 고정해 로컬·Railway 에서 같은 환경으로 실행되게 한다.
 
 # 웹 프레임워크와 ASGI 서버 — uvicorn app.main:app 으로 실행
