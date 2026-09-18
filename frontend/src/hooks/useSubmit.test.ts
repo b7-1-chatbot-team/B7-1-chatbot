@@ -6,18 +6,31 @@ import { RESULT_CODE } from '@/api/types'
 import { useSubmit } from './useSubmit'
 
 describe('useSubmit — 성공', () => {
-  it('결과를 그대로 돌려준다', async () => {
+  it('ok:true 와 결과를 함께 돌려준다', async () => {
     const action = vi.fn(async (value: string) => `결과:${value}`)
     const { result } = renderHook(() => useSubmit(action))
 
-    let returned: string | undefined
+    let returned: Awaited<ReturnType<typeof result.current.submit>> | undefined
     await act(async () => {
       returned = await result.current.submit('입력')
     })
 
-    expect(returned).toBe('결과:입력')
+    expect(returned).toEqual({ ok: true, data: '결과:입력' })
     expect(action).toHaveBeenCalledWith('입력')
     expect(result.current.error).toBeNull()
+  })
+
+  it('반환 타입이 void 인 작업도 ok 로 성공을 구분할 수 있다', async () => {
+    const action = vi.fn(async () => undefined)
+    const { result } = renderHook(() => useSubmit(action))
+
+    let returned: Awaited<ReturnType<typeof result.current.submit>> | undefined
+    await act(async () => {
+      returned = await result.current.submit()
+    })
+
+    // data 가 undefined 여도 ok 로 성공임이 드러난다
+    expect(returned?.ok).toBe(true)
   })
 
   it('진행 중에는 isSubmitting 이 true 다', async () => {
@@ -54,7 +67,7 @@ describe('useSubmit — 중복 제출', () => {
     )
     const { result } = renderHook(() => useSubmit(action))
 
-    let second: unknown = 'not-run'
+    let second: Awaited<ReturnType<typeof result.current.submit>> | undefined
     await act(async () => {
       void result.current.submit()
       // 상태 갱신을 기다리지 않고 곧바로 다시 누른 상황
@@ -62,7 +75,8 @@ describe('useSubmit — 중복 제출', () => {
     })
 
     expect(action).toHaveBeenCalledTimes(1)
-    expect(second).toBeUndefined()
+    // 오류가 아니라 무시된 것이므로 error 는 비어 있다
+    expect(second).toEqual({ ok: false, error: null })
 
     await act(async () => {
       finish?.()
@@ -85,19 +99,20 @@ describe('useSubmit — 중복 제출', () => {
 })
 
 describe('useSubmit — 오류', () => {
-  it('ApiError 는 보관하고 undefined 를 돌려준다', async () => {
+  it('ApiError 는 반환값과 상태 양쪽에 담는다', async () => {
     const action = vi.fn(async () => {
       throw new ApiError(RESULT_CODE.conflict, '이미 가입된 이메일입니다.')
     })
     const { result } = renderHook(() => useSubmit(action))
 
-    let returned: unknown = 'not-set'
+    let returned: Awaited<ReturnType<typeof result.current.submit>> | undefined
     await act(async () => {
       returned = await result.current.submit()
     })
 
-    expect(returned).toBeUndefined()
-    expect(result.current.error?.code).toBe(RESULT_CODE.conflict)
+    expect(returned?.ok).toBe(false)
+    // 반환값으로 바로 받을 수 있어야 이전 렌더의 상태를 보지 않는다
+    expect(returned?.ok === false && returned.error?.code).toBe(RESULT_CODE.conflict)
     expect(result.current.error?.message).toBe('이미 가입된 이메일입니다.')
     expect(result.current.isSubmitting).toBe(false)
   })
