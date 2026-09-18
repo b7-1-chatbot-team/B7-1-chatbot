@@ -1,3 +1,0 @@
-# 전역 상태를 두는 폴더 (AuthContext 등)
-# 토큰 읽기·쓰기는 React 밖에서도 쓰이므로 utils/tokenStorage.ts 에 둔다
-# 이 폴더는 인증 상태 관리 이슈에서 채운다
