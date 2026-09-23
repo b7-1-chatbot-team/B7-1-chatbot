@@ -9,17 +9,17 @@
 
 | 구분 | 기술 | 용도 / 근거 |
 |------|------|-------------|
-| 언어 | **Python 3.11+** | mission §5 필수 |
-| 프레임워크 | **FastAPI** | mission §5 필수. 웹 서버·라우팅 |
+| 언어 | **Python 3.11+** | mission 5절 필수 |
+| 프레임워크 | **FastAPI** | mission 5절 필수. 웹 서버·라우팅 |
 | ASGI 서버 | **Uvicorn** | 애플리케이션 실행 |
 | ORM | **SQLAlchemy 2.0** | DB 접근 계층 분리 |
 | DB | **SQLite** | 사용자 / 대화 로그 / 서버 로그 저장. 파일 1개라 평가자가 `sqlite3` 로 바로 확인 가능 |
 | 스키마 검증 | **Pydantic v2** | 요청·응답 형식 관리 |
-| 설정 관리 | **pydantic-settings**, python-dotenv | 환경변수 로딩 (mission §6) |
+| 설정 관리 | **pydantic-settings**, python-dotenv | 환경변수 로딩 (mission 6절) |
 | 비밀번호 해싱 | **bcrypt** | 단방향·salt 내장. 평문 저장 금지 |
 | 인증 | **PyJWT** | 토큰 발급·검증 |
 | HTTP 클라이언트 | **httpx `AsyncClient`** | AI API 비동기 호출, 타임아웃 제어 (현재 코드의 `requests` 는 교체 대상) |
-| 로깅 | 표준 `logging` + `server_logs` 테이블 | 운영 이벤트 추적 (mission §4-5), 관리자 요청 흐름 조회 |
+| 로깅 | 표준 `logging` + `server_logs` 테이블 | 운영 이벤트 추적 (mission 4-5절), 관리자 요청 흐름 조회 |
 
 ### 프론트엔드
 
@@ -31,7 +31,7 @@
 | 라우팅 | **React Router** |
 | HTTP | **axios** |
 | 상태 관리 | **Context API** (전역 상태가 `user`·인증 상태뿐이라 별도 라이브러리를 쓰지 않는다) |
-| 서버 데이터 | **직접 관리** (TanStack Query 미도입 — [12-decisions.md](12-decisions.md) §17) |
+| 서버 데이터 | **직접 관리** (TanStack Query 미도입 — [12-decisions.md 17. 토큰 변경을 useSyncExternalStore 로 구독](12-decisions.md#17-토큰-변경을-usesyncexternalstore-로-구독)) |
 | 스타일 | **CSS Modules** (`*.module.css`, Vite 기본 지원) + 전역 CSS 변수 |
 | 테스트 | **Vitest** + **MSW**(네트워크 모킹) + **happy-dom**(DOM·localStorage 환경) |
 | import 경로 | alias **`@/`** → `src` (`tsconfig.app.json` 의 `paths` + `vite.config.ts` 의 `resolve.alias`) |
@@ -77,7 +77,7 @@ flowchart TD
 
 프론트와 백엔드는 Railway 에서 **서로 다른 도메인**으로 서비스된다. 따라서
 - 백엔드에 **CORS 설정이 필수**다 (`CORS_ORIGINS` 에 개발 서버 + Railway 프론트 도메인).
-- 쿠키 대신 **Authorization 헤더 기반 JWT** 를 쓴다 (§4).
+- 쿠키 대신 **Authorization 헤더 기반 JWT** 를 쓴다 ([4. 인증 방식 결정: JWT vs 서버 측 세션](#4-인증-방식-결정-jwt-vs-서버-측-세션)).
 - SQLite 파일은 재배포에도 남도록 **Volume(`/data`)** 에 둔다.
 
 ## 3. 디렉터리 구조
@@ -177,7 +177,7 @@ flowchart TD
 ### 결론: **JWT Bearer access token (PyJWT, HS256) + DB 저장 refresh token**
 
 - access token 은 짧게, 서버에 저장하지 않음 → 요청마다 DB 조회 없이 검증
-- refresh token 은 해시로 DB 에 저장 → 재발급·**로그아웃 시 서버에서 폐기** 가능 ([03-api.md](03-api.md) §1-4·§1-5)
+- refresh token 은 해시로 DB 에 저장 → 재발급·**로그아웃 시 서버에서 폐기** 가능 ([03-api.md 1-4. 토큰 재발급](03-api.md#1-4-토큰-재발급)·[1-5. 로그아웃](03-api.md#1-5-로그아웃))
 
 ### 비교
 
@@ -193,7 +193,7 @@ flowchart TD
 ### 이 프로젝트에서 JWT 를 택한 이유
 
 1. **프론트와 백엔드가 Railway 에서 서로 다른 도메인이다.** 쿠키 인증은 크로스 사이트 쿠키가 되어 `SameSite=None; Secure` 와 CORS `credentials` 를 모두 맞춰야 하고, 브라우저의 서드파티 쿠키 차단 정책에 영향을 받는다. 헤더 방식은 이 문제가 없다.
-2. 구현 범위가 작다. 팀 3인이 병렬로 작업하는 상황에서 **인증 dependency 하나**로 챗·로그·관리자 라우터가 재사용할 수 있다 ([features.md](features.md) B6).
+2. 구현 범위가 작다. 백엔드·프론트가 병렬로 작업하는 상황에서 **인증 dependency 하나**로 챗·로그·관리자 라우터가 재사용할 수 있다 ([features.md](features.md) B6).
 3. CSRF 대응이 불필요해 백엔드 보안 작업량이 줄어든다.
 
 ### 채택에 따른 약점과 보완
@@ -202,7 +202,7 @@ flowchart TD
 |------|------|
 | 로그아웃 후에도 access token 이 만료 전까지 유효 | access token 수명을 **15분**으로 짧게(`JWT_EXPIRE_MINUTES=15`), 로그아웃 시 **서버가 refresh token 행을 삭제**해 재발급 차단, 프론트는 두 토큰 즉시 삭제 |
 | refresh token 탈취 | DB 에는 SHA-256 해시만 저장, 재발급 시 회전으로 이전 토큰 무효화, 만료 **1일**(`REFRESH_TOKEN_EXPIRE_DAYS=1`) |
-| XSS 로 localStorage 토큰 탈취 | 저장 위치는 **`localStorage` 확정**(A15). 해시·암호화 저장은 방어가 되지 않으므로 ① XSS 예방 — React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용, AI 답변도 텍스트 렌더링), 외부 스크립트 미삽입, 의존성 최소화 ② 피해 축소 — access 15분·refresh 회전·로그아웃 시 서버 폐기 ([12-decisions.md](12-decisions.md) §4) |
+| XSS 로 localStorage 토큰 탈취 | 저장 위치는 **`localStorage` 확정**(A15). 해시·암호화 저장은 방어가 되지 않으므로 ① XSS 예방 — React 기본 이스케이프 유지(`dangerouslySetInnerHTML` 미사용, AI 답변도 텍스트 렌더링), 외부 스크립트 미삽입, 의존성 최소화 ② 피해 축소 — access 15분·refresh 회전·로그아웃 시 서버 폐기 ([12-decisions.md 4. 토큰을 프론트에 저장하는 위치 — 위험성과 대안](12-decisions.md#4-토큰을-프론트에-저장하는-위치--위험성과-대안)) |
 | 관리자 권한 강등 후에도 토큰으로 접근 | 토큰에 role 을 넣지 않고 `require_admin` 이 **매 요청 DB 의 `users.role` 을 확인** |
 | `JWT_SECRET_KEY` 유출 시 전체 토큰 위조 | 키는 `.env` 로만 주입, 저장소 커밋 금지, Railway Variables 로 설정 |
 | 알고리즘 혼동 공격(`alg:none` 등) | 디코드 시 `algorithms=["HS256"]` 을 **명시적으로 고정** |
@@ -211,7 +211,7 @@ flowchart TD
 
 ## 5. 내부 처리 절차
 
-모든 응답은 **HTTP 200 + `{code, data}`** 이다 ([03-api.md](03-api.md) §0). 아래 다이어그램의 `code:` 는 body 의 값이다.
+모든 응답은 **HTTP 200 + `{code, data}`** 이다 ([03-api.md 0. 공통 규약](03-api.md#0-공통-규약)). 아래 다이어그램의 `code:` 는 body 의 값이다.
 
 ### 5-1. 회원가입 `POST /api/auth/signup`
 
@@ -338,7 +338,7 @@ sequenceDiagram
 | 타임아웃 | 호출 전체를 `asyncio.timeout(AI_TIMEOUT_SECONDS)`(30초)로 감싸고 httpx 타임아웃도 설정 | httpx 타임아웃은 연결·읽기 **단계별**로 적용되므로 전체 대기 상한을 따로 둔다 |
 | 예외 변환 | `TimeoutException`→504, 나머지→502 | 사용자에게는 두 코드만 노출, 상세 원인은 로그 `reason=` 으로 |
 | 실패 저장 | AI 실패도 `chat_logs` 에 `status=error` 로 저장 | 관리자 "AI 실패 기록"·통계 |
-| 서버 유지 | 예외를 잡아 봉투 응답으로 변환 | **AI 실패로 서버가 종료되면 안 됨** (mission §4-5) |
+| 서버 유지 | 예외를 잡아 봉투 응답으로 변환 | **AI 실패로 서버가 종료되면 안 됨** (mission 4-5절) |
 | 재시도 | **서버 자동 재시도 없음.** 실패를 즉시 안내하고 사용자가 [다시 시도] 버튼으로 재요청 | 쿼터 중복 소모·대기시간 누적 방지, 사용자가 상황을 알고 선택 ([12-decisions.md](12-decisions.md)) |
 | 비동기 | `httpx.AsyncClient` + `await` | 대기 중 다른 요청 처리 |
 | 로그 내용 | 질문 **원문 미기록**, 길이/식별자만 | 로그 파일·`server_logs` 개인정보 노출 방지 |
