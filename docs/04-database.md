@@ -1,6 +1,6 @@
 # 04. DB 구조
 
-> 관련 문서: [03-api.md](03-api.md) §5 · [02-architecture.md](02-architecture.md)
+> 관련 문서: [03-api.md 5. 연관 DB 스키마 (요약)](03-api.md#5-연관-db-스키마-요약) · [02-architecture.md](02-architecture.md)
 
 - DB: **SQLite** (로컬 `DATABASE_URL=sqlite:///./data/app.db`, Railway `sqlite:////data/app.db` — Volume 마운트 경로)
 - ORM: **SQLAlchemy 2.0** (`Mapped` / `mapped_column` 스타일)
@@ -51,7 +51,7 @@ erDiagram
     }
 ```
 
-access token(JWT)은 서버에 저장하지 않는다. **refresh token 만 해시로 `refresh_tokens` 에 저장**해 재발급·로그아웃 폐기에 쓴다 (근거: [02-architecture.md](02-architecture.md) §4, [03-api.md](03-api.md) §1-4·§1-5).
+access token(JWT)은 서버에 저장하지 않는다. **refresh token 만 해시로 `refresh_tokens` 에 저장**해 재발급·로그아웃 폐기에 쓴다 (근거: [02-architecture.md 4. 인증 방식 결정: JWT vs 서버 측 세션](02-architecture.md#4-인증-방식-결정-jwt-vs-서버-측-세션), [03-api.md 1-4. 토큰 재발급](03-api.md#1-4-토큰-재발급)·[1-5. 로그아웃](03-api.md#1-5-로그아웃)).
 
 ## 테이블 상세
 
@@ -223,7 +223,7 @@ CREATE INDEX ix_refresh_tokens_expires_at ON refresh_tokens (expires_at);
 
 ## CRUD 계층 분리
 
-라우터에는 DB 로직을 두지 않는다 ([02-architecture.md](02-architecture.md) §3 — CRUD 계층).
+라우터에는 DB 로직을 두지 않는다 ([02-architecture.md 3. 디렉터리 구조](02-architecture.md#3-디렉터리-구조) — CRUD 계층).
 
 | 파일 | 함수 | 역할 |
 |------|------|------|
@@ -247,7 +247,7 @@ CREATE INDEX ix_refresh_tokens_expires_at ON refresh_tokens (expires_at);
 
 평가자가 아래 중 원하는 방법으로 확인할 수 있다.
 
-1. **로그 조회 API**: `GET /api/me/chats`, 관리자 `GET /api/admin/*` — [03-api.md](03-api.md) §3·§4
+1. **로그 조회 API**: `GET /api/me/chats`, 관리자 `GET /api/admin/*` — [03-api.md 3. 대화 로그](03-api.md#3-대화-로그)·[4. 관리자](03-api.md#4-관리자-필수--mission-2-2절-관리자내부-로그-확인-화면-4-4절-관리자-조회-api화면)
 2. **화면**: 로그인 → "내 대화 로그" / 관리자 계정 → **"관리자" 화면** — [05-ui-ux.md](05-ui-ux.md)
 3. **SQL 스크립트**: `sqlite3 backend/data/app.db < backend/scripts/check_logs.sql`
 

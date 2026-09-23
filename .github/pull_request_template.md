@@ -14,7 +14,7 @@ close #
 
 ## 관련 요구사항
 
-- mission: ex) §4-2 회원가입 및 로그인
+- mission: ex) 4-2절 회원가입 및 로그인
 - features.md: ex) B3, F2
 
 ---

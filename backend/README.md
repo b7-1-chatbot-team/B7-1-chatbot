@@ -2,14 +2,15 @@
 
 > FastAPI · SQLAlchemy 2.0 · SQLite · JWT · httpx
 > 기준 문서: [docs/02-architecture.md](../docs/02-architecture.md) · [docs/09-team.md](../docs/09-team.md) · [docs/11-open-issues.md](../docs/11-open-issues.md)
-> 관리자 API(B15~B19)는 박성현 담당으로 조정 (기존 담당 미정 G7)
+> 2026-09-23 박성현 팀 이탈 → **백엔드 전체를 성원모가 담당** (AI 파이프라인·관리자 API 인수, docs/11-open-issues C10)
+> 아래 🟦·🟩 는 담당자가 아니라 **작업 영역** 구분이다 (둘 다 성원모)
 
 ## 범례
 
-| 표시 | 담당 |
+| 표시 | 영역 (담당) |
 |:----:|------|
-| 🟦 | **성원모** — 인증 · DB · 인프라 |
-| 🟩 | **박성현** — AI 파이프라인 · 관리자 API |
+| 🟦 | 인증 · DB · 인프라 (**성원모**) |
+| 🟩 | AI 파이프라인 · 관리자 API (**성원모**, 박성현 이탈로 인수) |
 | 🟨 | 공용 파일 — 수정 시 채널 공지 (09-team) |
 
 | 상태 | 의미 |
@@ -84,9 +85,9 @@ backend/
 
 ---
 
-## 2. 담당별 파일 · 진행 상태
+## 2. 영역별 파일 · 진행 상태
 
-### 🟦 성원모 — 인증 · DB · 인프라
+### 🟦 인증 · DB · 인프라 (성원모)
 
 | 영역 | 파일 | 이슈 / 브랜치 | 상태 |
 |------|------|---------------|:----:|
@@ -97,7 +98,7 @@ backend/
 | 배포 | Railway 서비스 설정, `CORS_ORIGINS`, Volume `/data` | `chore/deploy` | ⏳ |
 | 문서 | 루트 README 총괄 | `docs/*` | ⏳ |
 
-### 🟩 박성현 — AI 파이프라인 · 관리자 API
+### 🟩 AI 파이프라인 · 관리자 API (성원모)
 
 | 영역 | 파일 | 상태 |
 |------|------|:----:|
@@ -110,21 +111,21 @@ backend/
 | 관리자 API | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | ⏳ |
 | 관리자 조회 CRUD | `crud.user.list_with_stats`·`count`, `crud.chat_log.list_for_user`·`list_failures`·`stats`, `crud.server_log.list_by_request` | ⏳ |
 
-> 관리자 API 는 `require_admin` 의존성(403)과 관리자 계정 시드(`ensure_admin`)를 사용한다 — 이 두 가지는 인증 트랙(🟦)에서 이미 구현됨.
+> 관리자 API 는 `require_admin` 의존성(403)과 관리자 계정 시드(`ensure_admin`)를 사용한다 — 이 두 가지는 인증 영역(🟦)에서 이미 구현됨.
 
 ---
 
-## 3. 두 트랙이 만나는 지점
+## 3. 두 영역이 만나는 지점
 
 ```mermaid
 flowchart LR
-    subgraph 박성현["🟩 AI 파이프라인"]
+    subgraph AITRACK["🟩 AI 파이프라인 · 관리자 API"]
         CH[routers/chat.py]
         AI[services/ai_service.py]
         LG[core/logging.py]
         AD[routers/admin.py<br/>services/admin_service.py]
     end
-    subgraph 성원모["🟦 인증 · DB"]
+    subgraph AUTHTRACK["🟦 인증 · DB"]
         DEP[core/dependencies.py<br/>get_current_user]
         RESP[core/responses.py<br/>AppError · ok]
         CR[crud/chat_log.py<br/>create · recent_success_for_context]
@@ -143,7 +144,7 @@ flowchart LR
     AD -->|요청 흐름 조회| SL
 ```
 
-박성현 님이 가져다 쓰는 것:
+AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것:
 
 | 용도 | 사용 방법 | 제공 파일 |
 |------|-----------|-----------|

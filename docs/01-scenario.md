@@ -58,7 +58,7 @@
 4. "AI 실패 기록" 탭 → 실패한 요청의 `request_id` 클릭 → `request_received → ai_call_start → ai_call_failed → db_save_success` 흐름 확인
 5. 일반 사용자가 `/admin` 을 직접 입력하면 `/chat` 으로 돌아가고, API 는 `code: 403`
 
-> 모든 응답은 HTTP 200 + `{code, data}` 이며, 위 시나리오의 401·422·504 등은 body 의 `code` 다 ([03-api.md](03-api.md) §0).
+> 모든 응답은 HTTP 200 + `{code, data}` 이며, 위 시나리오의 401·422·504 등은 body 의 `code` 다 ([03-api.md 0. 공통 규약](03-api.md#0-공통-규약)).
 
 ## 4. 유저 플로우
 
@@ -88,7 +88,7 @@ flowchart TD
 
 ## 5. 시연 순서 (평가용)
 
-[08-checklist.md](08-checklist.md) §4 평가 당일 체크리스트와 함께 사용한다.
+[08-checklist.md 4. 평가 당일 체크리스트](08-checklist.md#4-평가-당일-체크리스트) 평가 당일 체크리스트와 함께 사용한다.
 
 | # | 동작 | 확인 포인트 |
 |---|------|-------------|

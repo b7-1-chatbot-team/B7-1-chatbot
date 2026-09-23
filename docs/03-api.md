@@ -1,7 +1,7 @@
 # 03. API 명세
 
 > 관련 문서: [02-architecture.md](02-architecture.md) · [04-database.md](04-database.md)
-> API 계약의 기준 문서다. 합의가 필요한 값은 §7, 문서 간 불일치는 [11-open-issues.md](11-open-issues.md) 에서 관리한다.
+> API 계약의 기준 문서다. 합의가 필요한 값은 [7. 확정 전 합의가 필요한 항목](#7-확정-전-합의가-필요한-항목), 문서 간 불일치는 [11-open-issues.md](11-open-issues.md) 에서 관리한다.
 
 ## 0. 공통 규약
 
@@ -140,7 +140,7 @@ POST /api/auth/signup
 | `nickname` | 1~20자, **중복 허용 (검사하지 않음)** |
 
 - 비밀번호는 **bcrypt 로 해싱해서 저장** (평문 저장 금지). 응답에 해시를 포함하지 않는다.
-- 가입으로 생성되는 계정은 항상 `role=user`. 관리자는 가입으로 만들 수 없다 (§4 참고).
+- 가입으로 생성되는 계정은 항상 `role=user`. 관리자는 가입으로 만들 수 없다 ([4. 관리자](#4-관리자-필수--mission-2-2절-관리자내부-로그-확인-화면-4-4절-관리자-조회-api화면) 참고).
 
 **실패**: `409`(이메일 중복), `422`(검증 실패)
 
@@ -403,7 +403,7 @@ curl -s -H "Authorization: Bearer $TOKEN" 'http://localhost:8000/api/me/chats?li
 
 ---
 
-## 4. 관리자 (필수 — mission §2-2 "관리자/내부 로그 확인 화면", §4-4 "관리자 조회 API/화면")
+## 4. 관리자 (필수 — mission 2-2절 "관리자/내부 로그 확인 화면", 4-4절 "관리자 조회 API/화면")
 
 ### 4-0. 공통
 
@@ -413,7 +413,7 @@ curl -s -H "Authorization: Bearer $TOKEN" 'http://localhost:8000/api/me/chats?li
 | 관리자 계정 생성 | 회원가입으로 불가. 서버 시작 시 `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NICKNAME` 으로 생성(이미 있으면 `role=admin` 으로 승격) |
 | 조회 전용 | 수정·삭제 API 없음 |
 | 노출 금지 | `hashed_password`, API 키, 토큰은 어떤 응답에도 포함하지 않는다 |
-| 감사 로그 | 모든 관리자 API 호출을 로그로 남긴다 (§6) |
+| 감사 로그 | 모든 관리자 API 호출을 로그로 남긴다 ([6. 서버 로그 이벤트 규약](#6-서버-로그-이벤트-규약)) |
 | 페이지네이션 | 목록은 `limit`(기본 20, 최대 100) · `offset`, 응답 `{total, items}` |
 
 **실패 공통**: `401`(토큰), `403`(일반 사용자)
@@ -499,7 +499,7 @@ GET /api/admin/failures?limit=20&offset=0
   }
 }
 ```
-- `chat_logs.status = 'error'` 인 기록, 최신순. `request_id` 로 §4-5 흐름 조회
+- `chat_logs.status = 'error'` 인 기록, 최신순. `request_id` 로 [4-5. 요청 흐름 로그](#4-5-요청-흐름-로그) 흐름 조회
 
 ### 4-5. 요청 흐름 로그
 
@@ -577,4 +577,4 @@ WARN  admin_forbidden    request_id=def457 user_id=12 path=/api/admin/stats
 | 사용할 AI API 제공자 | **Codyssey AI API (COPA)** | 확정 |
 | 응답 형식 | `{code, data}`, HTTP 항상 200 | 확정 |
 | 배포 | **Railway 서비스 2개 (프론트·백엔드 별도 도메인)** | 확정 |
-| 토큰 저장 위치 | **`localStorage`** (access·refresh 같은 곳, refresh 는 body 전송) | 확정 (A15) — 근거·XSS 대응 [12-decisions.md](12-decisions.md) §4 |
+| 토큰 저장 위치 | **`localStorage`** (access·refresh 같은 곳, refresh 는 body 전송) | 확정 (A15) — 근거·XSS 대응 [12-decisions.md 4. 토큰을 프론트에 저장하는 위치 — 위험성과 대안](12-decisions.md#4-토큰을-프론트에-저장하는-위치--위험성과-대안) |

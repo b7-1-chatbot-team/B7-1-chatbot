@@ -32,7 +32,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env        # 값 입력 (§3)
+cp .env.example .env        # 값 입력 (3절)
 uvicorn app.main:app --reload
 # → http://localhost:8000  ·  Swagger: http://localhost:8000/docs
 ```
@@ -85,7 +85,7 @@ ADMIN_NICKNAME=
 | `JWT_ALGORITHM` | `HS256` | 서명 알고리즘. 디코드 시에도 이 값으로 **고정** | |
 | `JWT_EXPIRE_MINUTES` | `15` | access token 만료(분). 응답 `expires_in` = ×60 | |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | `1` | refresh token 만료(일). 응답 `refresh_expires_in` = ×86400 | |
-| `DATABASE_URL` | `sqlite:///./data/app.db` | SQLAlchemy URL. Railway 는 `sqlite:////data/app.db` (§6-1) | |
+| `DATABASE_URL` | `sqlite:///./data/app.db` | SQLAlchemy URL. Railway 는 `sqlite:////data/app.db` ([6-1. 백엔드 서비스](#6-1-백엔드-서비스)) | |
 | `AI_TIMEOUT_SECONDS` | `30` | AI API 호출 전체 대기 상한(초) | |
 | `AI_CONTEXT_TURNS` | `5` | 프롬프트에 포함할 최근 성공 Q/A 수 | |
 | `MAX_MESSAGE_LENGTH` | `1000` | 질문 최대 글자수 | |
@@ -122,7 +122,7 @@ VITE_API_BASE_URL=https://<backend>.up.railway.app
 
 ## 4. 로컬 실행 확인
 
-응답은 항상 HTTP 200 + `{code, data}` 이므로 **body 의 `code` 를 확인**한다 ([03-api.md](03-api.md) §0).
+응답은 항상 HTTP 200 + `{code, data}` 이므로 **body 의 `code` 를 확인**한다 ([03-api.md 0. 공통 규약](03-api.md#0-공통-규약)).
 
 ```bash
 # 1) 백엔드
@@ -194,7 +194,7 @@ Railway Project
 | 도메인 | Settings → Networking → **Generate Domain** (프론트가 브라우저에서 직접 호출하므로 공개 도메인 필요) |
 | 배포 브랜치 | `main` (평가 배포 기준. 개발 확인용으로 develop 을 연결할지는 팀 결정) |
 
-**Variables**: §3 의 키를 모두 등록 (`.env` 파일 업로드 금지). 배포 시 달라지는 값:
+**Variables**: [3. 환경변수](#3-환경변수)의 키를 모두 등록 (`.env` 파일 업로드 금지). 배포 시 달라지는 값:
 
 | 키 | 값 |
 |----|-----|
@@ -218,7 +218,7 @@ Railway Project
 1. 백엔드 서비스 배포 → Volume 연결 → Generate Domain → 백엔드 URL 확보
 2. 프론트 서비스 Variables 에 `VITE_API_BASE_URL` = 백엔드 URL → 배포 → Generate Domain → 프론트 URL 확보
 3. 백엔드 Variables `CORS_ORIGINS` 에 프론트 URL 추가 → **백엔드 재배포**
-4. 브라우저로 프론트 URL 접속 → 개발자도구 Console 에 CORS 오류가 없는지 확인 (§7)
+4. 브라우저로 프론트 URL 접속 → 개발자도구 Console 에 CORS 오류가 없는지 확인 ([7. 외부 접속 · CORS 검증 (평가 전 필수)](#7-외부-접속--cors-검증-평가-전-필수))
 5. README 의 서비스 URL 칸에 프론트 URL 기입
 
 ### 6-4. 슬리핑(Serverless)
@@ -267,7 +267,7 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 | 모든 질문이 `code: 502` | `COPA_API_KEY` 미설정·오류. 로그 `ai_call_failed reason=` 확인 (`auth_failed` / `rate_limited` / `status_5xx`) |
 | 가끔 `code: 502` (429) | AI API 호출 제한(rate limit) 초과. 잠시 후 재시도 |
 | 응답이 계속 `code: 504` | `AI_TIMEOUT_SECONDS` 가 너무 짧거나 네트워크 지연. 값 조정 후 재배포 |
-| `/chat` 새로고침 시 404 | 프론트 정적 서빙 SPA fallback 누락 (§6-2) |
+| `/chat` 새로고침 시 404 | 프론트 정적 서빙 SPA fallback 누락 ([6-2. 프론트 서비스](#6-2-프론트-서비스)) |
 
 ## 9. 민감정보 관리 체크
 

@@ -1,11 +1,11 @@
 # 07. 검증 계획 및 결과
 
 > ⚠️ **읽기 전 주의**
-> §1~§3 은 **팀 스펙(JWT · Codyssey AI API · `{code, data}` 응답 · 관리자 · Railway) 기준 검증 계획**이다. 아직 실행되지 않았다.
-> §4 는 **스펙 확정 이전 참조 구현(PoC, 세션 쿠키 · Claude · Nginx)** 에서 **실제로 측정된 결과**다. 스펙과 구현이 다르므로 그대로 제출 근거로 쓸 수 없다.
-> 두 절을 섞지 않는다. 스펙대로 구현이 끝나면 §1~§3 을 실행하고 그 결과로 §4 를 대체한다.
+> [1. 검증 계획 (스펙 기준)](#1-검증-계획-스펙-기준)~[3. 실제 Codyssey AI API 연동 검증 (키 설정 후)](#3-실제-codyssey-ai-api-연동-검증-키-설정-후)은 **팀 스펙(JWT · Codyssey AI API · `{code, data}` 응답 · 관리자 · Railway) 기준 검증 계획**이다. 아직 실행되지 않았다.
+> [4. 참고 — 참조 구현(PoC) 실측 기록](#4-참고--참조-구현poc-실측-기록)은 **스펙 확정 이전 참조 구현(PoC, 세션 쿠키 · Claude · Nginx)** 에서 **실제로 측정된 결과**다. 스펙과 구현이 다르므로 그대로 제출 근거로 쓸 수 없다.
+> 두 절을 섞지 않는다. 스펙대로 구현이 끝나면 [1. 검증 계획 (스펙 기준)](#1-검증-계획-스펙-기준)~[3. 실제 Codyssey AI API 연동 검증 (키 설정 후)](#3-실제-codyssey-ai-api-연동-검증-키-설정-후)을 실행하고 그 결과로 [4. 참고 — 참조 구현(PoC) 실측 기록](#4-참고--참조-구현poc-실측-기록)을 대체한다.
 >
-> **판정 기준**: 서버 응답은 항상 HTTP 200 이므로, 아래 "기대" 의 `code` 는 **body 의 `code`** 를 뜻한다 ([03-api.md](03-api.md) §0).
+> **판정 기준**: 서버 응답은 항상 HTTP 200 이므로, 아래 "기대" 의 `code` 는 **body 의 `code`** 를 뜻한다 ([03-api.md 0. 공통 규약](03-api.md#0-공통-규약)).
 
 ---
 
@@ -16,51 +16,51 @@
 | **L1 서버 단위** | pytest + FastAPI `TestClient` (임시 DB) | 요구사항·경계 케이스 | 각 트랙 |
 | **L2 API 흐름** | curl 스크립트 (body `code` 판정) | 가입→로그인→질문→응답→로그→관리자 전 흐름 | 팀장 |
 | **L3 브라우저** | 수동 + (여유 시) Playwright | 화면 조작, 리다이렉트, 오류 표시, 반응형 | 이성준 |
-| **L4 배포/외부망** | Railway 배포 URL 을 휴대폰 데이터망에서 접속, CORS 확인 | mission §4-6 | 팀장 |
+| **L4 배포/외부망** | Railway 배포 URL 을 휴대폰 데이터망에서 접속, CORS 확인 | mission 4-6절 | 팀장 |
 | **L5 데이터/로그** | `sqlite3`, 로그 확인 | DB 누적 저장·로그 이벤트 증빙 | 팀장 |
 
 ### 1-1. L1 — 서버 단위 케이스
 
 | ID | 테스트 | 기대 | mission |
 |----|--------|------|---------|
-| V01 | 회원가입 | HTTP 200, `code: 201`, `data` 에 `hashed_password` 없음, role=user | §4-2 |
-| V02 | 같은 이메일 재가입 | `code: 409` | §4-2 |
-| V02b | 다른 이메일 + 같은 닉네임 | `code: 201` (닉네임 중복 허용) | §4-2 |
-| V03 | 비밀번호 7자 / 잘못된 이메일 / 닉네임 21자 | `code: 422`, `data.message` 존재, `detail` 키 없음 | §4-5 |
-| V04 | DB 의 `hashed_password` 확인 | bcrypt prefix(`$2b$`), 평문 아님 | §4-2 |
-| V05 | 로그인 성공 | `code: 200`, `data.access_token`·`refresh_token`·`token_type=bearer`·`expires_in=900`·`refresh_expires_in=86400`, `refresh_tokens` 에 해시 1행(원문 아님) | §4-2 |
-| V05b | `POST /api/auth/refresh` 유효 토큰 | `code: 200`, 새 토큰 쌍, (회전 시) 이전 refresh 로 재요청하면 `code: 401` | §4-2 |
-| V05c | refresh 만료 / 위조 / body 누락 | `code: 401` / `code: 401` / `code: 422` | §4-2 |
-| V05d | `POST /api/auth/logout` 후 같은 refresh 로 재발급 | 로그아웃 `code: 200`, 행 삭제, 재발급 `code: 401` | §4-2 |
-| V05e | 이미 폐기된 refresh 로 로그아웃 재요청 | `code: 200` (같은 결과) | §4-2 |
-| V05f | 만료 행 정리 작업 실행 (`delete_expired` 직접 호출) | `expires_at < now` 행만 삭제, 유효 행 유지 | §4-2 |
-| V06 | 틀린 비밀번호 / 없는 이메일 | `code: 401` (메시지 동일) | §4-2 |
-| V07 | `GET /api/auth/me` 유효 토큰 | `code: 200`, `data: {id, email, nickname, role}` | §4-2 |
-| V08 | 토큰 없음 / 변조 / 만료 | `code: 401` | §4-2 |
-| V09 | 비로그인 `POST /api/chat`, `GET /api/me/chats` | `code: 401` | §4-2 |
-| V10 | 챗 성공 | `code: 200`, `data: {chat_id, question, answer, created_at}`, `chat_logs` 1건(status=success) | §4-3, §4-4 |
-| V11 | 두 번째 질문 | 프롬프트에 직전 Q/A 포함 (AI 클라이언트를 목으로 두고 payload 검사) | §4-3 |
-| V12 | 7번째 질문 | 컨텍스트가 `AI_CONTEXT_TURNS`(5)턴으로 제한됨, 실패 기록은 제외 | §4-3 |
-| V13 | 빈 문자열 / 공백만 | `code: 422`, AI 호출 안 됨 | §4-5 |
-| V14 | 1001자 → 422 / 1000자 → 200 (경계값) | | §4-5 |
-| V15 | AI 타임아웃 강제 (응답을 30초 넘게 지연 / `httpx.TimeoutException`) | `code: 504`, `chat_logs` status=error·error_code=AI_TIMEOUT, **서버 프로세스 유지** | §4-5, §6 |
-| V16 | AI 500/429/연결 실패 강제 | `code: 502`, error_code=AI_CALL_FAILED | §4-5 |
-| V17 | 장애 직후 정상 질문 | `code: 200` (서비스 유지) | §4-5 |
-| V18 | 사용자 A 의 로그가 B 에게 안 보임 | `items` 에 타인 기록 없음 | §4-4 |
-| V19 | `limit=101` / `offset` 동작, 실패 기록 미포함 | 상한 처리, 최신순, `total` 정확 | §4-4 |
-| V20 | 로그 이벤트 | `request_received`·`ai_call_start`·`ai_call_success`/`ai_call_failed`·`db_save_success` 가 로그와 `server_logs` 에 존재, **비밀번호·API 키·질문 원문 미기록** | §4-5 |
-| V21 | DB commit 실패 강제 | 파일 로그에 `db_save_failed`, 서버 유지 | §4-5 |
+| V01 | 회원가입 | HTTP 200, `code: 201`, `data` 에 `hashed_password` 없음, role=user | 4-2절 |
+| V02 | 같은 이메일 재가입 | `code: 409` | 4-2절 |
+| V02b | 다른 이메일 + 같은 닉네임 | `code: 201` (닉네임 중복 허용) | 4-2절 |
+| V03 | 비밀번호 7자 / 잘못된 이메일 / 닉네임 21자 | `code: 422`, `data.message` 존재, `detail` 키 없음 | 4-5절 |
+| V04 | DB 의 `hashed_password` 확인 | bcrypt prefix(`$2b$`), 평문 아님 | 4-2절 |
+| V05 | 로그인 성공 | `code: 200`, `data.access_token`·`refresh_token`·`token_type=bearer`·`expires_in=900`·`refresh_expires_in=86400`, `refresh_tokens` 에 해시 1행(원문 아님) | 4-2절 |
+| V05b | `POST /api/auth/refresh` 유효 토큰 | `code: 200`, 새 토큰 쌍, (회전 시) 이전 refresh 로 재요청하면 `code: 401` | 4-2절 |
+| V05c | refresh 만료 / 위조 / body 누락 | `code: 401` / `code: 401` / `code: 422` | 4-2절 |
+| V05d | `POST /api/auth/logout` 후 같은 refresh 로 재발급 | 로그아웃 `code: 200`, 행 삭제, 재발급 `code: 401` | 4-2절 |
+| V05e | 이미 폐기된 refresh 로 로그아웃 재요청 | `code: 200` (같은 결과) | 4-2절 |
+| V05f | 만료 행 정리 작업 실행 (`delete_expired` 직접 호출) | `expires_at < now` 행만 삭제, 유효 행 유지 | 4-2절 |
+| V06 | 틀린 비밀번호 / 없는 이메일 | `code: 401` (메시지 동일) | 4-2절 |
+| V07 | `GET /api/auth/me` 유효 토큰 | `code: 200`, `data: {id, email, nickname, role}` | 4-2절 |
+| V08 | 토큰 없음 / 변조 / 만료 | `code: 401` | 4-2절 |
+| V09 | 비로그인 `POST /api/chat`, `GET /api/me/chats` | `code: 401` | 4-2절 |
+| V10 | 챗 성공 | `code: 200`, `data: {chat_id, question, answer, created_at}`, `chat_logs` 1건(status=success) | 4-3절, 4-4절 |
+| V11 | 두 번째 질문 | 프롬프트에 직전 Q/A 포함 (AI 클라이언트를 목으로 두고 payload 검사) | 4-3절 |
+| V12 | 7번째 질문 | 컨텍스트가 `AI_CONTEXT_TURNS`(5)턴으로 제한됨, 실패 기록은 제외 | 4-3절 |
+| V13 | 빈 문자열 / 공백만 | `code: 422`, AI 호출 안 됨 | 4-5절 |
+| V14 | 1001자 → 422 / 1000자 → 200 (경계값) | | 4-5절 |
+| V15 | AI 타임아웃 강제 (응답을 30초 넘게 지연 / `httpx.TimeoutException`) | `code: 504`, `chat_logs` status=error·error_code=AI_TIMEOUT, **서버 프로세스 유지** | 4-5절, 6절 |
+| V16 | AI 500/429/연결 실패 강제 | `code: 502`, error_code=AI_CALL_FAILED | 4-5절 |
+| V17 | 장애 직후 정상 질문 | `code: 200` (서비스 유지) | 4-5절 |
+| V18 | 사용자 A 의 로그가 B 에게 안 보임 | `items` 에 타인 기록 없음 | 4-4절 |
+| V19 | `limit=101` / `offset` 동작, 실패 기록 미포함 | 상한 처리, 최신순, `total` 정확 | 4-4절 |
+| V20 | 로그 이벤트 | `request_received`·`ai_call_start`·`ai_call_success`/`ai_call_failed`·`db_save_success` 가 로그와 `server_logs` 에 존재, **비밀번호·API 키·질문 원문 미기록** | 4-5절 |
+| V21 | DB commit 실패 강제 | 파일 로그에 `db_save_failed`, 서버 유지 | 4-5절 |
 | V22 | CORS preflight (`OPTIONS`) | 허용 Origin 은 `access-control-allow-origin` 헤더 있음, 미허용은 없음 | 배포 |
-| V23 | 없는 경로 / 처리 안 된 예외 | `code: 404` / `code: 500` 봉투 형식 | §4-5 |
-| V30 | 서버 시작 시 관리자 시드 | `ADMIN_EMAIL` 계정 role=admin, 재시작해도 중복 생성 없음 | §2-2 |
-| V31 | 일반 사용자 `GET /api/admin/*` 5종 | 모두 `code: 403`, 로그 `admin_forbidden` | §4-2 |
-| V32 | 비로그인 `GET /api/admin/*` | `code: 401` | §4-2 |
-| V33 | `GET /api/admin/stats` | 사용자 수·성공/실패·에러별 건수·평균 응답시간이 DB 와 일치 | §4-5 |
-| V34 | `GET /api/admin/users?q=` | 이메일 부분 검색, chat_count 정확, 응답에 `hashed_password` 없음 | §4-4 |
-| V35 | `GET /api/admin/users/{id}/chats` | 성공·실패 모두 최신순 / 없는 id → `code: 404` | §4-4 |
-| V36 | `GET /api/admin/failures` | status=error 만, error_code·request_id 포함 | §4-5 |
-| V37 | `GET /api/admin/requests/{request_id}/logs` | 해당 요청 이벤트 시간순 / 없는 id → `code: 404` | §4-5 |
-| V38 | 관리자 API 호출 감사 로그 | `admin_access admin_id= path=` 기록 | §4-5 |
+| V23 | 없는 경로 / 처리 안 된 예외 | `code: 404` / `code: 500` 봉투 형식 | 4-5절 |
+| V30 | 서버 시작 시 관리자 시드 | `ADMIN_EMAIL` 계정 role=admin, 재시작해도 중복 생성 없음 | 2-2절 |
+| V31 | 일반 사용자 `GET /api/admin/*` 5종 | 모두 `code: 403`, 로그 `admin_forbidden` | 4-2절 |
+| V32 | 비로그인 `GET /api/admin/*` | `code: 401` | 4-2절 |
+| V33 | `GET /api/admin/stats` | 사용자 수·성공/실패·에러별 건수·평균 응답시간이 DB 와 일치 | 4-5절 |
+| V34 | `GET /api/admin/users?q=` | 이메일 부분 검색, chat_count 정확, 응답에 `hashed_password` 없음 | 4-4절 |
+| V35 | `GET /api/admin/users/{id}/chats` | 성공·실패 모두 최신순 / 없는 id → `code: 404` | 4-4절 |
+| V36 | `GET /api/admin/failures` | status=error 만, error_code·request_id 포함 | 4-5절 |
+| V37 | `GET /api/admin/requests/{request_id}/logs` | 해당 요청 이벤트 시간순 / 없는 id → `code: 404` | 4-5절 |
+| V38 | 관리자 API 호출 감사 로그 | `admin_access admin_id= path=` 기록 | 4-5절 |
 
 ### 1-2. L2 — API 흐름 스크립트
 
@@ -135,7 +135,7 @@ curl -s -H "Authorization: Bearer $ATOKEN" $BASE/api/admin/failures
 | B16 | 로그아웃 → 뒤로가기 | Network 에 `POST /api/auth/logout`, 두 토큰 삭제, `/login` 유지 (보호 페이지 재진입 차단) |
 | B17 | access token 만료 후 요청 (`JWT_EXPIRE_MINUTES=1` 로 테스트) | 화면 이동 없이 refresh 후 요청 성공 |
 | B17b | refresh token 까지 무효인 상태로 요청 | 로그인 화면으로 이동 |
-| B17c | access 만료 상태에서 **API 를 2개 이상 동시에 호출하는 화면 진입**(챗: `/auth/me`+`/me/chats`, 관리자: stats+users) | Network 에 `POST /api/auth/refresh` **1회만** 기록(single-flight), 두 요청 모두 재시도 성공, 로그아웃되지 않음 ([12-decisions.md](12-decisions.md) §15) |
+| B17c | access 만료 상태에서 **API 를 2개 이상 동시에 호출하는 화면 진입**(챗: `/auth/me`+`/me/chats`, 관리자: stats+users) | Network 에 `POST /api/auth/refresh` **1회만** 기록(single-flight), 두 요청 모두 재시도 성공, 로그아웃되지 않음 ([12-decisions.md 15. 토큰 재발급 동시성 — single-flight](12-decisions.md#15-토큰-재발급-동시성--single-flight)) |
 | B18 | 375px 폭 | 가로 스크롤 0, 1열 |
 | B19 | 백엔드 중지 상태에서 질문 | "서버에 연결할 수 없습니다" 말풍선 |
 | B20 | 일반 사용자가 `/admin` 직접 입력 | `/chat` 으로 이동 |
@@ -150,7 +150,7 @@ curl -s -H "Authorization: Bearer $ATOKEN" $BASE/api/admin/failures
 |----|------|------|
 | D01 | 휴대폰 데이터망에서 Railway 프론트 URL 접속 | 화면 로드 |
 | D02 | 외부망에서 가입→로그인→질문→응답→로그→관리자 | 전 흐름 성공 |
-| D03 | 브라우저 Console / Network | **CORS 오류 없음**, preflight(OPTIONS) 통과 ([06-deployment.md](06-deployment.md) §7) |
+| D03 | 브라우저 Console / Network | **CORS 오류 없음**, preflight(OPTIONS) 통과 ([06-deployment.md 7. 외부 접속 · CORS 검증 (평가 전 필수)](06-deployment.md#7-외부-접속--cors-검증-평가-전-필수)) |
 | D04 | 허용되지 않은 Origin 으로 preflight | `access-control-allow-origin` 헤더 없음 |
 | D05 | 프론트 번들 검색 | `COPA_API_KEY` 값 등 비밀값 미포함 |
 | D06 | 백엔드 재배포 후 기존 계정 로그인 | 성공 (Volume 에 DB 유지) |
@@ -198,7 +198,7 @@ grep ai_call_failed backend/logs/app.log
 
 > **이 절의 수치는 스펙 확정 이전 구현에서 측정된 실제 값이다.**
 > 구성: 2026-09-14, macOS, Python 3.14.7, Node 24.11, **세션 쿠키 인증 · Anthropic Claude(mock 공급자) · 로컬 Nginx**.
-> 스펙(JWT · Codyssey AI API · `{code, data}` · Railway)과 다르므로 **스펙 기준 증빙으로 사용하지 않는다.** 어떤 케이스가 스펙 전환 후에도 그대로 유효한지는 §4-4 참고.
+> 스펙(JWT · Codyssey AI API · `{code, data}` · Railway)과 다르므로 **스펙 기준 증빙으로 사용하지 않는다.** 어떤 케이스가 스펙 전환 후에도 그대로 유효한지는 [4-4. 스펙 전환 후 재검증 필요 여부](#4-4-스펙-전환-후-재검증-필요-여부) 참고.
 
 ### 4-1. 실행 결과 요약
 

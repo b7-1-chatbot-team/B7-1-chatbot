@@ -1,23 +1,24 @@
 # 09. 팀 규칙 · 역할 분담
 
-> 기준 문서: [features.md](features.md) · 팀원 이름·역할·규칙 불일치: [11-open-issues.md](11-open-issues.md) §C
-> 팀: **성원모(팀장) · 이성준 · 박성현** (3인, 120시간 Term Project)
+> 기준 문서: [features.md](features.md) · 팀원 이름·역할·규칙 불일치: [11-open-issues.md C. 팀 · 협업 규칙 불일치](11-open-issues.md#c-팀--협업-규칙-불일치)
+> 팀: **성원모(팀장) · 이성준** (2인, 120시간 Term Project)
+> 2026-09-23 박성현 팀 이탈 → 박성현 담당이던 AI 파이프라인·관리자 API 를 성원모가 맡아 **백엔드 전체를 성원모가 담당**한다 ([11-open-issues.md](11-open-issues.md) C10)
 
 ## 1. mission 이 강제하는 필수 규칙 (위반 시 감점)
 
 | # | 규칙 | 근거 | 확인 방법 |
 |---|------|------|-----------|
-| R1 | **브랜치 전략 적용**: `main` / `develop` 분리 | §4-7 | `git branch -a` |
-| R2 | **기능 단위 작업 브랜치**에서 작업 (`feature/*`) | §4-7 | `git log --graph --all` |
-| R3 | **PR 기반 Merge** — 코드 병합은 GitHub PR 로만. **예외: `docs/` 문서만 바꾸는 커밋은 develop 에 직접 push** (팀 합의, §2-1) | §4-7, §6 | `git log --merges`, GitHub PR 목록 |
-| R4 | **팀원별 유의미한 커밋 10회 이상** | §4-7, §6 | `git shortlog -sn` |
-| R5 | 문서에 **팀 역할 / 개인별 작업 요약** 포함, **Git 이력과 모순 없게** | §2-2, §4-7 | README §6 ↔ shortlog |
-| R6 | API 키·비밀번호 등 **민감정보를 코드/문서에 직접 작성 금지** | §6 | `grep`, PR 리뷰 |
-| R7 | 모든 민감정보는 **환경변수(.env)** 로 관리, `.env` 는 **.gitignore** | §6 | `git ls-files` |
-| R8 | README 에 **환경변수 키 목록(이름)과 설정 방법** | §6 | README §5 |
-| R9 | AI 호출 **타임아웃** 설정 + 실패 시 **오류 안내** 반환 | §6 | `AI_TIMEOUT_SECONDS`, `code` 504/502 응답 |
-| R10 | 요청 수신 · AI 호출/응답 · DB 저장 성공/실패 **로그** 유지 | §6 | `app.log` 이벤트 확인 |
-| R11 | 평가 시점 **외부 네트워크 접속 가능** 상태 유지 | §4-6 | 외부망에서 배포 URL 접속 |
+| R1 | **브랜치 전략 적용**: `main` / `develop` 분리 | 4-7절 | `git branch -a` |
+| R2 | **기능 단위 작업 브랜치**에서 작업 (`feature/*`) | 4-7절 | `git log --graph --all` |
+| R3 | **PR 기반 Merge** — 코드 병합은 GitHub PR 로만. **예외: `docs/` 문서만 바꾸는 커밋은 develop 에 직접 push** (팀 합의, [2-1. 브랜치](#2-1-브랜치)) | 4-7절, 6절 | `git log --merges`, GitHub PR 목록 |
+| R4 | **팀원별 유의미한 커밋 10회 이상** | 4-7절, 6절 | `git shortlog -sn` |
+| R5 | 문서에 **팀 역할 / 개인별 작업 요약** 포함, **Git 이력과 모순 없게** | 2-2절, 4-7절 | README 6절 ↔ shortlog |
+| R6 | API 키·비밀번호 등 **민감정보를 코드/문서에 직접 작성 금지** | 6절 | `grep`, PR 리뷰 |
+| R7 | 모든 민감정보는 **환경변수(.env)** 로 관리, `.env` 는 **.gitignore** | 6절 | `git ls-files` |
+| R8 | README 에 **환경변수 키 목록(이름)과 설정 방법** | 6절 | README 5절 |
+| R9 | AI 호출 **타임아웃** 설정 + 실패 시 **오류 안내** 반환 | 6절 | `AI_TIMEOUT_SECONDS`, `code` 504/502 응답 |
+| R10 | 요청 수신 · AI 호출/응답 · DB 저장 성공/실패 **로그** 유지 | 6절 | `app.log` 이벤트 확인 |
+| R11 | 평가 시점 **외부 네트워크 접속 가능** 상태 유지 | 4-6절 | 외부망에서 배포 URL 접속 |
 
 ## 2. 팀 운영 규칙
 
@@ -121,31 +122,30 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 - 매일 짧은 스탠드업(어제/오늘/막힘), 이슈는 GitHub Issues 로 관리
 - `.env` 값 공유는 저장소/채팅 평문 금지 → 직접 전달
 - 충돌 방지: 작업 시작 전 `git pull origin develop`, 공용 파일(`main.py`, `config.py`) 수정 시 채널에 공지
-- **인터페이스 우선 합의**: 백엔드 두 트랙과 프론트가 병렬로 진행하므로 [03-api.md](03-api.md) 를 먼저 확정하고, API 가 바뀌면 03-api.md 를 함께 수정한다
+- **인터페이스 우선 합의**: 백엔드와 프론트가 병렬로 진행하므로 [03-api.md](03-api.md) 를 먼저 확정하고, API 가 바뀌면 03-api.md 를 함께 수정한다
 
 ## 3. 역할 분담
 
-3트랙으로 나눈다. (아래 담당 번호는 [features.md](features.md) 번호 체계와 다르다 — [11-open-issues.md](11-open-issues.md) C6)
+백엔드(성원모)·프론트엔드(이성준) 2트랙으로 나눈다. (아래 담당 번호는 [features.md](features.md) 번호 체계와 다르다 — [11-open-issues.md](11-open-issues.md) C6)
 
 | 팀원 | 역할 | 담당 범위 (features.md #) | 주요 산출물 |
 |------|------|---------------------------|-------------|
-| **성원모** (팀장) | 인증 · DB · 인프라 | B1~B16, C1~C5 | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/logs.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, Railway 배포, README |
-| **박성현** | AI 파이프라인 · 관리자 API | A1~A12, 관리자 API(features.md B15~B19) | `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구, `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py`, 관리자 조회 CRUD |
+| **성원모** (팀장) | 백엔드 전체 — 인증 · DB · 인프라 · AI 파이프라인 · 관리자 API | B1~B16, C1~C5, A1~A12, 관리자 API(features.md B15~B19) | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/me.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구, `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py`, 관리자 조회 CRUD, Railway 배포, README |
 | **이성준** | 프론트엔드 (React + TypeScript) | **F1~F14 전체** ([features.md](features.md) 기준, **관리자 화면 F10~F14 포함**) | `tsconfig.app.json`(strict)·`vite.config.ts`(alias·test), `src/api/`(인스턴스·인터셉터·엔드포인트·응답 타입), `src/utils/tokenStorage.ts`, `src/hooks/`, `src/store/`(AuthProvider·AuthStatus), `src/routes/`(경로 상수·가드), `src/pages/{Login,Signup,Chat,Logs,Admin}`, `src/components/`, `src/styles/`(reset·global), `src/test/`(vitest·MSW), CSS Modules·디자인 토큰 |
 
 **의존 관계 / 순서**
 
-1. 팀장이 **B1~B4(구조·설정·CORS·DB 세션) + B12(인증 dependency)** 를 먼저 올려야 나머지 두 트랙이 붙을 수 있다.
-2. 박성현 는 인증 dependency 가 나오기 전에는 **mock 사용자**로 `POST /api/chat` 을 먼저 만들고, 이후 dependency 로 교체한다.
-> 관리자 기능 담당 ([11-open-issues.md](11-open-issues.md) G7): **프론트 F10~F14 는 이성준(프론트 담당)**, **백엔드 B15~B19(관리자 API 5종 + 관리자 조회 CRUD)는 박성현(AI 트랙)으로 확정**. 관리자 화면 데이터(AI 실패 기록·응답시간·요청 흐름)가 AI 파이프라인이 기록하는 `chat_logs`·`server_logs` 에서 나오기 때문이다. 권한 검사 `require_admin` 과 관리자 계정 시드는 인증 트랙(성원모)에서 구현해 제공한다.
+1. 백엔드는 **인증·DB(B1~B4, B12) → AI 챗 파이프라인 → 관리자 API** 순서로 진행한다. 챗·관리자 API 가 인증 dependency 와 `chat_logs`·`server_logs` 기록에 기대기 때문이다.
+2. 백엔드 담당이 한 명이 되었으므로 트랙 간 mock 사용자 단계는 두지 않고, 인증 dependency 를 그대로 붙여 `POST /api/chat` 을 만든다.
+> 관리자 기능 담당 ([11-open-issues.md](11-open-issues.md) G7): **프론트 F10~F14 는 이성준**, **백엔드 B15~B19(관리자 API 5종 + 관리자 조회 CRUD)는 성원모** (2026-09-23 박성현 이탈로 이관). 권한 검사 `require_admin` 과 관리자 계정 시드는 이미 인증 작업에서 구현되어 있다.
 
 3. 이성준은 백엔드보다 먼저 시작할 수 있다 — [03-api.md](03-api.md) 기준으로 **목 응답(msw 또는 로컬 stub)** 으로 화면을 만들고 나중에 실 API 로 교체한다.
 
-공통: 코드 리뷰는 **순환**(성원모 → 박성현 → 이성준 → 성원모), 최종 통합 확인·평가 리허설은 3명 함께.
+공통: 코드 리뷰는 **상호 리뷰**(성원모 PR → 이성준 리뷰, 이성준 PR → 성원모 리뷰), 최종 통합 확인·평가 리허설은 2명 함께.
 
 ## 4. 브랜치·커밋 계획 (팀원별 10회 이상 보장)
 
-### 성원모 — 인증 / DB / 인프라 (계획 15 커밋)
+### 성원모 — 백엔드 전체: 인증 / DB / 인프라 / AI 파이프라인 / 관리자 API (계획 33 커밋)
 
 | 브랜치 | 커밋 |
 |--------|------|
@@ -153,19 +153,13 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 | `feature/be-db` | 4 `feat(be): SQLAlchemy 엔진·세션과 get_db 의존성` · 5 `feat(be): users·chat_logs 모델` · 6 `feat(be): user·chat_log 리포지토리 계층 분리` |
 | `feature/be-auth-jwt` | 7 `feat(be): bcrypt 해시·검증 유틸` · 8 `feat(be): 회원가입 API 와 이메일 중복 409` · 9 `feat(be): 로그인 JWT 발급` · 10 `feat(be): get_current_user 인증 dependency` · 11 `feat(be): /api/auth/me 로 상태 복원 지원` |
 | `feature/be-logs` | 12 `feat(be): /api/me/chats 사용자 스코프 조회와 페이지네이션` · 13 `feat(be): DB 저장 성공/실패 로깅` |
-| `chore/deploy` | 14 `chore(be): Railway 서비스 2개 배포 설정과 CORS 도메인` |
-| `docs/*` | 15 `docs: README 총괄 작성` |
-
-### 박성현 — AI 파이프라인 · 관리자 API (계획 18 커밋)
-
-| 브랜치 | 커밋 |
-|--------|------|
-| `feature/ai-client` | 1 `feat(be): httpx Codyssey AI API 클라이언트 모듈 분리` · 2 `feat(be): API 키 환경변수 로드` · 3 `feat(be): 호출 타임아웃 설정` |
-| `feature/ai-chat` | 4 `feat(be): /api/chat 엔드포인트와 인증 적용` · 5 `feat(be): 요청·응답 Pydantic 스키마` · 6 `feat(be): 서버 측 입력 검증 422` · 7 `feat(be): 최근 N턴 컨텍스트 구성` · 8 `feat(be): 컨텍스트 길이 초과 시 오래된 턴 제거` |
-| `feature/ai-errors` | 9 `feat(be): 타임아웃 시 AI_TIMEOUT 504 반환` · 10 `feat(be): 호출 실패 시 AI_CALL_FAILED 502 반환` |
-| `feature/ai-logging` | 11 `feat(be): request_id 와 AI 호출 이벤트 로그 4종` |
-| `feature/be-admin` | 12 `feat(be): 관리자 조회 CRUD 계층` · 13 `feat(be): 관리자 요약 통계 API` · 14 `feat(be): 관리자 사용자 목록·검색과 사용자별 대화 API` · 15 `feat(be): 관리자 AI 실패 기록 API` · 16 `feat(be): request_id 요청 흐름 로그 API` · 17 `test(be): 관리자 API 권한·응답 테스트` |
-| `docs/*` | 18 `docs: 챗 엔드포인트 명세·에러 코드 정리` |
+| `feature/ai-client` | 14 `feat(be): httpx Codyssey AI API 클라이언트 모듈 분리` · 15 `feat(be): API 키 환경변수 로드` · 16 `feat(be): 호출 타임아웃 설정` |
+| `feature/ai-chat` | 17 `feat(be): /api/chat 엔드포인트와 인증 적용` · 18 `feat(be): 요청·응답 Pydantic 스키마` · 19 `feat(be): 서버 측 입력 검증 422` · 20 `feat(be): 최근 N턴 컨텍스트 구성` · 21 `feat(be): 컨텍스트 길이 초과 시 오래된 턴 제거` |
+| `feature/ai-errors` | 22 `feat(be): 타임아웃 시 AI_TIMEOUT 504 반환` · 23 `feat(be): 호출 실패 시 AI_CALL_FAILED 502 반환` |
+| `feature/ai-logging` | 24 `feat(be): request_id 와 AI 호출 이벤트 로그 4종` |
+| `feature/be-admin` | 25 `feat(be): 관리자 조회 CRUD 계층` · 26 `feat(be): 관리자 요약 통계 API` · 27 `feat(be): 관리자 사용자 목록·검색과 사용자별 대화 API` · 28 `feat(be): 관리자 AI 실패 기록 API` · 29 `feat(be): request_id 요청 흐름 로그 API` · 30 `test(be): 관리자 API 권한·응답 테스트` |
+| `chore/deploy` | 31 `chore(be): Railway 서비스 2개 배포 설정과 CORS 도메인` |
+| `docs/*` | 32 `docs: 챗 엔드포인트 명세·에러 코드 정리` · 33 `docs: README 총괄 작성` |
 
 ### 이성준 — 프론트엔드 (계획 19 커밋)
 
@@ -197,9 +191,10 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 
 | 팀원 | 역할 | 주요 작업 | 커밋 수 | PR |
 |------|------|-----------|:------:|:--:|
-| 성원모 | 인증·DB·인프라 | _(실제 작업 기입)_ | _ | _ |
-| 박성현 | AI 파이프라인 | _(실제 작업 기입)_ | _ | _ |
+| 성원모 | 백엔드 전체 (인증·DB·인프라·AI 파이프라인·관리자 API) | _(실제 작업 기입)_ | _ | _ |
 | 이성준 | 프론트엔드 | _(실제 작업 기입)_ | _ | _ |
+
+> 박성현은 2026-09-23 팀에서 이탈했다. 이탈 전에 남긴 커밋이 있다면 Git 이력에 그대로 두고, 마감 시 README 역할표에 "중도 이탈"로 함께 적어 역할 설명과 Git 이력이 어긋나지 않게 한다.
 
 ```bash
 git shortlog -sn --no-merges          # 커밋 수 (머지 커밋 제외)
@@ -210,6 +205,6 @@ gh pr list --state merged --json number,title,author --limit 100
 ## 7. 참고: 이 저장소의 PoC 코드
 
 `backend/`, `frontend/` 에 있는 현재 코드는 스펙 확정 **이전에 만든 참조 구현(PoC)** 이다.
-세션 쿠키 인증 · Anthropic Claude · Nginx 배포 기준이라 위 스펙과 다르다. 차이 목록은 [08-checklist.md](08-checklist.md) §3 을 참고한다.
+세션 쿠키 인증 · Anthropic Claude · Nginx 배포 기준이라 위 스펙과 다르다. 차이 목록은 [08-checklist.md 3. 참조 구현(PoC) ↔ 스펙 차이](08-checklist.md#3-참조-구현poc--스펙-차이)을 참고한다.
 
 팀은 각자 브랜치에서 스펙대로 직접 구현·커밋해야 한다. **PoC 코드를 한 번에 통째로 올리면 R2~R5 를 충족하지 못한다.**

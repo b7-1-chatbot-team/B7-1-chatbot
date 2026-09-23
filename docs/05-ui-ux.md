@@ -1,6 +1,6 @@
 # 05. UI / UX 설계
 
-> 담당: **이성준 (프론트엔드)** — [09-team.md](09-team.md) §3 (관리자 화면 담당은 [11-open-issues.md](11-open-issues.md) G7)
+> 담당: **이성준 (프론트엔드)** — [09-team.md 3. 역할 분담](09-team.md#3-역할-분담) (관리자 화면 담당은 [11-open-issues.md](11-open-issues.md) G7)
 > 스택: React · **TypeScript(strict)** · Vite · React Router · axios · Context API · **CSS Modules**
 > 디자인 기준 시안: `docs/design/AI Chat Service.html` (다크 톤 · 청록 포인트 · 기술 정보는 모노 폰트)
 
@@ -134,7 +134,7 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 | 접근성 | `label` 연결, `autocomplete=email / current-password / new-password`, 오류 `role="alert"` |
 
 **토큰 저장 위치 — `localStorage` 확정** (access·refresh 모두 같은 곳, refresh 는 요청 body 로 전송).
-"새로고침 시 로그인 상태 복원" 요구가 있어 메모리(Context) 저장으로는 충족할 수 없기 때문이다. 근거·대안 비교는 [12-decisions.md](12-decisions.md) §4.
+"새로고침 시 로그인 상태 복원" 요구가 있어 메모리(Context) 저장으로는 충족할 수 없기 때문이다. 근거·대안 비교는 [12-decisions.md 4. 토큰을 프론트에 저장하는 위치 — 위험성과 대안](12-decisions.md#4-토큰을-프론트에-저장하는-위치--위험성과-대안).
 
 | 키 | 값 |
 |----|----|
@@ -150,9 +150,9 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 | 축 | 조치 |
 |----|------|
 | XSS 를 만들지 않기 | `dangerouslySetInnerHTML` 사용 금지 — **AI 답변도 텍스트로만 렌더링** · 외부 스크립트(CDN·분석 태그) 미삽입 · 의존성 최소화 · 사용자 입력을 `href`/`src` 에 그대로 넣지 않기 |
-| 터졌을 때 피해 줄이기 | access **15분** · refresh **회전**(재발급 시 이전 토큰 무효 → 탈취된 토큰의 수명이 "다음 재발급까지"로 줄고, 공격자와 사용자 중 한쪽이 튕겨 **탈취가 드러남**) · 로그아웃 시 서버에서 refresh 폐기 — 회전 이유 상세: [12-decisions.md](12-decisions.md) §9 |
+| 터졌을 때 피해 줄이기 | access **15분** · refresh **회전**(재발급 시 이전 토큰 무효 → 탈취된 토큰의 수명이 "다음 재발급까지"로 줄고, 공격자와 사용자 중 한쪽이 튕겨 **탈취가 드러남**) · 로그아웃 시 서버에서 refresh 폐기 — 회전 이유 상세: [12-decisions.md 9. access + refresh token · 로그아웃 API](12-decisions.md#9-access--refresh-token--로그아웃-api) |
 
-> refresh token 을 HttpOnly 쿠키로 옮기면 XSS 노출은 줄지만, 프론트·백엔드가 다른 도메인이라 CORS `credentials`·`SameSite=None` 설정과 서드파티 쿠키 정책 문제가 생긴다 ([11-open-issues.md](11-open-issues.md) A7 세부, [12-decisions.md](12-decisions.md) §4 대안).
+> refresh token 을 HttpOnly 쿠키로 옮기면 XSS 노출은 줄지만, 프론트·백엔드가 다른 도메인이라 CORS `credentials`·`SameSite=None` 설정과 서드파티 쿠키 정책 문제가 생긴다 ([11-open-issues.md](11-open-issues.md) A7 세부, [12-decisions.md 4. 토큰을 프론트에 저장하는 위치 — 위험성과 대안](12-decisions.md#4-토큰을-프론트에-저장하는-위치--위험성과-대안) 대안).
 
 ### 화면 3: 챗 (`/chat`) — 로그인 필수
 
@@ -185,7 +185,7 @@ CSS Modules 는 Vite 가 기본 지원하므로 별도 설치가 없다. 클래�
 | 클라이언트 검증 | 공백만 / 로딩 중 → 전송 버튼 비활성, 1000자에서 입력 차단 + 카운터 주황 |
 | textarea | 내용에 맞춰 최대 140px 까지 자동 높이 |
 | 오류 후 | 입력창 포커스 복귀 → 새 질문도 바로 가능 (서비스가 살아 있음을 체감) |
-| **[다시 시도] 버튼** | `code` 504·502 오류 말풍선에 표시. 누르면 **같은 질문으로 `POST /api/chat` 재호출** → 오류 말풍선을 로딩 점으로 바꾸고 결과로 교체. 요청 중에는 버튼·전송 비활성. **자동 재시도는 하지 않는다** ([03-api.md](03-api.md) §2-1) |
+| **[다시 시도] 버튼** | `code` 504·502 오류 말풍선에 표시. 누르면 **같은 질문으로 `POST /api/chat` 재호출** → 오류 말풍선을 로딩 점으로 바꾸고 결과로 교체. 요청 중에는 버튼·전송 비활성. **자동 재시도는 하지 않는다** ([03-api.md 2-1. 질문 전송](03-api.md#2-1-질문-전송)) |
 | 자동 스크롤 | 새 메시지/로딩 시 하단으로 부드럽게 |
 | `aria-live="polite"` | 스크린리더가 새 응답을 읽어줌 |
 | 느린 응답 안내 | 첫 요청이 5초 이상 걸리면 "서버를 깨우는 중입니다" 보조 문구 (Railway 슬리핑 사용 시 대응) |
@@ -410,7 +410,7 @@ export async function login(body: LoginRequest, signal?: AbortSignal): Promise<T
 동시에 401 을 받은 요청들이 각자 재발급하면 뒤늦은 쪽이 이미 폐기된 토큰을 써서 **사용자가 로그아웃된다.**
 `refreshing` 에 진행 중인 Promise 를 담아 **재발급은 1회만 호출하고 나머지 요청은 그 결과를 함께 기다린다.**
 챗 화면 진입(`/auth/me` + `/me/chats`)이나 관리자 화면(stats + users)처럼 한 화면에서 API 를 2개 이상 호출할 때 실제로 발생한다.
-근거·대안·한계: [12-decisions.md](12-decisions.md) §15 · 검증: [07-verification.md](07-verification.md) B17c
+근거·대안·한계: [12-decisions.md 15. 토큰 재발급 동시성 — single-flight](12-decisions.md#15-토큰-재발급-동시성--single-flight) · 검증: [07-verification.md](07-verification.md) B17c
 
 ## 5. 결과 코드별 사용자 메시지
 
