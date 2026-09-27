@@ -35,6 +35,8 @@ npm run dev                                    # http://localhost:5173
 
 **Vitest** + **MSW**(네트워크 모킹) + **happy-dom**(DOM·localStorage 환경) 구성입니다.
 
+검증 항목과 결과는 **[TESTING.md](TESTING.md)** 에 정리돼 있습니다. 기능을 추가하면 그 문서도 함께 갱신합니다.
+
 | 파일 | 역할 |
 |------|------|
 | `src/test/server.ts` | MSW 가짜 서버. 기본 핸들러 없이, 각 테스트가 `server.use(...)` 로 필요한 응답만 등록 |
