@@ -16,6 +16,40 @@
 const ACCESS_KEY = 'auth:access_token'
 const REFRESH_KEY = 'auth:refresh_token'
 
+/**
+ * localStorage 를 쓸 수 없을 때의 대체 저장소.
+ *
+ * 시크릿 모드·브라우저 설정으로 저장소가 막히면 getItem/setItem 이 예외를 던진다.
+ * 방어하지 않으면 로그인 순간 예외가 화면까지 퍼져 앱이 흰 화면이 된다.
+ * 메모리에 두면 새로고침 후 로그인 유지만 안 될 뿐 앱은 계속 동작한다.
+ */
+const memory = new Map<string, string>()
+
+function read(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return memory.get(key) ?? null
+  }
+}
+
+function write(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    memory.set(key, value)
+  }
+}
+
+function remove(key: string): void {
+  memory.delete(key)
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // 저장소를 쓸 수 없으면 메모리에서 지운 것으로 충분하다
+  }
+}
+
 /** 토큰이 바뀌면 호출할 구독자 명단 */
 const listeners = new Set<() => void>()
 
@@ -24,11 +58,12 @@ function notify(): void {
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_KEY)
+  // 빈 문자열은 토큰이 아니다. 그대로 두면 "있음"으로 판정되어 401 경로를 한 번 더 탄다
+  return read(ACCESS_KEY) || null
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_KEY)
+  return read(REFRESH_KEY) || null
 }
 
 /** 토큰이 있는지만 동기로 확인한다. 라우팅 가드가 화면을 그리기 전에 판단할 때 쓴다 */
@@ -38,15 +73,15 @@ export function hasAccessToken(): boolean {
 
 /** 로그인·재발급 성공 시 호출. 재발급은 refresh token 도 회전되므로 항상 둘을 함께 저장한다 */
 export function saveTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_KEY, accessToken)
-  localStorage.setItem(REFRESH_KEY, refreshToken)
+  write(ACCESS_KEY, accessToken)
+  write(REFRESH_KEY, refreshToken)
   notify()
 }
 
 /** 로그아웃·재발급 실패 시 호출. 둘을 함께 지운다 */
 export function clearTokens(): void {
-  localStorage.removeItem(ACCESS_KEY)
-  localStorage.removeItem(REFRESH_KEY)
+  remove(ACCESS_KEY)
+  remove(REFRESH_KEY)
   notify()
 }
 
