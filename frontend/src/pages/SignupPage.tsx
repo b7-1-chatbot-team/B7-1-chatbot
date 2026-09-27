@@ -9,7 +9,12 @@ import { Field } from '@/components/Field'
 import { useField } from '@/hooks/useField'
 import { useSubmit } from '@/hooks/useSubmit'
 import { PATHS } from '@/routes/paths'
-import { validateEmail, validateNickname, validatePassword } from '@/utils/validators'
+import {
+  validateEmail, validateNickname, validatePassword,
+  EMAIL_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  NICKNAME_MAX_LENGTH,
+} from '@/utils/validators'
 
 /**
  * 회원가입 화면 (docs/05-ui-ux.md 화면 1).
@@ -64,6 +69,7 @@ export default function SignupPage() {
           ref={emailInputRef}
           type="email"
           autoComplete="email"
+          maxLength={EMAIL_MAX_LENGTH}
           placeholder="user@example.com"
         />
         <Field
@@ -71,9 +77,10 @@ export default function SignupPage() {
           field={password}
           type="password"
           autoComplete="new-password"
+          maxLength={PASSWORD_MAX_LENGTH}
           hint="8자 이상"
         />
-        <Field label="닉네임" field={nickname} autoComplete="nickname" hint="1~20자, 중복 가능" />
+        <Field label="닉네임" field={nickname} autoComplete="nickname" maxLength={NICKNAME_MAX_LENGTH} hint="1~20자, 중복 가능" />
 
         {/* 이메일 중복은 위 필드에서 안내하므로 여기서 다시 보여주지 않는다 */}
         {error && error.code !== RESULT_CODE.conflict ? <p role="alert">{error.message}</p> : null}

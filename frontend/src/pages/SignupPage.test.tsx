@@ -192,3 +192,13 @@ describe('회원가입 — 서버 응답 처리', () => {
     expect(await screen.findByText(/서버에 연결할 수 없습니다/)).toBeTruthy()
   })
 })
+
+describe('회원가입 — 입력 길이 상한 (#34)', () => {
+  it('입력칸에 길이 상한이 걸려 있다', () => {
+    renderSignup()
+
+    expect(screen.getByLabelText('이메일')).toHaveAttribute('maxLength', '254')
+    expect(screen.getByLabelText('비밀번호')).toHaveAttribute('maxLength', '128')
+    expect(screen.getByLabelText('닉네임')).toHaveAttribute('maxLength', '20')
+  })
+})

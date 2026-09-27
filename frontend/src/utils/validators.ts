@@ -15,6 +15,15 @@ export const PASSWORD_MIN_LENGTH = 8
 export const NICKNAME_MIN_LENGTH = 1
 export const NICKNAME_MAX_LENGTH = 20
 
+/**
+ * 입력칸에 거는 길이 상한. 검증과 별개로 브라우저가 입력 자체를 막는다.
+ * 이메일 254자는 주소 형식의 최대 길이(RFC 5321)다.
+ * 비밀번호는 서버 검증 규칙에 상한이 없어 넉넉히 둔다. 수만 자를 붙여넣어
+ * 요청이 비대해지는 것만 막는다.
+ */
+export const EMAIL_MAX_LENGTH = 254
+export const PASSWORD_MAX_LENGTH = 128
+
 export function validateEmail(value: string): string | null {
   if (!value.trim()) return '이메일을 입력해 주세요.'
   if (!EMAIL_SHAPE.test(value)) return '이메일 형식이 올바르지 않습니다.'

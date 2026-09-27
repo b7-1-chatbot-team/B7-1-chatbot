@@ -128,3 +128,33 @@ describe('tokenStorage — 변경 구독', () => {
     expect(listener).not.toHaveBeenCalled()
   })
 })
+
+describe('tokenStorage — 저장소를 쓸 수 없을 때', () => {
+  it('저장소가 막혀도 예외 없이 메모리에 저장하고 읽는다', () => {
+    const setSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+    const getSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+
+    expect(() => saveTokens('access-1', 'refresh-1')).not.toThrow()
+    expect(getAccessToken()).toBe('access-1')
+    expect(getRefreshToken()).toBe('refresh-1')
+
+    clearTokens()
+    expect(getAccessToken()).toBeNull()
+
+    setSpy.mockRestore()
+    getSpy.mockRestore()
+  })
+})
+
+describe('tokenStorage — 빈 값', () => {
+  it('빈 문자열은 토큰이 없는 것으로 본다', () => {
+    localStorage.setItem('auth:access_token', '')
+
+    expect(getAccessToken()).toBeNull()
+    expect(hasAccessToken()).toBe(false)
+  })
+})
