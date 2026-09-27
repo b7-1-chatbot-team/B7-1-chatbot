@@ -79,7 +79,7 @@ VITE_ENABLE_MOCK=false   # 실제 백엔드에 연결
 | 이메일 | 실제 서버와 같게 **소문자로 정규화**해 저장합니다 |
 | 데이터 보관 | `localStorage` 의 `mock:db` — 새로고침해도 유지됩니다 |
 
-**관리자 계정은 미리 준비돼 있습니다.** 실제 서버도 시작 시 `.env` 로 만들며, 회원가입으로는 관리자를 만들 수 없습니다 (`docs/03-api.md` §4-0).
+**관리자 계정은 미리 준비돼 있습니다.** 실제 서버도 시작 시 `.env` 로 만들며, 회원가입으로는 관리자를 만들 수 없습니다 (`docs/03-api.md` 4-0절).
 
 | 구분 | 계정 |
 |------|------|
@@ -130,7 +130,7 @@ src/
 └── main.tsx         # 진입점 (BrowserRouter → AuthProvider → App)
 ```
 
-**`api/` 는 `store/` 를 import 하지 않습니다.** 인터셉터가 `AuthContext` 를 직접 부르면 `AuthContext → api/auth → instance → interceptors → AuthContext` 순환 참조가 됩니다. 재발급이 최종 실패하면 `clearTokens()` 만 호출하고, 토큰 변경 구독을 통해 인증 상태가 정리됩니다 (`docs/12-decisions.md` §17).
+**`api/` 는 `store/` 를 import 하지 않습니다.** 인터셉터가 `AuthContext` 를 직접 부르면 `AuthContext → api/auth → instance → interceptors → AuthContext` 순환 참조가 됩니다. 재발급이 최종 실패하면 `clearTokens()` 만 호출하고, 토큰 변경 구독을 통해 인증 상태가 정리됩니다 (`docs/12-decisions.md` 17절).
 
 **import 경로 규칙**
 
@@ -159,4 +159,4 @@ alias 설정은 **`tsconfig.app.json` 의 `paths`(타입 검사)와 `vite.config
 
 스타일은 **CSS Modules**(`*.module.css`)를 사용하고, 색·폰트 등 공통 값은 `styles/global.css` 의 `:root` CSS 변수로 관리합니다.
 전역 CSS 는 `styles/` 의 두 파일뿐이며, `main.tsx` 에서 `reset.css` → `global.css` 순서로 로드합니다.
-디자인 토큰은 기능 구현을 끝낸 뒤 스타일링 단계에서 채웁니다 (`docs/05-ui-ux.md` §1).
+디자인 토큰은 기능 구현을 끝낸 뒤 스타일링 단계에서 채웁니다 (`docs/05-ui-ux.md` 1절).

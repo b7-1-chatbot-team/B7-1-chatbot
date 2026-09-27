@@ -15,7 +15,7 @@ import { createRefreshInterceptor } from './interceptors/refresh'
 export const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  // 서버의 AI 호출 상한이 30초라(docs/03-api.md §7) 그보다 넉넉히 둔다.
+  // 서버의 AI 호출 상한이 30초라(docs/03-api.md 7절) 그보다 넉넉히 둔다.
   // 더 짧으면 정상 응답을 클라이언트가 먼저 끊어 버린다.
   timeout: 35_000,
 })

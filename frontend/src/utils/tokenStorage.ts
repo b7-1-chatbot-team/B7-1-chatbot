@@ -1,11 +1,11 @@
 /**
  * 토큰 저장소.
  *
- * localStorage 를 직접 만지는 곳은 이 파일 하나다 (docs/12-decisions.md §4).
+ * localStorage 를 직접 만지는 곳은 이 파일 하나다 (docs/12-decisions.md 4절).
  *
  * **이 모듈은 아무것도 import 하지 않는다.** 인터셉터(api/)와 AuthContext(store/) 가
  * 모두 이 파일을 참조하는데, 여기서 다시 그쪽을 참조하면 순환 참조가 된다
- * (docs/12-decisions.md §17).
+ * (docs/12-decisions.md 17절).
  *
  * 값이 바뀌면 구독자에게 알린다. localStorage 는 같은 탭에서 조작해도 이벤트가
  * 발생하지 않으므로, 저장소가 직접 알리지 않으면 React 는 변화를 알 수 없다.

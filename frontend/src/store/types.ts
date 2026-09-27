@@ -1,7 +1,7 @@
 import type { MeResponse } from '@/api/types'
 
 /**
- * 인증 상태 (docs/05-ui-ux.md §2).
+ * 인증 상태 (docs/05-ui-ux.md 2절).
  *
  * 가드는 토큰 유무와 사용자 정보 유무를 각각 검사하지 않고 이 값 하나로 판정한다.
  */

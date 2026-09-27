@@ -45,7 +45,7 @@ interface MockDb {
 /**
  * 관리자 계정은 **미리 심는다.**
  * 실제 서버도 시작 시 .env 의 ADMIN_EMAIL/ADMIN_PASSWORD 로 만들며,
- * 회원가입으로는 관리자를 만들 수 없다 (docs/03-api.md §4-0).
+ * 회원가입으로는 관리자를 만들 수 없다 (docs/03-api.md 4-0절).
  */
 const SEED_ADMIN: MockUser = {
   id: 1,
@@ -93,7 +93,7 @@ function normalizeEmail(email: string): string {
 }
 
 function fail(code: number, message: string) {
-  // 서버는 실패도 HTTP 200 으로 답한다 (docs/03-api.md §0)
+  // 서버는 실패도 HTTP 200 으로 답한다 (docs/03-api.md 0절)
   return HttpResponse.json({ code, data: { message } })
 }
 
@@ -140,7 +140,7 @@ async function forcedScenario(email: string) {
 }
 
 export const handlers = [
-  // 회원가입 (docs/03-api.md §1-1)
+  // 회원가입 (docs/03-api.md 1-1절)
   http.post('*/api/auth/signup', async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string; nickname: string }
     const email = normalizeEmail(body.email)
@@ -176,7 +176,7 @@ export const handlers = [
     })
   }),
 
-  // 로그인 (docs/03-api.md §1-2)
+  // 로그인 (docs/03-api.md 1-2절)
   http.post('*/api/auth/login', async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string }
     const email = normalizeEmail(body.email)
@@ -193,7 +193,7 @@ export const handlers = [
     return HttpResponse.json({ code: 200, data: issueTokens(user.id) })
   }),
 
-  // 토큰 재발급 (docs/03-api.md §1-4)
+  // 토큰 재발급 (docs/03-api.md 1-4절)
   http.post('*/api/auth/refresh', async ({ request }) => {
     const body = (await request.json().catch(() => null)) as { refresh_token?: string } | null
     if (!body?.refresh_token) return fail(422, '요청 형식이 올바르지 않습니다.')
@@ -207,7 +207,7 @@ export const handlers = [
     return HttpResponse.json({ code: 200, data: issueTokens(entry.userId) })
   }),
 
-  // 로그아웃 (docs/03-api.md §1-5)
+  // 로그아웃 (docs/03-api.md 1-5절)
   http.post('*/api/auth/logout', async ({ request }) => {
     const body = (await request.json().catch(() => null)) as { refresh_token?: string } | null
     if (!body?.refresh_token) return fail(422, '요청 형식이 올바르지 않습니다.')
@@ -219,7 +219,7 @@ export const handlers = [
     return HttpResponse.json({ code: 200, data: {} })
   }),
 
-  // 내 정보 (docs/03-api.md §1-3)
+  // 내 정보 (docs/03-api.md 1-3절)
   http.get('*/api/auth/me', ({ request }) => {
     const user = authenticate(request)
     if (!user) return fail(401, '로그인이 필요합니다.')

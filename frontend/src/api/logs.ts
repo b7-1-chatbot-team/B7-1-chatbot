@@ -2,7 +2,7 @@ import { instance } from './instance'
 import type { ChatLogList, ChatLogQuery } from './types'
 
 /**
- * 대화 로그 API (docs/03-api.md §3).
+ * 대화 로그 API (docs/03-api.md 3절).
  *
  * 조회 범위는 서버가 토큰의 사용자로 강제한다. 클라이언트가 user_id 를 보내지 않는다.
  */

@@ -9,7 +9,7 @@ import type {
 } from './types'
 
 /**
- * 인증 API (docs/03-api.md §1).
+ * 인증 API (docs/03-api.md 1절).
  *
  * 화면은 instance 를 직접 쓰지 않고 이 함수들만 쓴다.
  * 실패는 인터셉터가 ApiError 로 바꿔 던지므로 여기서 code 를 다루지 않는다.
@@ -45,7 +45,7 @@ export async function refresh(body: RefreshTokenRequest, signal?: AbortSignal): 
  * 로그아웃. 서버에서 refresh token 행을 지운다.
  *
  * 이미 없거나 만료된 토큰이어도 200 이다. 호출한 쪽은 응답과 관계없이
- * 저장된 토큰을 지운다 (docs/03-api.md §1-5).
+ * 저장된 토큰을 지운다 (docs/03-api.md 1-5절).
  */
 export async function logout(body: RefreshTokenRequest, signal?: AbortSignal): Promise<void> {
   await instance.post('/api/auth/logout', body, { signal })

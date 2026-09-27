@@ -17,7 +17,7 @@ import type { AuthContextValue, AuthStatus } from './types'
  *
  * 토큰은 이 컴포넌트가 들고 있지 않고 useAccessToken 으로 **구독**한다.
  * 그래서 인터셉터가 재발급 실패로 clearTokens() 를 호출하면, AuthContext 를 모르는
- * 채로도 여기까지 전달되어 로그아웃 상태가 된다 (docs/12-decisions.md §17).
+ * 채로도 여기까지 전달되어 로그아웃 상태가 된다 (docs/12-decisions.md 17절).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const accessToken = useAccessToken()
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (refreshToken) await logoutApi({ refresh_token: refreshToken })
     } finally {
-      // 서버 응답과 관계없이 지운다 (docs/03-api.md §1-5).
+      // 서버 응답과 관계없이 지운다 (docs/03-api.md 1-5절).
       // 네트워크 오류로 로그아웃이 막히면 안 된다
       clearTokens()
       setChecked(null)
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : 'checking'
 
   // Context 는 값의 참조가 바뀌면 구독 컴포넌트를 모두 리렌더한다.
-  // 객체 리터럴을 그대로 넘기면 Provider 가 렌더될 때마다 새 객체가 된다 (docs/12-decisions.md §18)
+  // 객체 리터럴을 그대로 넘기면 Provider 가 렌더될 때마다 새 객체가 된다 (docs/12-decisions.md 18절)
   const value = useMemo<AuthContextValue>(
     () => ({ user, status, login, logout }),
     [user, status, login, logout],

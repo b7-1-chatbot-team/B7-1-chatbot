@@ -2,7 +2,7 @@ import { instance } from './instance'
 import type { ChatRequest, ChatResponse } from './types'
 
 /**
- * 챗 API (docs/03-api.md §2).
+ * 챗 API (docs/03-api.md 2절).
  *
  * AI 호출이 실패하면 서버가 자동 재시도하지 않고 즉시 504(타임아웃) 또는 502(호출 실패)를
  * 돌려준다. 재시도는 사용자가 [다시 시도] 버튼을 눌러 같은 질문으로 다시 호출하는 방식이다.

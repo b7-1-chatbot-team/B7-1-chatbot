@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { PATHS } from './paths'
 
 /**
- * 라우팅 가드 (docs/05-ui-ux.md §2).
+ * 라우팅 가드 (docs/05-ui-ux.md 2절).
  *
  * 가드는 토큰 유무와 사용자 정보 유무를 각각 검사하지 않고 AuthStatus 한 값으로 판정한다.
  *
