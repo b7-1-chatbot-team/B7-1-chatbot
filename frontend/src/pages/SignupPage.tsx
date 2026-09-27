@@ -59,7 +59,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main>
+    <section>
       <h1>회원가입</h1>
 
       <form onSubmit={handleSubmit} noValidate>
@@ -93,6 +93,6 @@ export default function SignupPage() {
       <p>
         이미 계정이 있나요? <Link to={PATHS.login}>로그인</Link>
       </p>
-    </main>
+    </section>
   )
 }

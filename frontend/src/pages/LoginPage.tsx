@@ -61,7 +61,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
+    <section>
       <h1>로그인</h1>
       <p>챗봇 질문·응답 기능은 로그인한 사용자만 사용할 수 있습니다.</p>
 
@@ -88,6 +88,6 @@ export default function LoginPage() {
       <p>
         아직 계정이 없나요? <Link to={PATHS.signup}>회원가입</Link>
       </p>
-    </main>
+    </section>
   )
 }
