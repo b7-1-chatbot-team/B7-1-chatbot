@@ -1,4 +1,4 @@
-import { act, render, renderHook, screen } from '@testing-library/react'
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -232,5 +232,82 @@ describe('useAccessToken', () => {
 
     act(() => clearTokens())
     expect(result.current).toBeNull()
+  })
+})
+
+describe('AuthProvider — 계정 전환과 일시 실패 (#34)', () => {
+  function mockLoginAs(user: unknown, token: string) {
+    server.use(
+      http.post(`${BASE}/api/auth/login`, () =>
+        HttpResponse.json({
+          code: 200,
+          data: {
+            access_token: token,
+            refresh_token: `${token}-r`,
+            token_type: 'bearer',
+            expires_in: 900,
+            refresh_expires_in: 86_400,
+          },
+        }),
+      ),
+      http.get(`${BASE}/api/auth/me`, ({ request }) => {
+        const auth = request.headers.get('Authorization')
+        return HttpResponse.json({ code: 200, data: auth === `Bearer ${token}` ? user : USER })
+      }),
+    )
+  }
+
+  it('토큰만 지워진 뒤 다른 계정으로 로그인하면 새 사용자로 판정한다', async () => {
+    saveTokens('access-user', 'refresh-user')
+    mockMe(USER)
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
+    await waitFor(() => expect(result.current.user?.role).toBe('user'))
+
+    // 재발급 최종 실패 — 인터셉터는 토큰만 지운다
+    act(() => clearTokens())
+    expect(result.current.status).toBe('anonymous')
+
+    mockLoginAs(ADMIN, 'access-admin')
+    await act(() => result.current.login('admin@example.com', 'admin1234'))
+
+    await waitFor(() => expect(result.current.status).toBe('authenticated'))
+    expect(result.current.user?.role).toBe('admin')
+  })
+
+  it('다시 로그인한 직후 이전 사용자를 한 순간도 보여주지 않는다', async () => {
+    saveTokens('access-user', 'refresh-user')
+    mockMe(USER)
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
+    await waitFor(() => expect(result.current.user).not.toBeNull())
+    act(() => clearTokens())
+
+    act(() => saveTokens('access-admin', 'refresh-admin'))
+
+    // 확인 전에는 checking — 이전 사용자(일반)로 판정되면 가드가 /admin 에서 튕긴다
+    expect(result.current.status).toBe('checking')
+    expect(result.current.user).toBeNull()
+  })
+
+  it('연결 실패로 확인하지 못해도 토큰을 지우지 않는다 (다른 탭 보호)', async () => {
+    saveTokens('access-1', 'refresh-1')
+    server.use(http.get(`${BASE}/api/auth/me`, () => HttpResponse.error()))
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
+
+    await waitFor(() => expect(result.current.status).toBe('anonymous'))
+    expect(getAccessToken()).toBe('access-1')
+  })
+
+  it('재발급으로 토큰이 회전돼도 재확인 동안 로그인 상태를 유지한다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider })
+    await waitFor(() => expect(result.current.status).toBe('authenticated'))
+
+    act(() => saveTokens('access-2', 'refresh-2'))
+
+    // checking 으로 떨어지면 가드가 화면을 비워 15분마다 깜빡인다
+    expect(result.current.status).toBe('authenticated')
+    expect(result.current.user?.nickname).toBe('테스터')
   })
 })

@@ -21,28 +21,48 @@ import type { AuthContextValue, AuthStatus } from './types'
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const accessToken = useAccessToken()
-  const [fetchedUser, setFetchedUser] = useState<MeResponse | null>(null)
 
-  // 토큰이 없으면 사용자도 없다. effect 에서 setState 로 지우면 연쇄 렌더가 생기므로
-  // 렌더 중에 파생한다. 토큰이 사라지는 경우는 로그아웃과 재발급 최종 실패 두 가지다
-  const user = accessToken ? fetchedUser : null
+  /**
+   * 확인한 사용자와, 그 확인에 쓴 토큰을 함께 둔다.
+   * user 가 null 이면 확인에 실패했다는 뜻이다 (연결 실패 등).
+   *
+   * 사용자만 들고 있으면 토큰이 바뀌어도 "이미 확인됨"으로 보고 다시 묻지 않는다.
+   * 그러면 재발급 실패로 토큰이 지워진 뒤 다른 계정으로 로그인했을 때 이전 사용자의
+   * 권한으로 판정된다 (일반 사용자로 판정되어 관리자가 /admin 에서 튕김).
+   */
+  const [checked, setChecked] = useState<{ token: string; user: MeResponse | null } | null>(null)
+
+  // 토큰이 한 번 비워졌다면(로그아웃·재발급 실패) 이전 사용자 정보를 버린다.
+  // effect 가 아니라 렌더 중에 처리한다 — 다음 로그인의 첫 렌더부터 이전 사용자가 보이면 안 된다
+  const [prevToken, setPrevToken] = useState(accessToken)
+  if (accessToken !== prevToken) {
+    setPrevToken(accessToken)
+    if (!accessToken) setChecked(null)
+  }
+
+  const isConfirmed = accessToken !== null && checked?.token === accessToken
+
+  // 재발급으로 토큰이 회전되면 다시 확인하는 동안 직전 사용자를 계속 보여준다.
+  // 같은 세션 안의 회전이라 사용자는 같고, 비워 두면 15분마다 화면이 깜빡인다
+  const user = accessToken ? (checked?.user ?? null) : null
 
   useEffect(() => {
-    // 토큰이 없으면 물어볼 것이 없다. 이미 확인된 사용자면 화면 이동마다 다시 묻지 않는다
-    if (!accessToken || user) return
+    if (!accessToken || isConfirmed) return
 
     const controller = new AbortController()
     meApi(controller.signal)
-      .then(setFetchedUser)
+      .then((data) => setChecked({ token: accessToken, user: data }))
       .catch(() => {
         // 취소는 컴포넌트가 사라졌다는 뜻이므로 상태를 건드리지 않는다
         if (controller.signal.aborted) return
-        // 토큰이 유효하지 않다. 지우면 구독을 통해 anonymous 로 전환된다
-        clearTokens()
+        // 여기서 토큰을 지우지 않는다. 401 이면 인터셉터가 이미 재발급을 시도했고,
+        // 그마저 실패했다면 인터셉터가 지웠다. 연결 실패 같은 일시 오류에 지우면
+        // 저장소를 공유하는 모든 탭이 함께 로그아웃된다. 이 탭만 비로그인으로 둔다
+        setChecked({ token: accessToken, user: null })
       })
 
     return () => controller.abort()
-  }, [accessToken, user])
+  }, [accessToken, isConfirmed])
 
   const login = useCallback(async (email: string, password: string) => {
     const tokens = await loginApi({ email, password })
@@ -59,11 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 서버 응답과 관계없이 지운다 (docs/03-api.md §1-5).
       // 네트워크 오류로 로그아웃이 막히면 안 된다
       clearTokens()
-      setFetchedUser(null)
+      setChecked(null)
     }
   }, [])
 
-  const status: AuthStatus = !accessToken ? 'anonymous' : user ? 'authenticated' : 'checking'
+  const status: AuthStatus = !accessToken
+    ? 'anonymous'
+    : isConfirmed
+      ? checked?.user
+        ? 'authenticated'
+        : 'anonymous' // 확인 실패 — 저장소는 두고 이 탭만 비로그인
+      : user
+        ? 'authenticated' // 회전 후 재확인 중
+        : 'checking'
 
   // Context 는 값의 참조가 바뀌면 구독 컴포넌트를 모두 리렌더한다.
   // 객체 리터럴을 그대로 넘기면 Provider 가 렌더될 때마다 새 객체가 된다 (docs/12-decisions.md §18)
