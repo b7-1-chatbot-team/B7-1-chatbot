@@ -116,11 +116,13 @@ flowchart TD
 │       │   ├── authContext.ts   # Context 객체 (컴포넌트와 파일을 나눈다)
 │       │   ├── AuthProvider.tsx # 토큰 구독·사용자 복원·login/logout
 │       │   └── types.ts         # AuthStatus, AuthContextValue
-│       ├── utils/               # tokenStorage.ts (토큰 읽기·쓰기·삭제 + 변경 구독, 아무것도 import 안 함)
-│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth
+│       ├── utils/               # tokenStorage.ts (토큰 저장 + 변경 구독, 저장소 차단 시 메모리 대체, 아무것도 import 안 함),
+│       │                        # validators.ts (입력 검증 규칙·길이 상한)
+│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth, useField(입력 상태), useSubmit(제출 상태)
 │       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의), guards.tsx
 │       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
-│       ├── components/          # 컴포넌트(*.tsx) + *.module.css
+│       ├── components/          # Field(라벨·입력·오류, 접근성), Button(제출 중 잠금) + *.module.css
+│       ├── mocks/               # 브라우저 MSW — handlers.ts(가짜 백엔드), browser.ts. VITE_ENABLE_MOCK=true 일 때만
 │       ├── styles/              # reset.css(브라우저 기본값), global.css(:root 토큰·공통 기본값)
 │       ├── types/               # 여러 화면이 공유하는 타입 (user.ts)
 │       └── test/                # server.ts(MSW), setup.ts — 테스트는 *.test.ts 로 대상 옆에 둔다
@@ -167,8 +169,11 @@ flowchart TD
 | `app/routers/admin.py` | `GET /api/admin/*` |
 | `frontend/src/api/` | axios 인스턴스 + 인터셉터 (Authorization 자동 첨부, `code` 판단, 401 재발급 single-flight, 봉투 없는 응답 처리) |
 | `frontend/src/utils/tokenStorage.ts` | 토큰 읽기·쓰기·삭제 + **변경 구독**. 아무것도 import 하지 않는 끝점 |
-| `frontend/src/hooks/` | `useAccessToken`(토큰 구독) · `useAuth`(인증 상태 소비) |
-| `frontend/src/store/AuthProvider.tsx` | 인증 상태 전역 관리, 앱 로드 시 `/api/auth/me` (role 포함). Context 객체는 `store/authContext.ts` 에 분리 |
+| `frontend/src/hooks/` | `useAccessToken`(토큰 구독) · `useAuth`(인증 상태 소비) · `useField`(입력 값·검증·터치) · `useSubmit`(제출 중 상태·중복 차단, `{ ok, data \| error }` 반환) |
+| `frontend/src/components/` | `Field`(label 연결·`aria-invalid`·`role="alert"`) · `Button`(제출 중 잠금·문구 교체) |
+| `frontend/src/utils/validators.ts` | 이메일·비밀번호·닉네임 검증과 입력 길이 상한. 클라이언트 검증은 서버 검증의 보조 |
+| `frontend/src/mocks/` | 개발용 가짜 백엔드(브라우저 MSW). 운영 빌드에서 코드와 워커 파일 모두 제거됨 |
+| `frontend/src/store/AuthProvider.tsx` | 인증 상태 전역 관리, 앱 로드 시 `/api/auth/me` (role 포함). 사용자를 **확인에 쓴 토큰과 함께** 보관해 토큰이 바뀌면 재확인. 토큰을 직접 지우지 않음(연결 실패 시 이 탭만 비로그인). Context 객체는 `store/authContext.ts` 에 분리 |
 | `frontend/src/routes/guards.tsx` | `RequireAuth` · `RequireAdmin` · `GuestOnly` |
 | `frontend/src/pages/` | Login · Signup · Chat · Logs · Admin |
 
