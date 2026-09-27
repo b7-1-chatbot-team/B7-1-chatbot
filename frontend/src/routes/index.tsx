@@ -9,7 +9,7 @@ import { GuestOnly, RequireAdmin, RequireAuth } from './guards'
 import { PATHS } from './paths'
 
 /**
- * 라우트 정의 (docs/05-ui-ux.md §2)
+ * 라우트 정의 (docs/05-ui-ux.md 2절)
  *
  * | 경로     | 화면        | 접근 |
  * |----------|-------------|------|

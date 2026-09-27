@@ -9,7 +9,7 @@ import type { ApiEnvelope, ApiFailureData } from '../types'
  * 응답 인터셉터 — 공통 응답 형식을 벗기고, 실패를 ApiError 로 바꾼다.
  *
  * 이 서버는 성공·실패 모두 HTTP 200 으로 답하고 결과는 body 의 code 로만 판단한다
- * (docs/03-api.md §0). axios 는 200 을 성공으로 보고 에러를 던지지 않으므로,
+ * (docs/03-api.md 0절). axios 는 200 을 성공으로 보고 에러를 던지지 않으므로,
  * 여기서 code 를 읽어 HTTP 규약대로 되돌린다.
  *
  * 여기서 하는 일은 **형식 변환뿐**이다. "어떤 화면을 띄울지" 같은 분기는 화면이 맡는다.

@@ -5,7 +5,7 @@ import { RESULT_CODE } from './types'
 /**
  * API 실패를 나타내는 오류.
  *
- * 이 서버는 실패도 HTTP 200 으로 주므로(docs/03-api.md §0) axios 가 에러를 던지지 않는다.
+ * 이 서버는 실패도 HTTP 200 으로 주므로(docs/03-api.md 0절) axios 가 에러를 던지지 않는다.
  * 응답 인터셉터가 body 의 code 를 보고 이 오류로 바꿔 던지고,
  * 화면은 catch 에서 code 별로 분기한다.
  *
