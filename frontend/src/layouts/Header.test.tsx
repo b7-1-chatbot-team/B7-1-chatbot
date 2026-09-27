@@ -1,0 +1,182 @@
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { delay, http, HttpResponse } from 'msw'
+import { MemoryRouter } from 'react-router-dom'
+import { beforeAll, describe, expect, it } from 'vitest'
+
+import { instance } from '@/api/instance'
+import AppRoutes from '@/routes'
+import { AuthProvider } from '@/store/AuthProvider'
+import { server } from '@/test/server'
+import { getAccessToken, saveTokens } from '@/utils/tokenStorage'
+
+const BASE = 'https://api.test'
+
+beforeAll(() => {
+  instance.defaults.baseURL = BASE
+})
+
+const USER = { id: 1, email: 'user@example.com', nickname: '테스터', role: 'user' }
+const ADMIN = { id: 2, email: 'admin@example.com', nickname: '관리자님', role: 'admin' }
+
+function mockMe(data: unknown, delayMs = 0) {
+  server.use(
+    http.get(`${BASE}/api/auth/me`, async () => {
+      if (delayMs) await delay(delayMs)
+      return HttpResponse.json({ code: 200, data })
+    }),
+  )
+}
+
+function renderAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </MemoryRouter>,
+  )
+}
+
+// 헤더(banner) 안에서만 찾는다. 로그인 화면 본문에도 "회원가입" 링크가 있어 겹친다
+const link = (name: string) => within(screen.getByRole('banner')).queryByRole('link', { name })
+
+describe('헤더 — 인증 상태별 메뉴', () => {
+  it('비로그인은 로그인·회원가입 메뉴만 본다', () => {
+    renderAt('/login')
+
+    expect(link('로그인')).toBeInTheDocument()
+    expect(link('회원가입')).toBeInTheDocument()
+    expect(link('챗')).toBeNull()
+    expect(screen.queryByRole('button', { name: '로그아웃' })).toBeNull()
+  })
+
+  it('로그인 사용자는 챗·내 대화 로그·닉네임·로그아웃을 본다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    renderAt('/chat')
+
+    expect(await screen.findByRole('button', { name: '로그아웃' })).toBeInTheDocument()
+    expect(link('챗')).toBeInTheDocument()
+    expect(link('내 대화 로그')).toBeInTheDocument()
+    expect(screen.getByText('테스터')).toBeInTheDocument()
+    // 로그인한 사용자에게 로그인·회원가입 메뉴를 보여주지 않는다
+    expect(link('회원가입')).toBeNull()
+  })
+
+  it('이메일은 노출하지 않는다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    renderAt('/chat')
+
+    await screen.findByRole('button', { name: '로그아웃' })
+    expect(screen.queryByText('user@example.com')).toBeNull()
+  })
+
+  it('일반 사용자에게는 관리자 탭이 없다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    renderAt('/chat')
+
+    await screen.findByRole('button', { name: '로그아웃' })
+    expect(link('관리자')).toBeNull()
+  })
+
+  it('관리자에게만 관리자 탭이 보인다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(ADMIN)
+    renderAt('/chat')
+
+    await screen.findByRole('button', { name: '로그아웃' })
+    expect(link('관리자')).toBeInTheDocument()
+  })
+
+  it('확인 중에는 메뉴를 비워 비로그인 메뉴가 깜빡이지 않는다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER, 50)
+    renderAt('/chat')
+
+    expect(link('로그인')).toBeNull()
+    expect(link('챗')).toBeNull()
+
+    expect(await screen.findByRole('button', { name: '로그아웃' })).toBeInTheDocument()
+  })
+})
+
+describe('헤더 — 현재 메뉴 표시', () => {
+  it('지금 있는 화면의 메뉴에 aria-current 가 붙는다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    renderAt('/logs')
+
+    await screen.findByRole('button', { name: '로그아웃' })
+    expect(link('내 대화 로그')).toHaveAttribute('aria-current', 'page')
+    expect(link('챗')).not.toHaveAttribute('aria-current')
+  })
+
+  it('메뉴를 누르면 해당 화면으로 이동한다', async () => {
+    const user = userEvent.setup()
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    renderAt('/chat')
+    await screen.findByRole('button', { name: '로그아웃' })
+
+    await user.click(link('내 대화 로그')!)
+
+    expect(screen.getByRole('heading', { name: '내 대화 로그' })).toBeInTheDocument()
+  })
+})
+
+describe('헤더 — 로그아웃', () => {
+  it('서버에 refresh token 을 보내고 토큰을 지운 뒤 로그인 화면으로 간다', async () => {
+    const user = userEvent.setup()
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    let received: unknown = null
+    server.use(
+      http.post(`${BASE}/api/auth/logout`, async ({ request }) => {
+        received = await request.json()
+        return HttpResponse.json({ code: 200, data: {} })
+      }),
+    )
+    renderAt('/chat')
+
+    await user.click(await screen.findByRole('button', { name: '로그아웃' }))
+
+    expect(await screen.findByRole('heading', { name: '로그인' })).toBeInTheDocument()
+    expect(received).toEqual({ refresh_token: 'refresh-1' })
+    expect(getAccessToken()).toBeNull()
+  })
+
+  it('로그아웃 요청이 실패해도 로그아웃된다', async () => {
+    const user = userEvent.setup()
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    server.use(http.post(`${BASE}/api/auth/logout`, () => HttpResponse.error()))
+    renderAt('/chat')
+
+    await user.click(await screen.findByRole('button', { name: '로그아웃' }))
+
+    expect(await screen.findByRole('heading', { name: '로그인' })).toBeInTheDocument()
+    expect(getAccessToken()).toBeNull()
+  })
+
+  it('로그아웃 중에는 버튼을 잠근다', async () => {
+    const user = userEvent.setup()
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    server.use(
+      http.post(`${BASE}/api/auth/logout`, async () => {
+        await delay(100)
+        return HttpResponse.json({ code: 200, data: {} })
+      }),
+    )
+    renderAt('/chat')
+
+    await user.click(await screen.findByRole('button', { name: '로그아웃' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '로그아웃 중…' })).toBeDisabled(),
+    )
+  })
+})
