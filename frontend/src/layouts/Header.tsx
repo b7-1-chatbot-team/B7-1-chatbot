@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { useSubmit } from '@/hooks/useSubmit'
-import { PATHS } from '@/routes/paths'
+import { ADMIN_PATH, PATHS } from '@/routes/paths'
 
 /**
  * 공통 헤더 (docs/05-ui-ux.md 3절).
@@ -38,7 +38,7 @@ export function Header() {
           <nav aria-label="주 메뉴">
             <NavLink to={PATHS.chat}>챗</NavLink>
             <NavLink to={PATHS.logs}>내 대화 로그</NavLink>
-            {user.role === 'admin' ? <NavLink to={PATHS.admin}>관리자</NavLink> : null}
+            {user.role === 'admin' && ADMIN_PATH ? <NavLink to={ADMIN_PATH}>관리자</NavLink> : null}
           </nav>
           {/* 이메일은 노출하지 않고 닉네임만 보여준다 */}
           <span>{user.nickname}</span>

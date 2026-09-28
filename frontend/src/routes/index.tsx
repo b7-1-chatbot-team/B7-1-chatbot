@@ -7,7 +7,7 @@ import LoginPage from '@/pages/LoginPage'
 import LogsPage from '@/pages/LogsPage'
 import SignupPage from '@/pages/SignupPage'
 import { GuestOnly, RequireAdmin, RequireAuth } from './guards'
-import { PATHS } from './paths'
+import { ADMIN_PATH, PATHS } from './paths'
 
 /**
  * 라우트 정의 (docs/05-ui-ux.md 2절)
@@ -18,7 +18,7 @@ import { PATHS } from './paths'
  * | /signup  | 회원가입    | 게스트 전용 |
  * | /chat    | 챗          | 로그인 필수 |
  * | /logs    | 내 대화 로그 | 로그인 필수 |
- * | /admin   | 관리자      | 관리자 필수 |
+ * | (환경변수) | 관리자    | 관리자 필수 — 주소는 VITE_ADMIN_PATH |
  *
  * 미정의 경로는 /login 으로 보낸다. 로그인 상태라면 GuestOnly 가 다시 /chat 으로
  * 넘기므로, 결과적으로 인증 상태에 맞는 화면에 도착한다.
@@ -60,14 +60,17 @@ export default function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route
-        path={PATHS.admin}
-        element={
-          <RequireAdmin>
-            <AdminPage />
-          </RequireAdmin>
-        }
-      />
+      {/* 관리자 주소가 설정됐을 때만 등록한다 (VITE_ADMIN_PATH) */}
+      {ADMIN_PATH ? (
+        <Route
+          path={ADMIN_PATH}
+          element={
+            <RequireAdmin>
+              <AdminPage />
+            </RequireAdmin>
+          }
+        />
+      ) : null}
       <Route path="*" element={<Navigate to={PATHS.login} replace />} />
       </Route>
     </Routes>

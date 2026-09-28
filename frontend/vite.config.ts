@@ -42,5 +42,7 @@ export default defineConfig(({ mode }) => ({
     // describe·it 등을 전역으로 두지 않고 vitest 에서 명시적으로 import 한다
     globals: false,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // 테스트 전용 관리자 주소. 실제 값은 .env 에만 둔다
+    env: { VITE_ADMIN_PATH: '/test-admin-console' },
   },
 }))

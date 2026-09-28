@@ -12,6 +12,9 @@ import { getAccessToken, saveTokens } from '@/utils/tokenStorage'
 
 const BASE = 'https://api.test'
 
+// vite.config.ts 의 test.env 와 같은 값. 실제 관리자 주소는 .env 에만 둔다
+const ADMIN_URL = '/test-admin-console'
+
 beforeAll(() => {
   instance.defaults.baseURL = BASE
 })
@@ -88,7 +91,8 @@ describe('헤더 — 인증 상태별 메뉴', () => {
     renderAt('/chat')
 
     await screen.findByRole('button', { name: '로그아웃' })
-    expect(link('관리자')).toBeInTheDocument()
+    // 탭은 환경변수로 지정한 주소로 연결된다
+    expect(link('관리자')).toHaveAttribute('href', ADMIN_URL)
   })
 
   it('확인 중에는 메뉴를 비워 비로그인 메뉴가 깜빡이지 않는다', async () => {

@@ -11,6 +11,9 @@ import AppRoutes from './index'
 
 const BASE = 'https://api.test'
 
+// vite.config.ts 의 test.env 와 같은 값. 실제 관리자 주소는 .env 에만 둔다
+const ADMIN_URL = '/test-admin-console'
+
 beforeAll(() => {
   instance.defaults.baseURL = BASE
 })
@@ -90,25 +93,36 @@ describe('RequireAdmin — 관리자 전용 경로', () => {
     saveTokens('access-1', 'refresh-1')
     mockMe(ADMIN)
 
-    renderAt('/admin')
+    renderAt(ADMIN_URL)
 
     expect(await findHeading('관리자')).toBeTruthy()
   })
 
-  it('일반 사용자는 챗으로 보낸다 (로그인 화면이 아니다)', async () => {
+  it('일반 사용자는 없는 주소와 똑같이 처리된다 (결국 챗)', async () => {
     saveTokens('access-1', 'refresh-1')
     mockMe(USER)
 
-    renderAt('/admin')
+    renderAt(ADMIN_URL)
 
     expect(await findHeading('챗')).toBeTruthy()
     expect(queryHeading('관리자')).toBeNull()
   })
 
-  it('비로그인은 로그인 화면으로 보낸다', () => {
-    renderAt('/admin')
+  it('비로그인도 없는 주소와 똑같이 로그인 화면으로 간다', () => {
+    renderAt(ADMIN_URL)
 
     expect(heading('로그인')).toBeTruthy()
+    expect(queryHeading('관리자')).toBeNull()
+  })
+
+  it('/admin 은 더 이상 관리자 화면이 아니다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(ADMIN)
+
+    renderAt('/admin')
+
+    // 관리자여도 /admin 은 없는 주소다
+    expect(await findHeading('챗')).toBeTruthy()
     expect(queryHeading('관리자')).toBeNull()
   })
 })
