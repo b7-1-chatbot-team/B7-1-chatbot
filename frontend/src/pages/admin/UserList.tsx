@@ -18,11 +18,16 @@ interface UserListProps {
 /**
  * 사용자 목록 · 이메일 검색 (docs/03-api.md 4-2절).
  *
- * 검색어가 바뀌면 목록을 key 로 새로 그린다. 이전 검색의 [더 보기] 결과가 섞이지 않는다.
+ * 서버가 **최근 활동 순**으로 준다. 가입만 하고 쓰지 않는 계정보다 지금 쓰는 사용자를 먼저 본다.
+ * 활동 순은 누가 대화할 때마다 바뀌므로, 보는 도중 순서가 바뀐 것은 자동으로 따라가지 않고
+ * [목록 새로고침] 으로 관리자가 직접 다시 불러온다. 그 사이 [더 보기] 의 중복은 키로 거른다.
+ *
+ * 검색어가 바뀌거나 새로고침하면 목록을 key 로 새로 그린다. 이전 목록의 [더 보기] 결과가 섞이지 않는다.
  * 검색어는 입력이 멈춘 뒤 300ms 에 반영해 글자마다 요청하지 않는다.
  */
 export function UserList({ selectedId, onSelect }: UserListProps) {
   const [query, setQuery] = useState('')
+  const [version, setVersion] = useState(0)
   const q = useDebouncedValue(query.trim(), SEARCH_DEBOUNCE_MS)
 
   return (
@@ -30,8 +35,11 @@ export function UserList({ selectedId, onSelect }: UserListProps) {
       <h2 id="admin-users-title">사용자 목록</h2>
       <label>
         이메일 검색 <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
-      </label>
-      <UserListResult key={q} q={q} selectedId={selectedId} onSelect={onSelect} />
+      </label>{' '}
+      <button type="button" onClick={() => setVersion((v) => v + 1)}>
+        목록 새로고침
+      </button>
+      <UserListResult key={`${q}:${version}`} q={q} selectedId={selectedId} onSelect={onSelect} />
     </section>
   )
 }

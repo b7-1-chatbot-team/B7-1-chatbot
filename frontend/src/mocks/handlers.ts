@@ -433,32 +433,36 @@ export const handlers = [
     })
   }),
 
-  // 사용자 목록·이메일 검색 (4-2절) — 최근 가입 순
+  // 사용자 목록·이메일 검색 (4-2절) — 최근 활동 순, 대화가 없는 사용자는 뒤에서 최근 가입 순
   http.get('*/api/admin/users', ({ request }) => {
     const denied = requireAdmin(request)
     if (denied) return denied
 
     const { limit, offset, url } = pageParams(request)
     const q = url.searchParams.get('q')?.trim().toLowerCase() ?? ''
-    const matched = db.users.filter((user) => user.email.includes(q)).reverse()
+    const rows = db.users
+      .filter((user) => user.email.includes(q))
+      .map((user) => {
+        const chats = db.chats.filter((chat) => chat.userId === user.id)
+        return {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+          role: user.role,
+          created_at: user.createdAt,
+          chat_count: chats.length,
+          last_chat_at: chats.at(-1)?.createdAt ?? null,
+        }
+      })
+      .sort(
+        (a, b) =>
+          // ISO 시각은 문자열 비교로 순서가 맞다. 대화가 없으면('') 맨 뒤
+          (b.last_chat_at ?? '').localeCompare(a.last_chat_at ?? '') || b.id - a.id,
+      )
 
     return HttpResponse.json({
       code: 200,
-      data: {
-        total: matched.length,
-        items: matched.slice(offset, offset + limit).map((user) => {
-          const chats = db.chats.filter((chat) => chat.userId === user.id)
-          return {
-            id: user.id,
-            email: user.email,
-            nickname: user.nickname,
-            role: user.role,
-            created_at: user.createdAt,
-            chat_count: chats.length,
-            last_chat_at: chats.at(-1)?.createdAt ?? null,
-          }
-        }),
-      },
+      data: { total: rows.length, items: rows.slice(offset, offset + limit) },
     })
   }),
 
