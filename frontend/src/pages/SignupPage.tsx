@@ -90,8 +90,9 @@ export default function SignupPage() {
         </Button>
       </form>
 
+      {/* 문장 전체가 링크다. 한 단어만 누르게 하면 누를 곳이 좁다 */}
       <p>
-        이미 계정이 있나요? <Link to={PATHS.login}>로그인</Link>
+        <Link to={PATHS.login}>이미 계정이 있나요? 로그인</Link>
       </p>
     </section>
   )

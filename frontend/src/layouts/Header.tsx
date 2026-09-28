@@ -49,9 +49,9 @@ export function Header() {
       ) : null}
 
       {status === 'anonymous' ? (
+        // 회원가입은 로그인 화면 아래 안내 문장으로 이동한다. 헤더에는 로그인만 둔다
         <nav aria-label="계정 메뉴">
           <NavLink to={PATHS.login}>로그인</NavLink>
-          <NavLink to={PATHS.signup}>회원가입</NavLink>
         </nav>
       ) : null}
     </header>

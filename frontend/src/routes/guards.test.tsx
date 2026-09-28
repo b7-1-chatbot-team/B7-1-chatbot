@@ -98,32 +98,45 @@ describe('RequireAdmin — 관리자 전용 경로', () => {
     expect(await findHeading('관리자')).toBeTruthy()
   })
 
-  it('일반 사용자는 없는 주소와 똑같이 처리된다 (결국 챗)', async () => {
+  it('일반 사용자는 없는 주소와 같은 404 화면을 본다', async () => {
     saveTokens('access-1', 'refresh-1')
     mockMe(USER)
 
     renderAt(ADMIN_URL)
 
-    expect(await findHeading('챗')).toBeTruthy()
+    expect(await findHeading('404 Not Found')).toBeTruthy()
     expect(queryHeading('관리자')).toBeNull()
   })
 
-  it('비로그인도 없는 주소와 똑같이 로그인 화면으로 간다', () => {
+  it('비로그인도 없는 주소와 같은 404 화면을 본다 (로그인 화면으로 보내지 않는다)', () => {
     renderAt(ADMIN_URL)
 
-    expect(heading('로그인')).toBeTruthy()
-    expect(queryHeading('관리자')).toBeNull()
+    expect(heading('404 Not Found')).toBeTruthy()
+    expect(queryHeading('로그인')).toBeNull()
   })
 
-  it('/admin 은 더 이상 관리자 화면이 아니다', async () => {
+  it('관리자 주소와 없는 주소의 화면이 완전히 같다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    const admin = renderAt(ADMIN_URL)
+    await findHeading('404 Not Found')
+    const adminHtml = admin.container.innerHTML
+    admin.unmount()
+
+    const unknown = renderAt('/nowhere')
+    await findHeading('404 Not Found')
+
+    // 조금이라도 다르면 "이 주소에 무언가 있다"는 것이 드러난다
+    expect(unknown.container.innerHTML).toBe(adminHtml)
+  })
+
+  it('/admin 은 없는 주소다', async () => {
     saveTokens('access-1', 'refresh-1')
     mockMe(ADMIN)
 
     renderAt('/admin')
 
-    // 관리자여도 /admin 은 없는 주소다
-    expect(await findHeading('챗')).toBeTruthy()
-    expect(queryHeading('관리자')).toBeNull()
+    expect(await findHeading('404 Not Found')).toBeTruthy()
   })
 })
 
@@ -151,18 +164,18 @@ describe('GuestOnly — 게스트 전용 경로', () => {
 })
 
 describe('미정의 경로', () => {
-  it('비로그인은 로그인 화면으로 간다', () => {
+  it('비로그인은 404 화면을 본다', () => {
     renderAt('/nowhere')
 
-    expect(heading('로그인')).toBeTruthy()
+    expect(heading('404 Not Found')).toBeTruthy()
   })
 
-  it('로그인 상태면 로그인을 거쳐 결국 챗에 도착한다', async () => {
+  it('로그인 상태여도 404 화면을 본다 (다른 화면으로 보내지 않는다)', async () => {
     saveTokens('access-1', 'refresh-1')
     mockMe(USER)
 
     renderAt('/nowhere')
 
-    expect(await findHeading('챗')).toBeTruthy()
+    expect(await findHeading('404 Not Found')).toBeTruthy()
   })
 })
