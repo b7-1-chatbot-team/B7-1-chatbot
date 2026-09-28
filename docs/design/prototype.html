@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatlog 디자인 프로토타입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   디자인 토큰 — 실제 구현에서는 frontend/src/styles/global.css 의 :root 로 간다
+   (docs/05-ui-ux.md 1절). 수정하고 싶은 색·크기는 여기만 바꾸면 전체에 반영된다.
+   ===================================================================== */
+:root {
+  color-scheme: dark;
+
+  /* ==== 1. 원시 색 (팔레트) — 직접 쓰지 않고 아래 의미 토큰이 참조한다 ==== */
+  --gray-950: #0e1113;
+  --gray-925: #0f1315;
+  --gray-900: #14181a;
+  --gray-875: #161a1d;
+  --gray-850: #1b2023;
+  --gray-800: #22282b;
+  --gray-750: #262c30;
+  --gray-600: #3a4246;
+  --gray-500: #5d666a;
+  --gray-400: #8b9599;
+  --gray-100: #e3e7e6;
+  --teal-500: oklch(0.72 0.07 186);
+  --teal-600: oklch(0.66 0.07 186);
+  --teal-800: oklch(0.42 0.045 186);
+  --orange-500: oklch(0.72 0.09 55);
+
+  /* ==== 2. 의미 색 — 컴포넌트는 이것만 쓴다 ==== */
+  /* 텍스트 */
+  --text-primary: var(--gray-100);      /* 본문·제목 */
+  --text-secondary: var(--gray-400);    /* 설명·라벨·비활성 메뉴 */
+  --text-tertiary: var(--gray-500);     /* 시각·코드·보조 */
+  --text-disabled: var(--gray-600);     /* 비활성 컨트롤의 글자 */
+  --text-on-accent: var(--gray-950);    /* 청록 버튼 위 글자 */
+  --text-link: var(--teal-500);
+  --text-link-hover: color-mix(in oklch, var(--teal-500) 80%, white);
+  --text-error: var(--orange-500);
+  --text-success: var(--teal-500);
+  --text-placeholder: var(--gray-500);
+
+  /* 배경 */
+  --bg-page: var(--gray-950);
+  --bg-surface: var(--gray-900);        /* 카드·패널 */
+  --bg-surface-raised: var(--gray-875); /* 카드 안의 머리줄·선택된 메뉴 */
+  --bg-bubble-bot: var(--gray-850);
+  --bg-bubble-user: var(--teal-800);
+  --bg-input: var(--gray-925);
+  --bg-input-disabled: var(--gray-900);
+  --bg-hover: var(--gray-875);          /* 목록 행·메뉴 hover */
+  --bg-selected: color-mix(in oklch, var(--teal-500) 12%, var(--gray-900));
+  --bg-header: color-mix(in srgb, var(--gray-950) 82%, transparent);
+
+  /* 테두리 */
+  --border-default: var(--gray-800);    /* 카드·구분선 */
+  --border-strong: var(--gray-750);     /* 입력·버튼 */
+  --border-hover: var(--gray-500);
+  --border-selected: color-mix(in oklch, var(--teal-500) 35%, transparent);
+  --border-error: color-mix(in oklch, var(--orange-500) 55%, transparent);
+
+  /* 포커스 링 — 키보드 이동 시 모든 컨트롤 공통 */
+  --focus-ring-color: color-mix(in oklch, var(--teal-500) 60%, transparent);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 1px;
+
+  /* 주 버튼 (청록) — 상태별 */
+  --btn-primary-bg: var(--teal-500);
+  --btn-primary-bg-hover: color-mix(in oklch, var(--teal-500) 88%, white);
+  --btn-primary-bg-active: var(--teal-600);
+  --btn-primary-text: var(--text-on-accent);
+  --btn-primary-bg-disabled: color-mix(in oklch, var(--teal-500) 30%, var(--gray-900));
+  --btn-primary-text-disabled: color-mix(in oklch, var(--gray-950) 60%, var(--teal-500));
+  --btn-primary-bg-loading: color-mix(in oklch, var(--teal-500) 70%, var(--gray-900));
+
+  /* 보조 버튼 (테두리) — 상태별 */
+  --btn-secondary-bg: var(--gray-900);
+  --btn-secondary-bg-hover: var(--gray-875);
+  --btn-secondary-bg-active: var(--gray-850);
+  --btn-secondary-text: var(--text-primary);
+  --btn-secondary-border: var(--border-strong);
+  --btn-secondary-border-hover: var(--border-hover);
+  --btn-secondary-bg-disabled: var(--gray-900);
+  --btn-secondary-text-disabled: var(--text-disabled);
+
+  /* 상태 (성공·오류) */
+  --status-success: var(--teal-500);
+  --status-success-bg: color-mix(in oklch, var(--teal-500) 12%, var(--gray-900));
+  --status-success-border: color-mix(in oklch, var(--teal-500) 35%, transparent);
+  --status-error: var(--orange-500);
+  --status-error-bg: color-mix(in oklch, var(--orange-500) 10%, var(--gray-900));
+  --status-error-border: color-mix(in oklch, var(--orange-500) 35%, transparent);
+
+  /* 로딩 */
+  --loading-track: var(--gray-750);     /* 스피너 바탕 원 */
+  --loading-indicator: var(--teal-500); /* 스피너 도는 부분 */
+  --skeleton-base: var(--gray-875);
+  --skeleton-shine: var(--gray-800);
+
+  /* ==== 3. 글꼴 ==== */
+  --font-sans: 'IBM Plex Sans KR', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* 글자 크기 (데스크톱) — 모바일 값은 아래 MOBILE_TOKENS 가 덮어쓴다 */
+  --fs-micro: 10px;      /* 태그 */
+  --fs-caption: 11px;    /* 시각·코드 칩 보조 */
+  --fs-label: 12px;      /* 라벨·코드 칩·API 표기 */
+  --fs-small: 13px;      /* 보조 문장·필드 라벨 */
+  --fs-body-sm: 14px;    /* 버튼·메뉴·목록 */
+  --fs-body: 15px;       /* 본문 기본 */
+  --fs-input: 15px;      /* 입력칸 (모바일 16 — iOS 확대 방지) */
+  --fs-h3: 15px;         /* 패널 제목 */
+  --fs-h2: 20px;         /* 섹션 제목·총 기록 숫자 */
+  --fs-stat: 22px;       /* 통계 숫자 */
+  --fs-h1: 26px;         /* 화면 제목 */
+  --fs-display: 56px;    /* 404 숫자 */
+
+  --lh-tight: 1.3;       /* 제목·숫자 */
+  --lh-normal: 1.6;      /* 본문 */
+  --lh-input: 1.5;       /* 입력칸 */
+  --ls-title: -0.01em;
+  --ls-mono-caps: 0.04em;
+
+  /* ==== 4. 간격 (4px 그리드, 반 단계 허용) ==== */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-4-5: 18px;
+  --space-5: 20px;
+  --space-5-5: 22px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-22: 90px;
+  --space-page-top: 40px;       /* 본문 위 여백 (모바일 24) */
+
+  /* ==== 5. 모서리 ==== */
+  --radius-xs: 4px;      /* 태그·말풍선 꼬리 */
+  --radius-sm: 6px;      /* 코드 칩 */
+  --radius-md: 8px;      /* 메뉴·목록 행 */
+  --radius-control: 10px;/* 입력·버튼 */
+  --radius-card: 14px;
+  --radius-bubble: 14px;
+  --radius-tail: 4px;
+  --radius-pill: 999px;
+
+  /* ==== 6. 크기 ==== */
+  --page-max: 1180px;
+  --page-pad: clamp(16px, 4vw, 32px);
+  --chat-max: 820px;
+  --auth-max: 404px;
+  --admin-list-width: 360px;
+  --control-height: 40px;        /* 버튼·입력 최소 높이 */
+  --control-height-sm: 32px;
+  --touch-target: 44px;          /* 모바일 최소 터치 영역 */
+  --bubble-max: 78%;
+  --icon-spinner: 14px;
+  --brand-mark: 26px;
+  --dot-size: 6px;               /* 응답 대기 점 */
+  --border-width: 1px;
+  --tab-indicator: 2px;          /* 선택된 탭 밑줄 */
+  --qa-label-width: 72px;
+
+  /* ==== 7. 투명도 ==== */
+  --opacity-disabled: 0.45;
+
+  /* ==== 8. 움직임 ==== */
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;        /* hover·색 전환 */
+  --duration-base: 200ms;        /* 펼침·탭 전환 */
+  --duration-enter: 280ms;       /* 말풍선·화면 등장 (rise) */
+  --duration-blink: 1.2s;        /* 응답 대기 점 한 주기 */
+  --duration-spin: 0.8s;         /* 스피너 한 바퀴 */
+  --duration-shimmer: 1.4s;      /* 스켈레톤 */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-linear: linear;
+  --rise-distance: 6px;          /* 등장 시 올라오는 거리 */
+  --press-scale: 0.98;           /* 버튼 누름 */
+
+  /* ==== 9. 겹침 순서 ==== */
+  --z-header: 40;
+  --z-proto: 50;
+
+  /* 이전 이름 — 프로토타입 내부 호환용 */
+  --color-bg: var(--bg-page);
+  --color-surface: var(--bg-surface);
+  --color-surface-2: var(--bg-surface-raised);
+  --color-bubble: var(--bg-bubble-bot);
+  --color-input: var(--bg-input);
+  --color-border: var(--border-default);
+  --color-border-2: var(--border-strong);
+  --color-text: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-faint: var(--text-tertiary);
+  --color-accent: var(--teal-500);
+  --color-accent-ink: var(--text-on-accent);
+  --color-user-bubble: var(--bg-bubble-user);
+  --color-warn: var(--orange-500);
+  --color-warn-bg: var(--status-error-bg);
+  --color-accent-bg: var(--bg-selected);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font: inherit; color: inherit; }
+a { color: var(--text-link); text-decoration: none; }
+.mono { font-family: var(--font-mono); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(var(--rise-distance)); } to { opacity: 1; transform: none; } }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+/* 동작 줄이기 설정: 등장·누름·전환은 없애고, 로딩은 멈추지 않되 느리게 (기다리는 중임은 알려야 한다) */
+@media (prefers-reduced-motion: reduce) {
+  :root { --duration-fast: 0ms; --duration-base: 0ms; --duration-enter: 0ms; --rise-distance: 0px; --press-scale: 1; --duration-spin: 1.6s; }
+  .dots i, .skeleton { animation: none !important; }
+  .dots i { opacity: .6; }
+}
+
+/* ---------- 프로토타입 전용 조작 바 (실제 앱에는 없음) ---------- */
+.proto-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; gap: var(--space-1-5); align-items: center;
+  padding: var(--space-2) var(--page-pad);
+  background: #2a2140; border-bottom: var(--border-width) solid #45386a;
+  font-size: var(--fs-label);
+}
+.proto-bar strong { margin-right: var(--space-1-5); color: #cbbcf5; }
+.proto-bar button {
+  background: #3a2f5a; border: var(--border-width) solid #5a4b88; border-radius: var(--radius-sm);
+  padding: 3px 9px; cursor: pointer; color: #e8e0ff;
+}
+.proto-bar button[aria-pressed="true"] { background: #cbbcf5; color: #1d1530; }
+.proto-bar .sep { width: 1px; height: 18px; background: #5a4b88; margin: 0 var(--space-1); }
+.proto-note {
+  max-width: var(--page-max); margin: var(--space-3) auto 0; padding: var(--space-2-5) var(--space-3-5);
+  border: var(--border-width) dashed #5a4b88; border-radius: var(--radius-control); color: #cbbcf5; font-size: var(--fs-small);
+}
+.proto-note ul { padding-left: 18px; }
+.proto-note[hidden] { display: none; }
+
+/* ---------- 레이아웃 ---------- */
+.app-header {
+  position: sticky; top: 41px; z-index: var(--z-header);
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+.header-inner {
+  max-width: var(--page-max); margin: 0 auto; padding: var(--space-3) var(--page-pad);
+  display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: var(--space-2-5); color: var(--color-text); font-weight: var(--weight-semibold); }
+.brand:hover { text-decoration: none; }
+.brand-mark {
+  width: var(--brand-mark); height: var(--brand-mark); border-radius: var(--radius-sm); display: grid; place-items: center;
+  background: var(--color-user-bubble); color: var(--color-text); font-size: var(--fs-small);
+}
+.brand-tag {
+  font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--color-muted); font-weight: var(--weight-regular);
+  border: var(--border-width) solid var(--color-border-2); border-radius: var(--radius-pill); padding: 1px var(--space-2);
+}
+.nav { display: flex; gap: var(--space-1); }
+.nav a {
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  color: var(--color-muted); padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-md); font-size: var(--fs-body-sm);
+}
+@media (hover: hover) { .nav a:hover { text-decoration: none; color: var(--color-text); background: var(--bg-hover); } }
+.nav a[aria-current="page"] { color: var(--color-text); background: var(--color-surface-2); box-shadow: inset 0 0 0 1px var(--color-border-2); }
+.header-end { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+.nickname { color: var(--color-muted); font-size: var(--fs-body-sm); }
+
+main { max-width: var(--page-max); margin: 0 auto; padding: var(--space-page-top) var(--page-pad) var(--space-16); }
+.screen { display: none; animation: rise var(--duration-enter) var(--ease-enter); }
+.screen.active { display: block; }
+
+.page-title { font-size: var(--fs-h1); font-weight: var(--weight-semibold); letter-spacing: var(--ls-title); }
+.page-desc { color: var(--color-muted); margin-top: var(--space-1); }
+
+/* ---------- 공통 컴포넌트 ---------- */
+/* 버튼 — 상태: 기본 · hover(마우스 기기만) · 누름 · 포커스(키보드) · 비활성 · 로딩 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5);
+  min-height: var(--control-height); padding: 0 var(--space-3-5);
+  border-radius: var(--radius-control); font-size: var(--fs-body-sm); font-weight: var(--weight-medium);
+  border: var(--border-width) solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg); color: var(--btn-secondary-text); cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+@media (hover: hover) {
+  .btn:hover:not(:disabled) { background: var(--btn-secondary-bg-hover); border-color: var(--btn-secondary-border-hover); }
+  .btn-primary:hover:not(:disabled) { background: var(--btn-primary-bg-hover); border-color: transparent; }
+}
+.btn:active:not(:disabled) { background: var(--btn-secondary-bg-active); transform: scale(var(--press-scale)); }
+.btn:disabled { background: var(--btn-secondary-bg-disabled); color: var(--btn-secondary-text-disabled); cursor: not-allowed; }
+.btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); border-color: transparent; font-weight: var(--weight-semibold); }
+.btn-primary:active:not(:disabled) { background: var(--btn-primary-bg-active); }
+.btn-primary:disabled { background: var(--btn-primary-bg-disabled); color: var(--btn-primary-text-disabled); }
+.btn[aria-busy="true"] { cursor: progress; }
+.btn-primary[aria-busy="true"] { background: var(--btn-primary-bg-loading); color: var(--btn-primary-text); }
+.btn-small { font-size: var(--fs-small); }
+/* 상태 모음에서 hover·누름·포커스를 멈춘 모습으로 보여주기 위한 클래스 (실제 앱에는 없음) */
+.btn.is-hover { background: var(--btn-secondary-bg-hover); border-color: var(--btn-secondary-border-hover); }
+.btn-primary.is-hover { background: var(--btn-primary-bg-hover); border-color: transparent; }
+.btn.is-active { background: var(--btn-secondary-bg-active); transform: scale(var(--press-scale)); }
+.btn-primary.is-active { background: var(--btn-primary-bg-active); }
+.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
+.btn-block { width: 100%; }
+
+/* 포커스 링 — 키보드로 이동할 때만 (마우스 클릭엔 안 보임) */
+:where(a, button, input, textarea, [tabindex]):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset);
+}
+/* 입력칸은 클릭해도 포커스 표시 (어디에 입력 중인지) */
+input:focus, textarea:focus { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
+input:disabled, textarea:disabled { background: var(--bg-input-disabled); color: var(--text-disabled); cursor: not-allowed; }
+::placeholder { color: var(--text-placeholder); }
+
+/* 링크 */
+a { transition: color var(--duration-fast) var(--ease-standard); }
+@media (hover: hover) { a:hover { color: var(--text-link-hover); } }
+
+.card {
+  background: var(--color-surface); border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.chip {
+  font-family: var(--font-mono); font-size: var(--fs-label); border-radius: var(--radius-sm); padding: 1px 7px;
+  border: var(--border-width) solid var(--color-border-2); color: var(--color-muted); white-space: nowrap;
+}
+.chip-warn { color: var(--color-warn); border-color: color-mix(in oklch, var(--color-warn) 40%, transparent); }
+.chip-ok { color: var(--color-accent); border-color: color-mix(in oklch, var(--color-accent) 40%, transparent); }
+.api-note { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--color-faint); }
+
+.field { display: grid; gap: var(--space-1-5); margin-bottom: var(--space-3-5); }
+.field label { font-size: var(--fs-small); color: var(--color-muted); }
+.field input {
+  background: var(--color-input); border: var(--border-width) solid var(--color-border-2);
+  border-radius: var(--radius-control); padding: 0 var(--space-3); min-height: var(--control-height); font-size: var(--fs-input);
+}
+
+.field .hint { font-size: var(--fs-label); color: var(--color-faint); }
+.field .error { font-size: var(--fs-label); color: var(--color-warn); }
+.field.invalid input { border-color: color-mix(in oklch, var(--color-warn) 55%, transparent); }
+
+.alert {
+  display: flex; gap: var(--space-2-5); align-items: flex-start;
+  border-radius: var(--radius-control); padding: var(--space-2-5) var(--space-3); margin-bottom: var(--space-3-5); font-size: var(--fs-body-sm);
+}
+.alert-warn { background: var(--color-warn-bg); border: var(--border-width) solid color-mix(in oklch, var(--color-warn) 35%, transparent); color: var(--color-text); }
+.alert-warn .mono { color: var(--color-warn); font-size: var(--fs-label); padding-top: var(--space-0-5); }
+.alert-ok { background: var(--color-accent-bg); border: var(--border-width) solid color-mix(in oklch, var(--color-accent) 35%, transparent); }
+
+/* ---------- 로그인·회원가입 ---------- */
+.auth { max-width: var(--auth-max); margin: var(--space-14) auto 0; }
+.auth .card { padding: var(--space-5-5); margin-top: var(--space-7); }
+.auth-switch { display: block; text-align: center; margin-top: var(--space-4-5); font-size: var(--fs-body-sm); color: var(--color-muted); }
+.auth-switch:hover { color: var(--color-accent); }
+.auth-switch span { color: var(--color-accent); }
+.auth .api-note { text-align: center; margin-top: var(--space-4); }
+
+/* ---------- 챗 ---------- */
+.chat { max-width: var(--chat-max); margin: 0 auto; }
+.chat .card { display: flex; flex-direction: column; height: calc(100vh - 230px); min-height: 460px; overflow: hidden; }
+.chat-top {
+  display: flex; align-items: center; gap: var(--space-2-5); padding: var(--space-3) var(--space-4-5);
+  border-bottom: var(--border-width) solid var(--color-border); font-size: var(--fs-body-sm);
+}
+.chat-top .ctx { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--color-faint); cursor: help; }
+.chat-scroll { flex: 1; overflow-y: auto; padding: var(--space-5) var(--space-4-5); display: flex; flex-direction: column; gap: var(--space-3-5); }
+.greet { color: var(--color-muted); text-align: center; margin: auto 0; }
+.msg { display: flex; flex-direction: column; max-width: var(--bubble-max); animation: rise var(--duration-enter) var(--ease-enter); }
+.msg p { padding: var(--space-2-5) var(--space-3-5); border-radius: var(--radius-bubble); white-space: pre-wrap; word-break: break-word; }
+.msg time { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--color-faint); margin-top: var(--space-1); }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.bot { align-items: flex-start; }
+.msg.user p { background: var(--color-user-bubble); border-bottom-right-radius: var(--radius-tail); }
+.msg.bot p { background: var(--color-bubble); border-bottom-left-radius: var(--radius-tail); }
+.msg.err .err-box {
+  background: var(--color-warn-bg); border: var(--border-width) solid color-mix(in oklch, var(--color-warn) 35%, transparent);
+  border-radius: var(--radius-bubble); border-bottom-left-radius: var(--radius-tail); padding: var(--space-2-5) var(--space-3-5);
+}
+.msg.err .err-foot { display: flex; align-items: center; gap: var(--space-2-5); margin-top: var(--space-2); }
+.dots { display: inline-flex; gap: var(--space-1); padding: var(--space-3-5) var(--space-4); background: var(--color-bubble); border-radius: var(--radius-bubble); border-bottom-left-radius: var(--radius-tail); }
+.dots i { width: var(--dot-size); height: var(--dot-size); border-radius: var(--radius-pill); background: var(--color-muted); animation: blink var(--duration-blink) infinite; }
+.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+.loading-older { text-align: center; font-size: var(--fs-label); color: var(--color-faint); }
+.slow { font-size: var(--fs-small); color: var(--color-muted); padding: 0 var(--space-4-5) var(--space-2); }
+.composer { border-top: var(--border-width) solid var(--color-border); padding: var(--space-3) var(--space-3-5); }
+.composer-row { display: flex; gap: var(--space-2-5); align-items: flex-end; }
+.composer textarea {
+  font-size: var(--fs-input);
+  flex: 1; resize: none; overflow-y: auto; background: var(--color-input);
+  border: var(--border-width) solid var(--color-border-2); border-radius: var(--radius-control); padding: var(--space-2-5) var(--space-3); line-height: var(--lh-input);
+}
+.composer-foot { display: flex; justify-content: space-between; margin-top: var(--space-1-5); }
+.counter { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--color-faint); }
+.counter[data-limit] { color: var(--color-warn); }
+
+/* ---------- 내 대화 로그 ---------- */
+.logs-head { display: flex; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+.total { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+.total-box { padding: var(--space-1-5) var(--space-3-5); text-align: center; }
+.total-box small { display: block; font-size: var(--fs-caption); color: var(--color-muted); }
+.total-box strong { font-family: var(--font-mono); font-size: var(--fs-h2); font-weight: var(--weight-medium); }
+.log-scroll { max-height: 62vh; overflow-y: auto; display: grid; gap: var(--space-3); padding-right: var(--space-1); }
+.log-card { padding: var(--space-3-5) var(--space-4-5); }
+.log-card header { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--fs-label); color: var(--color-faint); margin-bottom: var(--space-2); }
+.qa { display: grid; grid-template-columns: var(--qa-label-width) 1fr; gap: var(--space-1-5) var(--space-3); font-size: var(--fs-body-sm); }
+.qa dt { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--color-faint); padding-top: 3px; letter-spacing: var(--ls-mono-caps); }
+.qa dd { white-space: pre-wrap; }
+.qa dd.q { color: var(--color-text); }
+.qa dd.a { color: var(--color-muted); border-top: var(--border-width) solid var(--color-border); padding-top: var(--space-1-5); }
+.qa dt.a { border-top: var(--border-width) solid var(--color-border); padding-top: 9px; }
+.empty { border: var(--border-width) dashed var(--color-border-2); border-radius: var(--radius-card); padding: var(--space-10); text-align: center; color: var(--color-muted); }
+
+/* ---------- 관리자 ---------- */
+.admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4-5); }
+.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2-5); margin-bottom: var(--space-5-5); }
+.stat { padding: var(--space-3) var(--space-3-5); }
+.stat dt { font-size: var(--fs-label); color: var(--color-muted); }
+.stat dt.mono { font-size: var(--fs-caption); }
+.stat dd { font-family: var(--font-mono); font-size: var(--fs-stat); margin-top: var(--space-0-5); }
+.stat.warn dd { color: var(--color-warn); }
+.tabs { display: flex; gap: var(--space-1); border-bottom: var(--border-width) solid var(--color-border); margin-bottom: var(--space-4); }
+.tabs button { background: none; border: 0; padding: var(--space-2) var(--space-3-5); color: var(--color-muted); cursor: pointer; border-bottom: var(--tab-indicator) solid transparent; margin-bottom: calc(var(--border-width) * -1); }
+.tabs button[aria-selected="true"] { color: var(--color-text); border-bottom-color: var(--color-accent); }
+.admin-grid { display: grid; grid-template-columns: var(--admin-list-width) 1fr; gap: var(--space-4); align-items: start; }
+.panel { padding: var(--space-4); }
+.panel h2 { font-size: var(--fs-body); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }
+.panel-tools { display: flex; gap: var(--space-2); margin-bottom: var(--space-2-5); }
+.panel-tools input { flex: 1; min-width: 0; background: var(--color-input); border: var(--border-width) solid var(--color-border-2); border-radius: var(--radius-md); padding: 7px var(--space-2-5); font-size: var(--fs-body-sm); }
+.user-count { font-size: var(--fs-label); color: var(--color-faint); margin-bottom: var(--space-1-5); }
+.user-list { list-style: none; padding: 0; display: grid; gap: var(--space-0-5); }
+.user-list button {
+  width: 100%; text-align: left; background: none; border: var(--border-width) solid transparent; border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-2-5); cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: var(--space-0-5) var(--space-2);
+}
+@media (hover: hover) { .user-list button:hover { background: var(--bg-hover); } }
+.user-list button[aria-pressed="true"] { background: var(--color-accent-bg); border-color: color-mix(in oklch, var(--color-accent) 35%, transparent); }
+.user-list .email { font-size: var(--fs-body-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-list .meta { grid-column: 1 / -1; font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--color-faint); }
+.more { display: flex; justify-content: center; margin-top: var(--space-2-5); }
+.record { border-top: var(--border-width) solid var(--color-border); padding: var(--space-3) 0; }
+.record:first-of-type { border-top: 0; }
+.record header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--fs-label); color: var(--color-faint); margin-bottom: var(--space-1-5); }
+.record .rid { margin-left: auto; background: none; border: 0; color: var(--color-accent); font-family: var(--font-mono); font-size: var(--fs-label); cursor: pointer; padding: 0; }
+@media (hover: hover) { .record .rid:hover { text-decoration: underline; } }
+.flow { margin-top: var(--space-4); padding: var(--space-4); }
+.flow-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2-5); }
+.flow-head h2 { font-size: var(--fs-body); font-weight: var(--weight-semibold); }
+.flow ol { list-style: none; padding: 0; font-family: var(--font-mono); font-size: var(--fs-small); }
+.flow li { display: grid; grid-template-columns: 76px 56px 170px 1fr; gap: var(--space-2-5); padding: 5px 0; border-top: var(--border-width) solid var(--color-border); }
+.flow li:first-child { border-top: 0; }
+.flow .lv-INFO { color: var(--color-accent); }
+.flow .lv-ERROR { color: var(--color-warn); }
+.flow time, .flow .detail { color: var(--color-muted); }
+.fail-list .record header .who { color: var(--color-text); font-family: var(--font-sans); font-size: var(--fs-small); }
+
+/* ---------- 로딩 표시 ---------- */
+.spinner {
+  width: var(--icon-spinner); height: var(--icon-spinner); border-radius: var(--radius-pill); display: inline-block; vertical-align: -2px;
+  border: 2px solid var(--loading-track); border-top-color: var(--loading-indicator);
+  animation: spin var(--duration-spin) var(--ease-linear) infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading { display: flex; align-items: center; justify-content: center; gap: var(--space-2); color: var(--color-muted); font-size: var(--fs-small); padding: var(--space-4); }
+.skeleton { border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%) 0 0 / 300% 100%; animation: shimmer var(--duration-shimmer) ease infinite; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.btn[aria-busy="true"] .spinner { border-top-color: currentColor; }
+
+/* ---------- 날짜 구분선 (챗) ---------- */
+.day-divider { display: flex; align-items: center; gap: var(--space-2-5); font-size: var(--fs-label); color: var(--color-faint); margin: var(--space-1-5) 0; }
+.day-divider::before, .day-divider::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+.time-table { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.time-table th, .time-table td { white-space: nowrap; text-align: left; padding: var(--space-1-5) var(--space-2); border-top: var(--border-width) solid var(--color-border); }
+.time-table th { color: var(--color-muted); font-weight: var(--weight-medium); font-size: var(--fs-label); }
+.time-table td.mono { font-family: var(--font-mono); font-size: var(--fs-label); }
+
+/* ---------- 디자인 토큰 화면 ---------- */
+.tok-table { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.tok-table th, .tok-table td { text-align: left; padding: var(--space-1-5) var(--space-2); border-top: var(--border-width) solid var(--border-default); vertical-align: middle; }
+.tok-table th { color: var(--text-secondary); font-weight: var(--weight-medium); font-size: var(--fs-label); }
+.tok-table code { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--text-primary); }
+.tok-table .val { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--text-tertiary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tok-table .mob { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--status-success); }
+.swatch { width: 36px; height: 22px; border-radius: var(--radius-xs); border: var(--border-width) solid var(--border-strong); }
+.bar { height: 10px; background: var(--status-success); border-radius: 2px; }
+.radius-box { width: 44px; height: 28px; border: var(--border-width) solid var(--status-success); background: var(--bg-selected); }
+.tok-wrap { overflow-x: auto; }
+.motion-demo { display: inline-block; padding: var(--space-1) var(--space-2); background: var(--bg-bubble-bot); border-radius: var(--radius-sm); }
+
+/* ---------- 상태 모음 ---------- */
+.catalog h2.cat { font-size: var(--fs-h2); font-weight: var(--weight-semibold); margin: var(--space-10) 0 var(--space-1-5); padding-top: var(--space-4); border-top: var(--border-width) solid var(--color-border); }
+.catalog h2.cat:first-of-type { border-top: 0; margin-top: var(--space-5); }
+.catalog .cat-desc { color: var(--color-muted); font-size: var(--fs-small); margin-bottom: var(--space-3-5); }
+.cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--space-3-5); }
+.case { border: var(--border-width) solid var(--color-border); border-radius: var(--radius-card); overflow: hidden; background: var(--color-bg); }
+.case > h3 { font-size: var(--fs-label); font-weight: var(--weight-medium); padding: 7px var(--space-3); background: var(--color-surface-2); border-bottom: var(--border-width) solid var(--color-border); color: var(--color-muted); display: flex; gap: var(--space-2); align-items: center; }
+.case > h3 .tag { margin-left: auto; font-family: var(--font-mono); font-size: var(--fs-micro); padding: 0 var(--space-1-5); border-radius: var(--radius-xs); }
+.tag-now { background: #23313a; color: #9cc3d1; }
+.tag-new { background: #3a2f5a; color: #cbbcf5; }
+.case .body { padding: var(--space-3-5); display: grid; gap: var(--space-2-5); }
+.case .body > .btn { justify-self: start; }
+.case .body.center { place-items: center; min-height: 90px; }
+.case .mini-header { display: flex; align-items: center; gap: var(--space-2-5); font-size: var(--fs-small); flex-wrap: wrap; }
+.case .mini-header .brand-mark { width: 22px; height: 22px; font-size: var(--fs-caption); }
+.case .mini-header .nav a { padding: var(--space-1) var(--space-2); font-size: var(--fs-small); }
+.case .msg { max-width: 92%; }
+.legend { display: flex; gap: var(--space-3-5); font-size: var(--fs-label); color: var(--color-muted); margin: var(--space-2) 0 0; }
+
+/* ---------- 404 ---------- */
+.notfound { text-align: center; margin-top: var(--space-22); }
+.notfound .code { font-family: var(--font-mono); font-size: var(--fs-display); color: var(--color-faint); }
+.notfound p { color: var(--color-muted); margin: var(--space-2) 0 var(--space-5); }
+
+/* ---------- 반응형 (docs/05-ui-ux.md 7절) ----------
+   프로토타입은 폭 버튼으로 보기 위해 컨테이너 쿼리를 쓴다. 실제 구현은 @media 로 같은 기준을 쓴다 */
+#frame { container: app / inline-size; }
+@container app (max-width: 900px) {
+  .case[style*="span 2"] { grid-column: auto !important; }
+  .admin-grid { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+@container app (max-width: 560px) {
+  .header-inner { gap: var(--space-2-5); }
+  .nav { order: 3; width: 100%; }
+  .brand-tag { display: none; }
+  .msg { max-width: 90%; }
+  .flow li { grid-template-columns: 64px 1fr; }
+  .flow li .detail { grid-column: 2; }
+  .qa { grid-template-columns: 1fr; }
+  .qa dt.a { border-top: 0; padding-top: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 프로토타입 조작 바 (실제 앱에 없음) ===== -->
+<div class="proto-bar" role="toolbar" aria-label="프로토타입 조작">
+  <strong>프로토타입</strong>
+  <button data-screen="login">로그인</button>
+  <button data-screen="signup">회원가입</button>
+  <button data-screen="chat">챗</button>
+  <button data-screen="logs">내 대화 로그</button>
+  <button data-screen="admin">관리자</button>
+  <button data-screen="notfound">404</button>
+  <button data-screen="catalog">상태 모음 ★</button>
+  <button data-screen="tokens">디자인 토큰 ◆</button>
+  <span class="sep"></span>
+  <button data-variant="toggle-state" id="variant-btn">상태 바꾸기</button>
+  <button id="note-btn" aria-pressed="true">반영 메모</button>
+  <span class="sep"></span>
+  <button data-width="390">모바일 390</button>
+  <button data-width="768">태블릿 768</button>
+  <button data-width="" aria-pressed="true">데스크톱</button>
+</div>
+
+<div class="proto-note" id="note"></div>
+
+<div id="frame">
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" href="#" data-go="chat"><span class="brand-mark">C</span> Chatlog <span class="brand-tag">FastAPI · SQLite</span></a>
+    <nav class="nav" id="nav" aria-label="주 메뉴"></nav>
+    <div class="header-end" id="header-end"></div>
+  </div>
+</header>
+
+<main>
+  <!-- ===== 로그인 ===== -->
+  <section class="screen auth" id="screen-login">
+    <h1 class="page-title">로그인</h1>
+    <p class="page-desc">챗봇 질문·응답 기능은 로그인한 사용자만 사용할 수 있습니다.</p>
+    <div class="card">
+      <div class="alert alert-ok" data-when="login:done">가입이 완료되었습니다. 로그인해 주세요.</div>
+      <div class="field"><label>이메일</label><input type="email" value="user@example.com" autocomplete="email"></div>
+      <div class="field"><label>비밀번호</label><input type="password" placeholder="••••••••" autocomplete="current-password"></div>
+      <div class="alert alert-warn" data-when="login:error"><span class="mono">401</span><span>이메일 또는 비밀번호가 올바르지 않습니다.</span></div>
+      <button class="btn btn-primary btn-block">로그인</button>
+      <a class="auth-switch" href="#" data-go="signup">아직 계정이 없나요? <span>회원가입</span></a>
+    </div>
+    <p class="api-note">POST /api/auth/login · JWT 발급</p>
+  </section>
+
+  <!-- ===== 회원가입 ===== -->
+  <section class="screen auth" id="screen-signup">
+    <h1 class="page-title">회원가입</h1>
+    <p class="page-desc">이메일로 가입하고 챗봇을 사용해 보세요.</p>
+    <div class="card">
+      <div class="field" data-invalid-when="signup:error"><label>이메일</label><input type="email" value="user@example.com">
+        <span class="error" data-when="signup:error">이미 가입된 이메일입니다.</span></div>
+      <div class="field"><label>비밀번호</label><input type="password" placeholder="••••••••"><span class="hint">8자 이상</span></div>
+      <div class="field"><label>닉네임</label><input type="text" value="어썸체크"><span class="hint">1~20자 · 다른 사람과 같아도 됩니다</span></div>
+      <div class="alert alert-warn" data-when="signup:error"><span class="mono">409</span><span>이미 가입된 이메일입니다.</span></div>
+      <button class="btn btn-primary btn-block">가입하기</button>
+      <a class="auth-switch" href="#" data-go="login">이미 계정이 있나요? <span>로그인</span></a>
+    </div>
+    <p class="api-note">POST /api/auth/signup · 비밀번호는 bcrypt 로 해싱되어 저장됩니다</p>
+  </section>
+
+  <!-- ===== 챗 ===== -->
+  <section class="screen chat" id="screen-chat">
+    <div class="card">
+      <div class="chat-top">
+        <span id="chat-title"></span>
+        <span class="ctx" title="AI 는 최근 성공한 대화 5개를 기억하고 답합니다">context: 최근 5턴</span>
+      </div>
+      <div class="chat-scroll" id="chat-scroll"></div>
+      <p class="slow" id="slow" hidden>응답이 늦어지고 있습니다. 서버를 깨우는 중일 수 있어요.</p>
+      <form class="composer" id="composer">
+        <div class="composer-row">
+          <textarea id="chat-input" rows="3" maxlength="1000" placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈"></textarea>
+          <button class="btn btn-primary" id="send" disabled>전송</button>
+        </div>
+        <div class="composer-foot">
+          <span class="api-note">POST /api/chat</span>
+          <span class="counter" id="counter">0 / 1000</span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== 내 대화 로그 ===== -->
+  <section class="screen" id="screen-logs">
+    <div class="logs-head">
+      <div>
+        <h1 class="page-title">내 대화 로그</h1>
+        <p class="page-desc">로그인한 사용자 본인의 기록만 보입니다. <span class="api-note">GET /api/me/chats</span></p>
+      </div>
+      <div class="total">
+        <div class="card total-box"><small>총 기록</small><strong id="log-total">28</strong></div>
+        <button class="btn" id="log-refresh">새로고침</button>
+      </div>
+    </div>
+    <div class="log-scroll" id="log-scroll"></div>
+  </section>
+
+  <!-- ===== 관리자 ===== -->
+  <section class="screen" id="screen-admin">
+    <div class="admin-head">
+      <h1 class="page-title">관리자</h1>
+      <button class="btn">새로고침</button>
+    </div>
+    <dl class="stats">
+      <div class="card stat"><dt>사용자</dt><dd>5</dd></div>
+      <div class="card stat"><dt>대화 성공</dt><dd>228</dd></div>
+      <div class="card stat warn"><dt>대화 실패</dt><dd>12</dd></div>
+      <div class="card stat warn"><dt class="mono">AI_TIMEOUT</dt><dd>7</dd></div>
+      <div class="card stat warn"><dt class="mono">AI_CALL_FAILED</dt><dd>5</dd></div>
+      <div class="card stat"><dt>평균 응답</dt><dd>1,320ms</dd></div>
+    </dl>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="users">사용자</button>
+      <button role="tab" aria-selected="false" data-tab="failures">AI 실패 기록</button>
+    </div>
+
+    <div id="tab-users" class="admin-grid">
+      <div class="card panel">
+        <h2>사용자 목록</h2>
+        <div class="panel-tools">
+          <input type="search" placeholder="이메일 검색" aria-label="이메일 검색">
+          <button class="btn btn-small">목록 새로고침</button>
+        </div>
+        <p class="user-count">5명 · 최근 활동 순</p>
+        <ul class="user-list" id="user-list"></ul>
+      </div>
+      <div class="card panel" id="user-chats"></div>
+    </div>
+
+    <div id="tab-failures" class="card panel fail-list" hidden></div>
+
+    <div class="card flow" id="flow" hidden></div>
+  </section>
+
+<section class="screen catalog" id="screen-catalog"><h1 class="page-title">상태 모음</h1><p class="page-desc">테스트 케이스와 코드의 모든 분기에서 나오는 화면 조각을 한곳에 모았다. 디자인은 이 조각들에 모두 적용된다.</p><div class="legend"><span><span class="tag tag-now" style="padding:0 var(--space-1-5);border-radius: var(--radius-xs);font-family:var(--font-mono);font-size: var(--fs-micro)">현재 코드</span> 지금 코드에 있는 상태</span><span><span class="tag tag-new" style="padding:0 var(--space-1-5);border-radius: var(--radius-xs);font-family:var(--font-mono);font-size: var(--fs-micro)">제안</span> 코드에 표시가 없어 디자인하며 추가하자는 것</span></div><h2 class="cat">1. 공통 — 헤더</h2><p class="cat-desc">인증 상태·권한에 따라 메뉴가 다르다. 확인 중에는 메뉴를 비워 깜빡임을 막는다.</p><div class="cases"><div class="case"><h3>인증 확인 중 (새로고침 직후)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="mini-header"><span class="brand"><span class="brand-mark">C</span>Chatlog</span></div><p class="page-desc" style="font-size: var(--fs-label)">메뉴 영역 비움</p></div></div><div class="case"><h3>비로그인<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="mini-header"><span class="brand"><span class="brand-mark">C</span>Chatlog</span><span style="margin-left:auto"><a class="btn btn-small">로그인</a></span></div></div></div><div class="case"><h3>일반 사용자 (현재 메뉴 = 챗)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="mini-header"><span class="brand"><span class="brand-mark">C</span>Chatlog</span><nav class="nav"><a aria-current="page">챗</a><a>내 대화 로그</a></nav><span class="nickname" style="margin-left:auto">어썸체크</span><button class="btn btn-small">로그아웃</button></div></div></div><div class="case"><h3>관리자<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="mini-header"><span class="brand"><span class="brand-mark">C</span>Chatlog</span><nav class="nav"><a>챗</a><a>내 대화 로그</a><a aria-current="page">관리자</a></nav><span class="nickname" style="margin-left:auto">관리자</span><button class="btn btn-small">로그아웃</button></div></div></div><div class="case"><h3>로그아웃 진행 중<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="mini-header"><span class="brand"><span class="brand-mark">C</span>Chatlog</span><span class="nickname" style="margin-left:auto">어썸체크</span><button class="btn btn-small" disabled aria-busy="true"><span class="spinner"></span>로그아웃 중…</button></div></div></div></div><h2 class="cat">2. 공통 — 버튼</h2><p class="cat-desc">모든 버튼은 이 상태를 공유한다. 제출 중에는 잠그고 문구를 바꾼다(중복 제출 방지).</p><div class="cases"><div class="case" style="grid-column: span 2"><h3>주 버튼 — 6가지 상태<span class="tag tag-now">현재 코드</span></h3><div class="body"><div style="display:flex;flex-wrap:wrap;gap:12px"><div style="display:grid;gap:4px;justify-items:start"><button class="btn btn-primary "  >로그인</button><span class="api-note">기본</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn btn-primary is-hover"  >로그인</button><span class="api-note">hover</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn btn-primary is-active"  >로그인</button><span class="api-note">누름</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn btn-primary is-focus"  >로그인</button><span class="api-note">포커스</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn btn-primary " disabled >로그인</button><span class="api-note">비활성</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn btn-primary " disabled aria-busy="true"><span class=spinner></span>처리 중…</button><span class="api-note">로딩</span></div></div></div></div><div class="case" style="grid-column: span 2"><h3>보조 버튼 — 6가지 상태<span class="tag tag-now">현재 코드</span></h3><div class="body"><div style="display:flex;flex-wrap:wrap;gap:12px"><div style="display:grid;gap:4px;justify-items:start"><button class="btn  "  >새로고침</button><span class="api-note">기본</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn  is-hover"  >새로고침</button><span class="api-note">hover</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn  is-active"  >새로고침</button><span class="api-note">누름</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn  is-focus"  >새로고침</button><span class="api-note">포커스</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn  " disabled >새로고침</button><span class="api-note">비활성</span></div><div style="display:grid;gap:4px;justify-items:start"><button class="btn  " disabled aria-busy="true"><span class=spinner></span>처리 중…</button><span class="api-note">로딩</span></div></div></div></div><div class="case"><h3>작은 버튼 · 입력칸 비활성<span class="tag tag-now">현재 코드</span></h3><div class="body"><button class="btn btn-small">목록 새로고침</button><div class="field" style="margin:0"><label>질문 (응답 대기 중)</label><input disabled value="보낼 수 없음"></div></div></div><div class="case"><h3>더 보기 — 기본 / 불러오는 중<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="more" style="margin:0"><button class="btn btn-small">더 보기</button></div><div class="more" style="margin:0"><button class="btn btn-small" disabled aria-busy="true"><span class="spinner"></span>불러오는 중…</button></div></div></div><div class="case"><h3>텍스트 링크 (문장 전체가 링크)<span class="tag tag-now">현재 코드</span></h3><div class="body"><a class="auth-switch" style="margin:0">아직 계정이 없나요? <span>회원가입</span></a><a class="auth-switch" style="margin:0">이미 계정이 있나요? <span>로그인</span></a></div></div></div><h2 class="cat">3. 공통 — 로딩 표시</h2><p class="cat-desc">기다리는 곳마다 같은 모양을 쓴다. 현재 코드는 글자("불러오는 중…")만 있거나 아무것도 없다.</p><div class="cases"><div class="case"><h3>화면 전체 — 인증 확인 중<span class="tag tag-new">제안</span></h3><div class="body center"><p class="loading"><span class="spinner"></span>확인 중…</p><p class="page-desc" style="font-size: var(--fs-label);text-align:center">지금은 빈 화면. 0.3초 이상 걸릴 때만 보이게 제안</p></div></div><div class="case"><h3>목록 첫 로딩 — 스피너 + 문구<span class="tag tag-now">현재 코드</span></h3><div class="body center"><p class="loading"><span class="spinner"></span>불러오는 중…</p></div></div><div class="case"><h3>목록 첫 로딩 — 스켈레톤 (대안)<span class="tag tag-new">제안</span></h3><div class="body"><div class="skeleton" style="height:14px;width:40%"></div><div class="skeleton" style="height:14px;width:90%"></div><div class="skeleton" style="height:14px;width:70%"></div></div></div><div class="case"><h3>위쪽 — 이전 기록 불러오는 중 (챗·로그)<span class="tag tag-now">현재 코드</span></h3><div class="body center"><p class="loading"><span class="spinner"></span>이전 기록을 불러오는 중…</p></div></div><div class="case"><h3>챗 — 응답 대기 점 3개<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot"><span class="dots" aria-label="응답을 기다리는 중"><i></i><i></i><i></i></span></div></div></div><div class="case"><h3>숫자 자리 — 불러오는 중<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="card total-box" style="width:90px"><small>총 기록</small><strong>…</strong></div></div></div></div><h2 class="cat">4. 공통 — 입력 필드</h2><p class="cat-desc">검증 오류는 한 번 입력칸을 벗어난 뒤에만 보인다. 서버 오류(409)는 해당 칸에 붙는다.</p><div class="cases"><div class="case"><h3>기본 / 입력값 있음<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="field" style="margin:0"><label>이메일</label><input type="text" value="" placeholder="user@example.com" ></div><div class="field" style="margin:0"><label>닉네임</label><input type="text" value="어썸체크" placeholder="" ><span class=hint>1~20자, 중복 가능</span></div></div></div><div class="case"><h3>포커스<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="field" style="margin:0"><label>이메일</label><input type="text" value="user@" placeholder="" style="outline:2px solid color-mix(in oklch, var(--color-accent) 60%, transparent);outline-offset:1px"></div></div></div><div class="case"><h3>검증 오류 — 이메일<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="field invalid" style="margin:0"><label>이메일</label><input type="text" value="" placeholder="" ><span class=error>이메일을 입력해 주세요.</span></div><div class="field invalid" style="margin:0"><label>이메일</label><input type="text" value="user@" placeholder="" ><span class=error>이메일 형식이 올바르지 않습니다.</span></div></div></div><div class="case"><h3>검증 오류 — 비밀번호<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="field invalid" style="margin:0"><label>비밀번호</label><input type="password" value="" placeholder="" ><span class=error>비밀번호를 입력해 주세요.</span></div><div class="field invalid" style="margin:0"><label>비밀번호</label><input type="password" value="1234" placeholder="" ><span class=error>비밀번호는 8자 이상으로 입력해 주세요.</span></div></div></div><div class="case"><h3>검증 오류 — 닉네임<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="field invalid" style="margin:0"><label>닉네임</label><input type="text" value="" placeholder="" ><span class=error>닉네임을 입력해 주세요.</span></div><div class="field invalid" style="margin:0"><label>닉네임</label><input type="text" value="아주아주아주아주긴닉네임입니다아주긴" placeholder="" ><span class=error>닉네임은 20자 이하로 입력해 주세요.</span></div></div></div><div class="case"><h3>서버 오류가 칸에 붙음 — 409<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="field invalid" style="margin:0"><label>이메일</label><input type="text" value="user@example.com" placeholder="" ><span class=error>이미 가입된 이메일입니다.</span></div></div></div></div><h2 class="cat">5. 공통 — 안내 박스</h2><p class="cat-desc">성공은 청록, 오류는 주황. 코드는 작게 모노 폰트로 붙인다 (05-ui-ux 6절).</p><div class="cases"><div class="case"><h3>성공 — 가입 완료<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-ok" style="margin:0">가입이 완료되었습니다. 로그인해 주세요.</div></div></div><div class="case"><h3>로그인 실패 — 401<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">401</span><span>이메일 또는 비밀번호가 올바르지 않습니다.</span></div></div></div><div class="case"><h3>입력값 오류 — 422<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">422</span><span>입력값을 다시 확인해 주세요.</span></div></div></div><div class="case"><h3>서버 오류 — 500<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">500</span><span>서버 내부 오류가 발생했습니다.</span></div></div></div><div class="case"><h3>연결 실패<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">NETWORK_ERROR</span><span>서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.</span></div></div></div><div class="case"><h3>권한 없음 — 403 (관리자 API)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">403</span><span>요약 통계을(를) 불러오지 못했습니다. 관리자만 접근할 수 있습니다.</span></div><button class="btn btn-small" style="justify-self:start">다시 불러오기</button></div></div></div><h2 class="cat">6. 챗</h2><p class="cat-desc">말풍선 3종(사용자·봇·오류) + 응답 대기. 오류 중 504·502 만 [다시 시도].</p><div class="cases"><div class="case"><h3>첫 방문 — 인사 문구<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="chat-top" style="padding:0 0 var(--space-2)">새 대화 <span class="api-note">·</span><span class="ctx">context: 최근 5턴</span></div><p class="greet" style="margin:var(--space-2-5) 0">안녕하세요. 무엇이든 물어보세요.</p></div></div><div class="case"><h3>이전 대화 있음 — context 만<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="chat-top" style="padding:0 0 var(--space-2)"><span class="ctx">context: 최근 5턴</span></div><div class="msg user"><p>이전 질문</p><time>14:20</time></div><div class="msg bot"><p>이전 답변</p><time>14:20</time></div></div></div><div class="case"><h3>이전 대화 첫 로딩<span class="tag tag-new">제안</span></h3><div class="body center"><p class="loading"><span class="spinner"></span>이전 대화를 불러오는 중…</p><p class="page-desc" style="font-size: var(--fs-label);text-align:center">지금은 아무것도 안 보임</p></div></div><div class="case"><h3>이전 대화 불러오기 실패<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span>이전 대화를 불러오지 못했습니다.</span></div><button class="btn btn-small" style="justify-self:start">다시 불러오기</button></div></div><div class="case"><h3>이전 기록(위쪽) 불러오기 실패<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">NETWORK_ERROR</span><span>이전 대화를 불러오지 못했습니다. 서버에 연결할 수 없습니다.</span></div></div></div><div class="case"><h3>사용자 말풍선 / 봇 말풍선<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg user"><p>FastAPI에서 CORS 설정은 어떻게 해?</p><time>14:20</time></div><div class="msg bot"><p>FastAPI에서는 CORSMiddleware 를 추가합니다.</p><time>14:20</time></div></div></div><div class="case"><h3>긴 답변 — 줄바꿈 유지<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot"><p>첫째 줄입니다.
+둘째 줄입니다.
+
+    들여쓴 코드 줄
+아주긴단어가끊기지않고이어지는경우에도칸을벗어나지않아야합니다아주긴단어</p><time>14:20</time></div></div></div><div class="case"><h3>HTML 이 들어간 답변 — 글자 그대로<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot"><p>&lt;b&gt;굵게&lt;/b&gt; &lt;script&gt;alert(1)&lt;/script&gt;</p><time>14:20</time></div></div></div><div class="case"><h3>응답 대기<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg user"><p>배포 방법 알려줘</p><time>14:20</time></div><div class="msg bot"><span class="dots" aria-label="응답을 기다리는 중"><i></i><i></i><i></i></span></div></div></div><div class="case"><h3>느린 응답 안내 (5초 이상)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot"><span class="dots" aria-label="응답을 기다리는 중"><i></i><i></i><i></i></span></div><p class="slow" style="padding:0">응답이 늦어지고 있습니다. 서버를 깨우는 중일 수 있어요.</p></div></div><div class="case"><h3>오류 — 504 타임아웃 [다시 시도]<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot err"><div class="err-box">현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.<div class="err-foot"><span class="chip chip-warn">504 · AI_TIMEOUT</span><button class="btn btn-small">다시 시도</button></div></div><time>14:22</time></div></div></div><div class="case"><h3>오류 — 502 AI 호출 실패 [다시 시도]<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot err"><div class="err-box">AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.<div class="err-foot"><span class="chip chip-warn">502 · AI_CALL_FAILED</span><button class="btn btn-small">다시 시도</button></div></div><time>14:22</time></div></div></div><div class="case"><h3>오류 — 다른 요청 중이라 [다시 시도] 잠김<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot err"><div class="err-box">현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.<div class="err-foot"><span class="chip chip-warn">504 · AI_TIMEOUT</span><button class="btn btn-small" disabled>다시 시도</button></div></div><time>14:22</time></div></div></div><div class="case"><h3>오류 — 500 (다시 시도 없음)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot err"><div class="err-box">서버 내부 오류가 발생했습니다.<div class="err-foot"><span class="chip chip-warn">500 · INTERNAL_ERROR</span></div></div><time>14:22</time></div></div></div><div class="case"><h3>오류 — 422 (다시 시도 없음)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot err"><div class="err-box">질문은 1~1000자로 입력해 주세요.<div class="err-foot"><span class="chip chip-warn">422 · VALIDATION_ERROR</span></div></div><time>14:22</time></div></div></div><div class="case"><h3>오류 — 연결 실패 (다시 시도 없음)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot err"><div class="err-box">서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.<div class="err-foot"><span class="chip chip-warn">NETWORK_ERROR</span></div></div><time>14:22</time></div></div></div></div><h2 class="cat">7. 챗 — 입력칸</h2><p class="cat-desc">높이 3줄 고정, 넘치면 안에서 스크롤. 공백뿐이거나 응답 대기 중이면 [전송] 비활성.</p><div class="cases"><div class="case"><h3>비어 있음 — 전송 비활성<span class="tag tag-now">현재 코드</span></h3><div class="body"><form class="composer" style="border:0;padding:0" onsubmit="return false"><div class="composer-row"><textarea rows="3" maxlength="1000" placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈" ></textarea><button class="btn btn-primary" disabled>전송</button></div><div class="composer-foot"><span class="api-note">POST /api/chat</span><span class="counter" >0 / 1000</span></div></form></div></div><div class="case"><h3>입력 중 — 전송 가능<span class="tag tag-now">현재 코드</span></h3><div class="body"><form class="composer" style="border:0;padding:0" onsubmit="return false"><div class="composer-row"><textarea rows="3" maxlength="1000" placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈" >FastAPI 에서 CORS 설정은?</textarea><button class="btn btn-primary" >전송</button></div><div class="composer-foot"><span class="api-note">POST /api/chat</span><span class="counter" >22 / 1000</span></div></form></div></div><div class="case"><h3>여러 줄 — 안에서 스크롤<span class="tag tag-now">현재 코드</span></h3><div class="body"><form class="composer" style="border:0;padding:0" onsubmit="return false"><div class="composer-row"><textarea rows="3" maxlength="1000" placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈" >첫째 줄
+둘째 줄
+셋째 줄
+넷째 줄
+다섯째 줄</textarea><button class="btn btn-primary" >전송</button></div><div class="composer-foot"><span class="api-note">POST /api/chat</span><span class="counter" >24 / 1000</span></div></form></div></div><div class="case"><h3>응답 대기 중 — 전송 잠김<span class="tag tag-now">현재 코드</span></h3><div class="body"><form class="composer" style="border:0;padding:0" onsubmit="return false"><div class="composer-row"><textarea rows="3" maxlength="1000" placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈" >다음 질문</textarea><button class="btn btn-primary" disabled>전송</button></div><div class="composer-foot"><span class="api-note">POST /api/chat</span><span class="counter" >5 / 1000</span></div></form></div></div><div class="case"><h3>1000자 도달 — 카운터 주황<span class="tag tag-now">현재 코드</span></h3><div class="body"><form class="composer" style="border:0;padding:0" onsubmit="return false"><div class="composer-row"><textarea rows="3" maxlength="1000" placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈" >가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가</textarea><button class="btn btn-primary" >전송</button></div><div class="composer-foot"><span class="api-note">POST /api/chat</span><span class="counter" data-limit>1000 / 1000</span></div></form></div></div></div><h2 class="cat">8. 내 대화 로그</h2><p class="cat-desc">아래가 최신. 맨 위로 스크롤하면 이전 20건을 불러온다.</p><div class="cases"><div class="case"><h3>카드<span class="tag tag-now">현재 코드</span></h3><div class="body"><article class="card log-card"><header><span>#27</span><time>2026-09-28 14:27</time></header><dl class="qa"><dt>QUESTION</dt><dd class="q">FastAPI에서 CORS 설정은?</dd><dt class="a">ANSWER</dt><dd class="a">CORSMiddleware 를 추가합니다.</dd></dl></article></div></div><div class="case"><h3>첫 로딩<span class="tag tag-new">제안</span></h3><div class="body"><div class="card total-box" style="width:90px;justify-self:end"><small>총 기록</small><strong>…</strong></div><p class="loading"><span class="spinner"></span>불러오는 중…</p></div></div><div class="case"><h3>기록 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><p class="empty" style="padding:var(--space-6)">아직 저장된 대화가 없습니다.</p></div></div><div class="case"><h3>불러오기 실패<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">NETWORK_ERROR</span><span>대화 기록을 불러오지 못했습니다. 서버에 연결할 수 없습니다.</span></div><button class="btn btn-small" style="justify-self:start">다시 불러오기</button></div></div><div class="case"><h3>이전 기록 불러오는 중 (맨 위)<span class="tag tag-now">현재 코드</span></h3><div class="body"><p class="loading"><span class="spinner"></span>이전 기록을 불러오는 중…</p><article class="card log-card"><header><span>#27</span><time>2026-09-28 14:27</time></header><dl class="qa"><dt>QUESTION</dt><dd class="q">FastAPI에서 CORS 설정은?</dd><dt class="a">ANSWER</dt><dd class="a">CORSMiddleware 를 추가합니다.</dd></dl></article></div></div><div class="case"><h3>이전 기록 불러오기 실패<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">NETWORK_ERROR</span><span>이전 기록을 불러오지 못했습니다. 서버에 연결할 수 없습니다.</span></div><article class="card log-card"><header><span>#27</span><time>2026-09-28 14:27</time></header><dl class="qa"><dt>QUESTION</dt><dd class="q">FastAPI에서 CORS 설정은?</dd><dt class="a">ANSWER</dt><dd class="a">CORSMiddleware 를 추가합니다.</dd></dl></article></div></div></div><h2 class="cat">9. 관리자</h2><p class="cat-desc">요약·목록·대화·실패 기록·요청 흐름 각각 로딩/빈 상태/오류가 있다.</p><div class="cases"><div class="case"><h3>요약 — 값<span class="tag tag-now">현재 코드</span></h3><div class="body"><dl class="stats" style="grid-template-columns:repeat(3,1fr);margin:0"><div class="card stat"><dt>사용자</dt><dd>5</dd></div><div class="card stat warn"><dt>대화 실패</dt><dd>12</dd></div><div class="card stat warn"><dt class=mono>AI_TIMEOUT</dt><dd>7</dd></div></dl></div></div><div class="case"><h3>요약 — 불러오는 중 / 평균 응답 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><dl class="stats" style="grid-template-columns:repeat(3,1fr);margin:0"><div class="card stat"><dt>사용자</dt><dd>…</dd></div><div class="card stat"><dt>대화 성공</dt><dd>…</dd></div><div class="card stat"><dt>평균 응답</dt><dd>–</dd></div></dl></div></div><div class="case"><h3>요약 — 실패 (403)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">403</span><span>요약 통계을(를) 불러오지 못했습니다. 관리자만 접근할 수 있습니다.</span></div><button class="btn btn-small" style="justify-self:start">다시 불러오기</button></div></div><div class="case"><h3>탭 — 사용자 선택됨 / AI 실패 기록 선택됨<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="tabs" style="margin:0"><button aria-selected="true">사용자</button><button aria-selected="false">AI 실패 기록</button></div><div class="tabs" style="margin:0"><button aria-selected="false">사용자</button><button aria-selected="true">AI 실패 기록</button></div></div></div><div class="case"><h3>사용자 목록 — 선택됨 · 관리자 칩 · 대화 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="panel-tools"><input type="search" placeholder="이메일 검색"><button class="btn btn-small">목록 새로고침</button></div><p class="user-count">2명</p><ul class="user-list"><li><button aria-pressed="true"><span class="email">kim@example.com</span><span></span><span class="meta">44건 · 2026-09-28 14:06</span></button></li><li><button aria-pressed="false"><span class="email">admin@example.com</span><span class="chip">관리자</span><span class="meta">0건 · 대화 없음</span></button></li></ul></div></div><div class="case"><h3>사용자 목록 — 불러오는 중<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="panel-tools"><input type="search" value="kim"><button class="btn btn-small">목록 새로고침</button></div><p class="loading"><span class="spinner"></span>불러오는 중…</p></div></div><div class="case"><h3>사용자 목록 — 검색 결과 없음 / 사용자 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><p class="page-desc">"zzz" 에 해당하는 사용자가 없습니다.</p><p class="page-desc">사용자가 없습니다.</p></div></div><div class="case"><h3>사용자 목록 — 더 불러오기 실패<span class="tag tag-now">현재 코드</span></h3><div class="body"><ul class="user-list"><li><button aria-pressed="false"><span class="email">kim@example.com</span><span></span><span class="meta">44건 · 2026-09-28 14:06</span></button></li><li><button aria-pressed="false"><span class="email">admin@example.com</span><span class="chip">관리자</span><span class="meta">0건 · 대화 없음</span></button></li></ul><div class="alert alert-warn" style="margin:0"><span class="mono">NETWORK_ERROR</span><span>더 불러오지 못했습니다. 서버에 연결할 수 없습니다.</span></div><div class="more" style="margin:0"><button class="btn btn-small">더 보기</button></div></div></div><div class="case"><h3>사용자 대화 — 미선택<span class="tag tag-now">현재 코드</span></h3><div class="body"><p class="page-desc">목록에서 사용자를 선택하면 대화 기록이 보입니다.</p></div></div><div class="case"><h3>사용자 대화 — 성공 / 실패 기록<span class="tag tag-now">현재 코드</span></h3><div class="body"><h2 style="font-size: var(--fs-body-sm)">kim@example.com 의 대화 (44)</h2><article class="record"><header><span>#988</span><time>2026-09-28 14:06</time><span class="chip chip-warn">ERROR 504 · AI_TIMEOUT</span><span>30,000ms</span><button class="rid">request 351990af2cf2</button></header><dl class="qa"><dt>QUESTION</dt><dd class="q">긴 글 요약해줘</dd></dl></article><article class="record"><header><span>#987</span><time>2026-09-28 14:05</time><span class="chip chip-ok">SUCCESS</span><span>1,240ms</span><button class="rid">request 5d14c34e071f</button></header><dl class="qa"><dt>QUESTION</dt><dd class="q">CORS 설정은?</dd><dt class="a">ANSWER</dt><dd class="a">CORSMiddleware 를 추가합니다.</dd></dl></article></div></div><div class="case"><h3>사용자 대화 — 불러오는 중 / 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><h2 style="font-size: var(--fs-body-sm)">사용자의 대화</h2><p class="loading"><span class="spinner"></span>불러오는 중…</p><p class="page-desc">대화 기록이 없습니다.</p></div></div><div class="case"><h3>사용자 대화 — 없는 사용자 (404)<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="alert alert-warn" style="margin:0"><span class="mono">404</span><span>대화 기록을(를) 불러오지 못했습니다. 사용자를 찾을 수 없습니다.</span></div><button class="btn btn-small" style="justify-self:start">다시 불러오기</button></div></div><div class="case"><h3>AI 실패 기록 — 항목<span class="tag tag-now">현재 코드</span></h3><div class="body"><article class="record"><header><time>2026-09-28 14:06</time><span style="color:var(--color-text);font-family:var(--font-sans)">kim@example.com</span><span class="chip chip-warn">502 · AI_CALL_FAILED</span><span>820ms</span><button class="rid">request a0c7e21f93b4</button></header><p>배포 방법 알려줘</p></article></div></div><div class="case"><h3>AI 실패 기록 — 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><p class="page-desc">AI 실패 기록이 없습니다.</p></div></div><div class="case"><h3>요청 흐름 — 이벤트<span class="tag tag-now">현재 코드</span></h3><div class="body"><ol style="list-style:none;padding:0;font-family:var(--font-mono);font-size: var(--fs-label)" class="flow"><li><time>14:05:30</time><span class="lv-INFO">INFO</span><span>request_received</span><span class="detail">path=/api/chat</span></li><li><time>14:06:00</time><span class="lv-ERROR">ERROR</span><span>ai_call_failed</span><span class="detail">reason=timeout</span></li></ol></div></div><div class="case"><h3>요청 흐름 — 불러오는 중 / 로그 없음<span class="tag tag-now">현재 코드</span></h3><div class="body"><p class="loading"><span class="spinner"></span>불러오는 중…</p><p class="page-desc">로그가 없습니다.</p></div></div></div><h2 class="cat">10. 시간 표기</h2><p class="cat-desc">같은 시각이라도 화면 목적에 따라 다르게 적는다. 기준은 <b>보는 사람의 오늘</b>. "3분 전" 같은 상대 표기는 쓰지 않는다 — 기록을 추적하는 서비스라 정확한 시각이 필요하고, 화면을 켜 둔 동안 값이 낡는다.</p><div class="cases">
+<div class="case" style="grid-column: span 2"><h3>규칙 표<span class="tag tag-new">제안</span></h3><div class="body"><div style="overflow-x:auto"><table class="time-table"><tr><th>언제</th><th>챗 말풍선</th><th>챗 날짜 구분선</th><th>로그·관리자 목록</th></tr>
+<tr><td>오늘</td><td class="mono">14:05</td><td>오늘</td><td class="mono">오늘 14:05</td></tr>
+<tr><td>어제</td><td class="mono">14:05</td><td>어제</td><td class="mono">어제 14:05</td></tr>
+<tr><td>올해 (그 전)</td><td class="mono">14:05</td><td>9월 21일 (일)</td><td class="mono">9월 21일 14:05</td></tr>
+<tr><td>작년 이전</td><td class="mono">14:05</td><td>2025년 12월 3일 (수)</td><td class="mono">2025-12-03 14:05</td></tr>
+<tr><td>요청 흐름</td><td colspan="3" class="mono">14:05:30 (초까지, 한 요청 안이라 날짜 불필요)</td></tr></table></div>
+<p class="page-desc" style="font-size: var(--fs-label)">목록 시각에 마우스를 올리면 전체 시각 <span class="mono">2026-09-28 14:05:12</span> (title). 24시간제, 한국 시간.</p></div></div>
+<div class="case"><h3>챗 — 날짜가 바뀌는 곳에 구분선<span class="tag tag-new">제안</span></h3><div class="body"><p class="day-divider">9월 21일 (일)</p><div class="msg user"><p>지난주 질문</p><time>10:12</time></div><p class="day-divider">어제</p><div class="msg bot"><p>어제 답변</p><time>22:40</time></div><p class="day-divider">오늘</p><div class="msg user"><p>오늘 질문</p><time>14:05</time></div></div></div>
+<div class="case"><h3>로그 카드 · 관리자 기록의 시각<span class="tag tag-new">제안</span></h3><div class="body"><article class="card log-card"><header><span>#28</span><time title="2026-09-28 14:05:12">오늘 14:05</time></header></article><article class="card log-card"><header><span>#20</span><time title="2026-09-27 22:40:03">어제 22:40</time></header></article><article class="card log-card"><header><span>#12</span><time title="2026-09-21 10:12:44">9월 21일 10:12</time></header></article><article class="card log-card"><header><span>#3</span><time title="2025-12-03 09:01:30">2025-12-03 09:01</time></header></article></div></div>
+</div><h2 class="cat">11. 404</h2><p class="cat-desc">없는 주소와 비관리자의 관리자 주소 접근이 같은 화면.</p><div class="cases"><div class="case"><h3>404<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="notfound" style="margin:0"><div class="code" style="font-size:36px">404</div><p style="margin:var(--space-1) 0 var(--space-3)">요청하신 페이지를 찾을 수 없습니다.</p><a class="btn btn-small">첫 화면으로 돌아가기</a></div></div></div></div><h2 class="cat">12. 움직임</h2><p class="cat-desc">등장 rise 0.25~0.3s, 응답 대기 blink 1.2s, 로딩 스피너. 동작 줄이기 설정이면 모두 멈춘다.</p><div class="cases"><div class="case"><h3>등장 (rise) — 새 말풍선·화면 전환<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot"><p>새로 도착한 답변은 6px 위로 떠오르며 나타납니다</p><time>14:20</time></div></div></div><div class="case"><h3>반복 — 대기 점 · 스피너 · 스켈레톤<span class="tag tag-now">현재 코드</span></h3><div class="body"><div class="msg bot"><span class="dots" aria-label="응답을 기다리는 중"><i></i><i></i><i></i></span></div><p class="loading" style="padding:0"><span class="spinner"></span>스피너</p><div class="skeleton" style="height:12px;width:60%"></div></div></div></div></section>
+
+  <!-- ===== 디자인 토큰 ===== -->
+  <section class="screen catalog" id="screen-tokens">
+    <h1 class="page-title">디자인 토큰</h1>
+    <p class="page-desc">모든 화면이 이 값만 참조한다. 이 표는 페이지의 CSS 변수를 직접 읽어 그리므로 <code>:root</code> 를 고치면 표와 화면이 함께 바뀐다. <b>모바일</b> 열은 폭 560px 이하에서 덮어쓰는 값.</p>
+    <div id="tokens-body"></div>
+  </section>
+
+  <!-- ===== 404 ===== -->
+  <section class="screen notfound" id="screen-notfound">
+    <div class="code">404</div>
+    <h1 class="page-title">404 Not Found</h1>
+    <p>요청하신 페이지를 찾을 수 없습니다.</p>
+    <a class="btn" href="#" data-go="login">첫 화면으로 돌아가기</a>
+  </section>
+</main>
+</div>
+
+<script>
+/* 가짜 데이터와 화면 전환 — 실제 구현과 무관, 모양 확인용 */
+const $ = (s, r = document) => r.querySelector(s)
+const $$ = (s, r = document) => [...r.querySelectorAll(s)]
+const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+/* ===== 폭에 따라 바뀌는 토큰 — 여기 한곳에서 정의하고 CSS 로 주입한다 ===== */
+const BREAKPOINTS = { tablet: 900, mobile: 560 }
+const TABLET_TOKENS = {
+  '--fs-h1': '24px',
+  '--admin-list-width': '100%',
+}
+const MOBILE_TOKENS = {
+  '--fs-h1': '22px',
+  '--fs-h2': '18px',
+  '--fs-stat': '20px',
+  '--fs-display': '44px',
+  '--fs-input': '16px',          // 16px 미만이면 iOS 가 입력 시 화면을 확대한다
+  '--control-height': '44px',    // 손가락 터치 최소 44px
+  '--control-height-sm': '36px',
+  '--bubble-max': '90%',
+  '--qa-label-width': '100%',
+  '--duration-enter': '220ms',   // 작은 화면은 이동 거리가 짧아 더 빨리
+  '--rise-distance': '4px',
+  '--space-page-top': '24px',
+}
+{
+  const decl = (t) => Object.entries(t).map(([k, v]) => `${k}: ${v};`).join(' ')
+  const style = document.createElement('style')
+  style.textContent =
+    `@container app (max-width: ${BREAKPOINTS.tablet}px) { .app-header, main { ${decl(TABLET_TOKENS)} } }\n` +
+    `@container app (max-width: ${BREAKPOINTS.mobile}px) { .app-header, main { ${decl(MOBILE_TOKENS)} } }`
+  document.head.appendChild(style)
+}
+
+/* ===== 디자인 토큰 화면 ===== */
+const TOKEN_GROUPS = [
+  ['1. 원시 색 (팔레트)', 'color', ['--gray-950','--gray-925','--gray-900','--gray-875','--gray-850','--gray-800','--gray-750','--gray-600','--gray-500','--gray-400','--gray-100','--teal-500','--teal-600','--teal-800','--orange-500'], '직접 쓰지 않는다. 아래 의미 토큰이 참조한다.'],
+  ['2-1. 텍스트 색', 'text', ['--text-primary','--text-secondary','--text-tertiary','--text-disabled','--text-placeholder','--text-on-accent','--text-link','--text-link-hover','--text-error','--text-success']],
+  ['2-2. 배경 색', 'color', ['--bg-page','--bg-surface','--bg-surface-raised','--bg-bubble-bot','--bg-bubble-user','--bg-input','--bg-input-disabled','--bg-hover','--bg-selected','--bg-header']],
+  ['2-3. 테두리 · 포커스', 'color', ['--border-default','--border-strong','--border-hover','--border-selected','--border-error','--focus-ring-color'], '포커스 링: 두께 --focus-ring-width, 간격 --focus-ring-offset. 키보드로 이동할 때만 보이고 입력칸은 클릭해도 보인다.'],
+  ['2-4. 주 버튼 상태', 'button-primary', ['--btn-primary-bg','--btn-primary-bg-hover','--btn-primary-bg-active','--btn-primary-text','--btn-primary-bg-disabled','--btn-primary-text-disabled','--btn-primary-bg-loading']],
+  ['2-5. 보조 버튼 상태', 'button-secondary', ['--btn-secondary-bg','--btn-secondary-bg-hover','--btn-secondary-bg-active','--btn-secondary-text','--btn-secondary-border','--btn-secondary-border-hover','--btn-secondary-bg-disabled','--btn-secondary-text-disabled'], 'hover 는 마우스가 있는 기기에서만 (터치 기기는 누른 뒤 색이 남는 문제 방지). 누름은 --press-scale 로 살짝 줄어듦.'],
+  ['2-6. 상태 색 · 로딩', 'color', ['--status-success','--status-success-bg','--status-success-border','--status-error','--status-error-bg','--status-error-border','--loading-track','--loading-indicator','--skeleton-base','--skeleton-shine'], '오류는 빨강 대신 채도 낮은 주황 (05-ui-ux 6절).'],
+  ['3. 글자 크기', 'font', ['--fs-micro','--fs-caption','--fs-label','--fs-small','--fs-body-sm','--fs-body','--fs-input','--fs-h3','--fs-h2','--fs-stat','--fs-h1','--fs-display'], '본문 기본 = --fs-body. 모바일에서 입력칸은 16px (iOS 확대 방지).'],
+  ['3-1. 글꼴 · 굵기 · 줄 간격', 'plain', ['--font-sans','--font-mono','--weight-regular','--weight-medium','--weight-semibold','--lh-tight','--lh-normal','--lh-input','--ls-title','--ls-mono-caps']],
+  ['4. 간격 (4px 그리드)', 'space', ['--space-0-5','--space-1','--space-1-5','--space-2','--space-2-5','--space-3','--space-3-5','--space-4','--space-4-5','--space-5','--space-5-5','--space-6','--space-7','--space-8','--space-10','--space-14','--space-16','--space-22']],
+  ['5. 모서리', 'radius', ['--radius-xs','--radius-sm','--radius-md','--radius-control','--radius-card','--radius-bubble','--radius-tail','--radius-pill']],
+  ['6. 크기', 'plain', ['--page-max','--page-pad','--chat-max','--auth-max','--admin-list-width','--control-height','--control-height-sm','--touch-target','--bubble-max','--qa-label-width','--icon-spinner','--brand-mark','--dot-size','--border-width','--tab-indicator']],
+  ['7. 투명도 · 겹침', 'plain', ['--opacity-disabled','--z-header','--z-proto']],
+  ['8. 움직임', 'motion', ['--duration-instant','--duration-fast','--duration-base','--duration-enter','--duration-blink','--duration-spin','--duration-shimmer','--ease-standard','--ease-enter','--ease-linear','--rise-distance','--press-scale'], '동작 줄이기 설정(prefers-reduced-motion): 전환·등장·누름은 0, 대기 점과 스켈레톤은 멈춤, 스피너는 멈추지 않고 1.6s 로 느리게.'],
+]
+const TOKEN_NOTES = {
+  '--text-disabled': '비활성 버튼·입력 글자', '--text-secondary': '설명·라벨·비활성 메뉴', '--text-tertiary': '시각·코드·보조',
+  '--fs-body': '본문 기본', '--fs-input': '입력칸', '--fs-h1': '화면 제목', '--fs-label': '라벨·코드 칩',
+  '--duration-fast': 'hover·색 전환', '--duration-base': '탭·펼침', '--duration-enter': '말풍선·화면 등장',
+  '--control-height': '버튼·입력 높이', '--touch-target': '모바일 최소 터치',
+}
+function renderTokens() {
+  const cs = getComputedStyle(document.querySelector('main'))
+  const rootCs = getComputedStyle(document.documentElement)
+  const val = (n) => (cs.getPropertyValue(n) || rootCs.getPropertyValue(n)).trim()
+  const mob = (n) => MOBILE_TOKENS[n] ?? TABLET_TOKENS[n] ?? ''
+  const preview = (kind, n) => {
+    if (kind === 'color' || kind.startsWith('button')) return `<div class="swatch" style="background:var(${n})"></div>`
+    if (kind === 'text') return `<span style="color:var(${n});font-weight:600">가나다 Aa</span>`
+    if (kind === 'font') return `<span style="font-size:var(${n});line-height:1.2">가나다 Aa</span>`
+    if (kind === 'space') return `<div class="bar" style="width:var(${n})"></div>`
+    if (kind === 'radius') return `<div class="radius-box" style="border-radius:var(${n})"></div>`
+    if (kind === 'motion' && n.startsWith('--duration')) return `<button class="btn btn-small" data-motion="${n}">재생</button>`
+    return ''
+  }
+  $('#tokens-body').innerHTML = TOKEN_GROUPS.map(([title, kind, names, desc]) =>
+    `<h2 class="cat">${title}</h2>${desc ? `<p class="cat-desc">${desc}</p>` : ''}<div class="tok-wrap"><table class="tok-table">
+      <tr><th style="width:70px">보기</th><th>토큰</th><th>데스크톱 값</th><th>모바일(≤${BREAKPOINTS.mobile}) / 태블릿(≤${BREAKPOINTS.tablet})</th><th>쓰는 곳</th></tr>
+      ${names.map((n) => `<tr><td>${preview(kind, n)}</td><td><code>${n}</code></td><td class="val" title="${val(n)}">${val(n)}</td>
+        <td class="mob">${MOBILE_TOKENS[n] ? '모바일 ' + MOBILE_TOKENS[n] : ''}${TABLET_TOKENS[n] ? (MOBILE_TOKENS[n] ? ' · ' : '') + '태블릿 ' + TABLET_TOKENS[n] : ''}</td>
+        <td style="color:var(--text-secondary)">${TOKEN_NOTES[n] ?? ''}</td></tr>`).join('')}
+    </table></div>`).join('') +
+    `<h2 class="cat">9. 반응형 기준</h2><p class="cat-desc">CSS 변수는 미디어 쿼리 조건에 쓸 수 없어 숫자로 고정한다 (docs/05-ui-ux.md 7절).</p>
+     <div class="tok-wrap"><table class="tok-table"><tr><th>이름</th><th>폭</th><th>바뀌는 것</th></tr>
+     <tr><td>데스크톱</td><td class="val">&gt; ${BREAKPOINTS.tablet}px</td><td>관리자 2단(목록 ${val('--admin-list-width')} + 대화), 통계 6칸</td></tr>
+     <tr><td>태블릿</td><td class="val">≤ ${BREAKPOINTS.tablet}px</td><td>관리자 1단, 통계 2칸, 제목 24px</td></tr>
+     <tr><td>모바일</td><td class="val">≤ ${BREAKPOINTS.mobile}px</td><td>헤더 2줄(메뉴 아래로), 버튼·입력 44px, 입력 글자 16px, 말풍선 90%, 등장 220ms·4px, 로그 카드 질문/답변 세로 배치</td></tr></table></div>
+     <h2 class="cat">10. 상태 규칙</h2><div class="tok-wrap"><table class="tok-table"><tr><th>상태</th><th>보이는 방식</th></tr>
+     <tr><td>hover</td><td>배경 한 단계 밝게 / 테두리 --border-hover. 마우스 기기만, ${val('--duration-fast')}</td></tr>
+     <tr><td>누름 (active)</td><td>배경 한 단계 어둡게 + 크기 ${val('--press-scale')}</td></tr>
+     <tr><td>포커스</td><td>링 ${val('--focus-ring-width')} 청록 60%, 간격 ${val('--focus-ring-offset')} — 키보드 이동 시 (입력칸은 항상)</td></tr>
+     <tr><td>비활성</td><td>전용 배경·글자색 (투명도로 흐리게 하지 않음 — 뒤 배경이 비쳐 읽기 어려워서), 커서 not-allowed</td></tr>
+     <tr><td>로딩</td><td>버튼: 비활성 + 스피너 + "처리 중…" 문구, 배경 --btn-primary-bg-loading, 커서 progress / 영역: 스피너 + 문구</td></tr>
+     <tr><td>선택됨</td><td>--bg-selected + --border-selected (사용자 목록), 탭은 청록 밑줄 ${val('--tab-indicator')}</td></tr>
+     <tr><td>오류</td><td>--status-error 글자 · --status-error-bg 배경 · --border-error 테두리 + 결과 코드 칩</td></tr></table></div>`
+}
+document.addEventListener('click', (e) => {
+  const m = e.target.closest('[data-motion]')
+  if (!m) return
+  const box = document.createElement('span')
+  box.className = 'motion-demo'
+  box.textContent = '등장'
+  box.style.animation = `rise var(${m.dataset.motion}) var(--ease-enter)`
+  m.replaceWith(box)
+  setTimeout(() => box.replaceWith(m), 1500)
+})
+
+/* 화면별 상태와 반영 메모 */
+const SCREENS = {
+  login: {
+    who: 'guest',
+    states: [['기본', ''], ['가입 완료 후', 'login:done'], ['로그인 실패', 'login:error']],
+    notes: [
+      '아이디(username) → <b>이메일</b> 로그인 (시안은 아이디)',
+      '헤더 비로그인 메뉴는 <b>[로그인]만</b> — 회원가입 버튼 없음, 로그인 카드 아래 <b>문장 전체가 링크</b>',
+      '로그인 실패는 이메일/비밀번호 중 무엇이 틀렸는지 알리지 않음, 비밀번호만 비움',
+      '가입 완료 후 이동하면 청록 안내 + 이메일 자동 입력',
+      '시안 하단 푸터(/api/health · 200 OK)는 스펙 범위 밖이라 제외 (05-ui-ux 8절)',
+    ],
+  },
+  signup: {
+    who: 'guest',
+    states: [['기본', ''], ['이메일 중복 409', 'signup:error']],
+    notes: [
+      '이메일 · 비밀번호(8자 이상) · <b>닉네임</b>(1~20자, 중복 허용)',
+      '409 는 이메일 칸에 표시하고 포커스 이동, 이메일을 고치면 사라짐',
+      '가입으로는 관리자를 만들 수 없음 (시드 계정만 관리자)',
+    ],
+  },
+  chat: {
+    who: 'user',
+    states: [['이전 대화 있음', 'history'], ['첫 방문 (대화 없음)', 'empty'], ['응답 대기 · 느림 안내', 'slow'], ['1000자 도달', 'limit']],
+    notes: [
+      '말풍선엔 시각만, <b>날짜가 바뀌는 곳에 구분선</b> (오늘 / 어제 / 9월 21일 (일) / 2025년 12월 3일 (수))',
+      '<b>아래가 최신</b>, 위로 스크롤하면 이전 대화를 더 불러옴 (보던 위치 유지, "처음 대화" 표시 없음)',
+      '"<b>새 대화</b> · context: 최근 5턴" — 대화가 없을 때만 "새 대화", 마우스를 올리면 설명',
+      '입력칸 <b>높이 고정(3줄)</b>, 넘치면 안에서 스크롤, 크기 조절 불가',
+      'Enter 전송 · Shift+Enter 줄바꿈 · 한글 조합 중 Enter 무시',
+      '입력칸 아래 <b>POST /api/chat</b> · 글자 수 (1000자에서 <b>주황</b>)',
+      '504·502 오류 말풍선에만 [다시 시도] (같은 질문 재전송), 500·연결 실패는 없음',
+      '시안의 "응답 시뮬레이션"·"서버 로그" 보조 패널은 범위 밖이라 제외 → 챗은 가운데 1열',
+      '이 화면은 직접 입력해 볼 수 있음: "#timeout" / "#fail" 을 넣으면 오류 말풍선',
+    ],
+  },
+  logs: {
+    who: 'user',
+    states: [['기록 있음', 'list'], ['기록 없음', 'empty'], ['불러오기 실패', 'error']],
+    notes: [
+      '챗과 같은 방향 — <b>아래가 최신</b>, 처음엔 맨 아래에서 시작',
+      '<b>[더 보기] 버튼 없음</b> — 맨 위로 스크롤하면 이전 20건을 위에 붙임 (직접 스크롤해 보세요)',
+      '카드는 <b>1열</b> (시안의 2열 그리드 대신) — 시간 순서로 읽는 목록이라',
+      '성공한 대화만 보임 (실패 기록은 관리자 화면에서)',
+      '답변은 텍스트로만 표시 (HTML 해석 안 함)',
+    ],
+  },
+  admin: {
+    who: 'admin',
+    states: [['사용자 선택', 'user'], ['사용자 미선택', 'none'], ['요청 흐름 열림', 'flow']],
+    notes: [
+      '관리자 주소는 환경변수로만 — 헤더 [관리자] 탭은 <b>관리자에게만</b> 보임',
+      '비관리자·비로그인이 주소로 오면 <b>없는 주소와 같은 404</b>',
+      '사용자 목록 <b>최근 활동 순</b>, 대화 없는 사용자는 뒤 · <b>[목록 새로고침]</b>으로 직접 갱신',
+      '이메일 검색 (입력이 멈추고 300ms 뒤 검색) · [더 보기]',
+      '대화 수(chat_count)는 성공+실패 전체, 선택하면 나오는 대화 수와 같음',
+      '성공(청록)/실패(주황) 표시, 실패는 답변 없음, request_id 누르면 요청 흐름',
+      '선택한 탭·사용자·요청은 주소에 남음 (새로고침·공유 유지)',
+      '평균 응답: 성공 기록이 없으면 "–"',
+    ],
+  },
+  tokens: {
+    who: 'user',
+    states: [['전체', '']],
+    notes: [
+      '색은 <b>원시 팔레트 → 의미 토큰</b> 2단계. 컴포넌트는 의미 토큰만 쓴다 (텍스트·배경·테두리·버튼 상태·상태 색·로딩)',
+      '버튼은 기본 / hover / 누름 / 포커스 / 비활성 / 로딩 각각 색이 따로 있다',
+      '글자 크기 12단계, 간격 4px 그리드, 모서리 8단계, 크기, 움직임(시간·곡선·거리)',
+      '<b>모바일(≤560)·태블릿(≤900)</b> 에서 바뀌는 값은 스크립트의 MOBILE_TOKENS / TABLET_TOKENS 한곳에 있다',
+      '[재생] 버튼으로 등장 애니메이션 시간을 비교해 볼 수 있다',
+    ],
+  },
+  catalog: {
+    who: 'user',
+    states: [['전체', '']],
+    notes: [
+      '테스트 케이스·코드 분기에서 나오는 <b>모든 상태</b>를 한 화면에 모았습니다 (로딩·빈 상태·오류·비활성·포커스 포함)',
+      '<b>현재 코드</b> 표시는 지금 코드에 있는 상태, <b>제안</b> 표시는 지금은 아무것도 안 보이거나 글자뿐이라 디자인하며 추가하자는 것',
+      '로딩 표시는 <b>스피너 + 문구</b> 로 통일 제안 (목록 첫 로딩은 스켈레톤도 대안으로 넣음)',
+      '<b>시간 표기</b> 규칙 (10번): 챗은 말풍선엔 시각만 + 날짜 구분선, 로그·관리자는 오늘/어제/날짜 + 시각, 마우스를 올리면 전체 시각',
+      '안내 박스의 코드 칩: 지금 로그인·가입 화면은 문구만 보여줌 → 문서(05-ui-ux)대로 칩을 붙이자는 제안 포함',
+    ],
+  },
+  notfound: {
+    who: 'guest',
+    states: [['비로그인', 'guest'], ['일반 사용자가 관리자 주소로', 'user']],
+    notes: [
+      '없는 주소 / 비관리자의 관리자 주소 접근 모두 <b>똑같은 화면</b>, 주소도 그대로',
+      '로그인 상태·권한을 짐작하게 하는 문구 없음 (헤더만 로그인 상태를 따름)',
+    ],
+  },
+}
+
+let current = 'chat'
+let stateIndex = 0
+
+function renderHeader(who) {
+  const nav = $('#nav'), end = $('#header-end')
+  const link = (s, label) => `<a href="#" data-go="${s}" ${s === current ? 'aria-current="page"' : ''}>${label}</a>`
+  if (who === 'guest') {
+    nav.innerHTML = ''
+    end.innerHTML = `<a class="btn btn-small" href="#" data-go="login">로그인</a>`
+  } else {
+    nav.innerHTML = link('chat', '챗') + link('logs', '내 대화 로그') + (who === 'admin' ? link('admin', '관리자') : '')
+    end.innerHTML = `<span class="nickname">${who === 'admin' ? '관리자' : '어썸체크'}</span><button class="btn btn-small">로그아웃</button>`
+  }
+}
+
+function show(name, index = 0) {
+  current = name
+  stateIndex = index
+  const cfg = SCREENS[name]
+  const state = cfg.states[index][1]
+  $$('.screen').forEach((s) => s.classList.toggle('active', s.id === `screen-${name}`))
+  $$('.proto-bar [data-screen]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.screen === name))
+  $('#variant-btn').textContent = `상태: ${cfg.states[index][0]} ▸`
+
+  // 404 는 상태에 따라 헤더만 바뀐다
+  renderHeader(name === 'notfound' ? (state === 'user' ? 'user' : 'guest') : cfg.who)
+
+  $$('[data-when]').forEach((el) => (el.hidden = el.dataset.when !== state))
+  $$('[data-invalid-when]').forEach((el) => el.classList.toggle('invalid', el.dataset.invalidWhen === state))
+
+  if (name === 'chat') renderChat(state)
+  if (name === 'logs') renderLogs(state)
+  if (name === 'admin') renderAdmin(state)
+  if (name === 'tokens') renderTokens()
+
+  $('#note').innerHTML = `<b>${name} 화면에 반영한 결정</b><ul>${cfg.notes.map((n) => `<li>${n}</li>`).join('')}</ul>`
+}
+
+/* ----- 챗 ----- */
+const time = (i) => `14:${String(i).padStart(2, '0')}`
+let chatMessages = []
+let olderPages = 0
+
+function historyMessages(from, to) {
+  const out = []
+  for (let i = from; i <= to; i++) {
+    out.push({ kind: 'user', text: `이전 질문 ${i}`, t: time(i % 60) })
+    out.push({ kind: 'bot', text: `이전 질문 ${i} 에 대한 답변입니다.`, t: time(i % 60) })
+  }
+  return out
+}
+
+function bubble(m) {
+  if (m.kind === 'day') return `<p class="day-divider" role="separator">${m.text}</p>`
+  if (m.kind === 'dots') return `<div class="msg bot"><span class="dots"><i></i><i></i><i></i></span></div>`
+  if (m.kind === 'err') {
+    return `<div class="msg bot err"><div class="err-box">${esc(m.text)}
+      <div class="err-foot"><span class="chip chip-warn">${m.code}</span>${m.retry ? '<button class="btn btn-small">다시 시도</button>' : ''}</div></div>
+      <time>${m.t}</time></div>`
+  }
+  return `<div class="msg ${m.kind}"><p>${esc(m.text)}</p><time>${m.t}</time></div>`
+}
+
+function drawChat(keepBottom = true) {
+  const box = $('#chat-scroll')
+  const empty = chatMessages.length === 0
+  $('#chat-title').innerHTML = empty ? '새 대화 <span class="api-note">·</span>' : ''
+  box.innerHTML = empty
+    ? '<p class="greet">안녕하세요. 무엇이든 물어보세요.</p>'
+    : (olderPages < 2 && chatMessages.length > 6 ? '<p class="loading-older" id="older-hint">위로 스크롤하면 이전 대화를 불러옵니다</p>' : '') +
+      chatMessages.map(bubble).join('')
+  if (keepBottom) box.scrollTop = box.scrollHeight
+}
+
+function renderChat(state) {
+  olderPages = 0
+  $('#slow').hidden = state !== 'slow'
+  const input = $('#chat-input')
+  input.value = state === 'limit' ? '가'.repeat(1000) : ''
+  updateCounter()
+  if (state === 'empty') chatMessages = []
+  else {
+    chatMessages = [
+      { kind: 'day', text: '9월 21일 (일)' },
+      ...historyMessages(11, 12),
+      { kind: 'day', text: '어제' },
+      ...historyMessages(13, 14),
+      { kind: 'day', text: '오늘' },
+      { kind: 'user', text: 'FastAPI에서 CORS 설정은 어떻게 해?', t: time(20) },
+      { kind: 'bot', text: 'FastAPI에서는 CORSMiddleware 를 추가합니다.\napp.add_middleware(CORSMiddleware, allow_origins=[...])', t: time(20) },
+      { kind: 'user', text: '긴 글 요약해줘', t: time(21) },
+      { kind: 'err', text: '현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.', code: '504 · AI_TIMEOUT', retry: true, t: time(22) },
+    ]
+    if (state === 'slow') chatMessages.push({ kind: 'user', text: '배포 방법 알려줘', t: time(23) }, { kind: 'dots' })
+  }
+  drawChat()
+}
+
+$('#chat-scroll').addEventListener('scroll', (e) => {
+  const box = e.currentTarget
+  if (current !== 'chat' || box.scrollTop > 40 || olderPages >= 2 || chatMessages.length <= 6) return
+  olderPages += 1
+  const before = box.scrollHeight
+  const start = 11 - olderPages * 5
+  chatMessages = [{ kind: 'day', text: olderPages === 1 ? '9월 14일 (일)' : '2025년 12월 3일 (수)' }, ...historyMessages(start, start + 4), ...chatMessages]
+  drawChat(false)
+  box.scrollTop += box.scrollHeight - before // 보던 위치 유지
+})
+
+function updateCounter() {
+  const input = $('#chat-input'), counter = $('#counter')
+  counter.textContent = `${input.value.length} / 1000`
+  input.value.length >= 1000 ? counter.setAttribute('data-limit', '') : counter.removeAttribute('data-limit')
+  $('#send').disabled = input.value.trim() === ''
+}
+$('#chat-input').addEventListener('input', updateCounter)
+$('#chat-input').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return
+  e.preventDefault()
+  $('#composer').requestSubmit()
+})
+$('#composer').addEventListener('submit', (e) => {
+  e.preventDefault()
+  const q = $('#chat-input').value.trim()
+  if (!q) return
+  const now = new Date()
+  const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+  chatMessages.push({ kind: 'user', text: q, t }, { kind: 'dots' })
+  $('#chat-input').value = ''
+  updateCounter()
+  drawChat()
+  setTimeout(() => {
+    chatMessages.pop()
+    if (q.includes('#timeout')) chatMessages.push({ kind: 'err', text: '현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.', code: '504 · AI_TIMEOUT', retry: true, t })
+    else if (q.includes('#fail')) chatMessages.push({ kind: 'err', text: 'AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.', code: '502 · AI_CALL_FAILED', retry: true, t })
+    else chatMessages.push({ kind: 'bot', text: `(프로토타입) "${q}" 에 대한 답변입니다.`, t })
+    drawChat()
+    $('#chat-input').focus()
+  }, 900)
+})
+
+/* ----- 내 대화 로그 ----- */
+let logFrom = 9
+function logCard(id) {
+  return `<article class="card log-card"><header><span>#${id}</span><time title="2026-09-${id > 20 ? 28 : 27} ${time(id)}:12">${id > 20 ? '오늘' : '어제'} ${time(id)}</time></header>
+    <dl class="qa"><dt>QUESTION</dt><dd class="q">질문 ${id} — FastAPI 에서 CORS 설정은 어떻게 해?</dd>
+    <dt class="a">ANSWER</dt><dd class="a">답변 ${id} — CORSMiddleware 를 추가하고 allow_origins 에 프론트 주소를 넣습니다.</dd></dl></article>`
+}
+function drawLogs(keepBottom) {
+  const box = $('#log-scroll')
+  const ids = []
+  for (let i = logFrom; i <= 28; i++) ids.push(i)
+  box.innerHTML = (logFrom > 1 ? '<p class="loading-older">위로 스크롤하면 이전 기록을 불러옵니다</p>' : '') + ids.map(logCard).join('')
+  if (keepBottom) box.scrollTop = box.scrollHeight
+}
+function renderLogs(state) {
+  const box = $('#log-scroll')
+  $('#log-total').textContent = state === 'list' ? '28' : state === 'empty' ? '0' : '…'
+  if (state === 'empty') { box.innerHTML = '<p class="empty">아직 저장된 대화가 없습니다.</p>'; return }
+  if (state === 'error') {
+    box.innerHTML = '<div class="alert alert-warn"><span class="mono">NETWORK_ERROR</span><span>대화 기록을 불러오지 못했습니다. 서버에 연결할 수 없습니다. <button class="btn btn-small">다시 불러오기</button></span></div>'
+    return
+  }
+  logFrom = 9
+  drawLogs(true)
+}
+$('#log-scroll').addEventListener('scroll', (e) => {
+  const box = e.currentTarget
+  if (box.scrollTop > 40 || logFrom <= 1 || SCREENS.logs.states[stateIndex][1] !== 'list') return
+  const before = box.scrollHeight
+  logFrom = 1
+  drawLogs(false)
+  box.scrollTop += box.scrollHeight - before
+})
+$('#log-refresh').addEventListener('click', () => renderLogs('list'))
+
+/* ----- 관리자 ----- */
+const USERS = [
+  { id: 4, email: 'kim@example.com', role: 'user', count: 44, last: '2026-09-28 14:06' },
+  { id: 3, email: 'lee@example.com', role: 'user', count: 12, last: '2026-09-28 13:40' },
+  { id: 2, email: 'park@test.com', role: 'user', count: 3, last: '2026-09-27 09:12' },
+  { id: 5, email: 'new@example.com', role: 'user', count: 0, last: null },
+  { id: 1, email: 'admin@example.com', role: 'admin', count: 0, last: null },
+]
+const RECORDS = [
+  { id: 988, ok: false, code: '504 · AI_TIMEOUT', ms: '30,000ms', rid: '351990af2cf2', q: '긴 글 요약해줘', t: '2026-09-28 14:06' },
+  { id: 987, ok: true, ms: '1,240ms', rid: '5d14c34e071f', q: 'FastAPI에서 CORS 설정은 어떻게 해?', a: 'FastAPI에서는 CORSMiddleware 를 추가합니다.', t: '2026-09-28 14:05' },
+  { id: 985, ok: false, code: '502 · AI_CALL_FAILED', ms: '820ms', rid: 'a0c7e21f93b4', q: '배포 방법 알려줘', t: '2026-09-28 13:58' },
+  { id: 981, ok: true, ms: '1,105ms', rid: '9be1c02d44aa', q: 'JWT 가 뭐야?', a: 'JSON Web Token 의 약자로, 서명된 토큰입니다.', t: '2026-09-28 13:50' },
+]
+let selected = 4
+
+function renderAdmin(state) {
+  selected = state === 'none' ? null : 4
+  $('#flow').hidden = state !== 'flow'
+  if (state === 'flow') renderFlow('351990af2cf2')
+  selectTab('users')
+  drawUsers()
+}
+function drawUsers() {
+  $('#user-list').innerHTML = USERS.map((u) => `<li><button aria-pressed="${u.id === selected}" data-user="${u.id}">
+      <span class="email">${u.email}</span>${u.role === 'admin' ? '<span class="chip">관리자</span>' : '<span></span>'}
+      <span class="meta">${u.count}건${u.last ? ' · ' + u.last : ' · 대화 없음'}</span></button></li>`).join('')
+  const panel = $('#user-chats')
+  if (!selected) { panel.innerHTML = '<p class="page-desc">목록에서 사용자를 선택하면 대화 기록이 보입니다.</p>'; return }
+  const u = USERS.find((x) => x.id === selected)
+  if (u.count === 0) { panel.innerHTML = `<h2>${u.email} 의 대화 (0)</h2><p class="page-desc">대화 기록이 없습니다.</p>`; return }
+  panel.innerHTML = `<h2>${u.email} 의 대화 (${u.count})</h2>` + RECORDS.map(record).join('') +
+    '<div class="more"><button class="btn btn-small">더 보기</button></div>'
+}
+function record(r) {
+  return `<article class="record"><header><span>#${r.id}</span><time>${r.t}</time>
+      <span class="chip ${r.ok ? 'chip-ok' : 'chip-warn'}">${r.ok ? 'SUCCESS' : 'ERROR ' + r.code}</span><span>${r.ms}</span>
+      <button class="rid" data-rid="${r.rid}">request ${r.rid}</button></header>
+    <dl class="qa"><dt>QUESTION</dt><dd class="q">${esc(r.q)}</dd>${r.a ? `<dt class="a">ANSWER</dt><dd class="a">${esc(r.a)}</dd>` : ''}</dl></article>`
+}
+function drawFailures() {
+  const fails = [
+    { ...RECORDS[0], who: 'kim@example.com' },
+    { ...RECORDS[2], who: 'kim@example.com' },
+    { id: 970, code: '504 · AI_TIMEOUT', ms: '30,000ms', rid: '77ab01c9e0f2', q: '논문 3편 비교해줘', t: '2026-09-28 11:02', who: 'lee@example.com' },
+  ]
+  $('#tab-failures').innerHTML = '<h2>AI 실패 기록 (12)</h2>' + fails.map((f) => `<article class="record"><header><time>${f.t}</time>
+      <span class="who">${f.who}</span><span class="chip chip-warn">${f.code}</span><span>${f.ms}</span>
+      <button class="rid" data-rid="${f.rid}">request ${f.rid}</button></header><p>${esc(f.q)}</p></article>`).join('') +
+    '<div class="more"><button class="btn btn-small">더 보기</button></div>'
+}
+function renderFlow(rid) {
+  const flow = $('#flow')
+  flow.hidden = false
+  const unknown = rid === 'none'
+  const ev = [
+    ['14:05:30', 'INFO', 'request_received', 'path=/api/chat'],
+    ['14:05:30', 'INFO', 'ai_call_start', 'context_turns=5'],
+    ['14:06:00', 'ERROR', 'ai_call_failed', 'reason=timeout latency_ms=30000'],
+    ['14:06:00', 'INFO', 'db_save_success', 'chat_id=988 status=error'],
+  ]
+  flow.innerHTML = `<div class="flow-head"><h2>요청 흐름 <span class="api-note">request_id ${rid}</span></h2><button class="btn btn-small" id="flow-close">닫기</button></div>` +
+    (unknown ? '<p class="page-desc">로그가 없습니다.</p>' :
+      '<ol>' + ev.map(([t, lv, e, d]) => `<li><time>${t}</time><span class="lv-${lv}">${lv}</span><span>${e}</span><span class="detail">${d}</span></li>`).join('') + '</ol>')
+  $('#flow-close').onclick = () => (flow.hidden = true)
+}
+function selectTab(tab) {
+  $$('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === tab))
+  $('#tab-users').hidden = tab !== 'users'
+  $('#tab-failures').hidden = tab !== 'failures'
+  if (tab === 'failures') drawFailures()
+}
+
+document.addEventListener('click', (e) => {
+  const go = e.target.closest('[data-go]')
+  if (go) { e.preventDefault(); show(go.dataset.go) }
+  const scr = e.target.closest('.proto-bar [data-screen]')
+  if (scr) show(scr.dataset.screen)
+  if (e.target.closest('#variant-btn')) {
+    const n = SCREENS[current].states.length
+    show(current, (stateIndex + 1) % n)
+  }
+  const user = e.target.closest('[data-user]')
+  if (user) { selected = Number(user.dataset.user); $('#flow').hidden = true; drawUsers() }
+  const rid = e.target.closest('[data-rid]')
+  if (rid) renderFlow(rid.dataset.rid)
+  const tab = e.target.closest('.tabs [role=tab]')
+  if (tab) { selectTab(tab.dataset.tab); $('#flow').hidden = true }
+  const w = e.target.closest('.proto-bar [data-width]')
+  if (w) {
+    $$('.proto-bar [data-width]').forEach((b) => b.setAttribute('aria-pressed', b === w))
+    const frame = $('#frame')
+    frame.style.maxWidth = w.dataset.width ? w.dataset.width + 'px' : ''
+    frame.style.margin = w.dataset.width ? '0 auto' : ''
+    frame.style.outline = w.dataset.width ? 'var(--border-width) dashed #5a4b88' : ''
+  }
+})
+$('#note-btn').addEventListener('click', (e) => {
+  const note = $('#note')
+  note.hidden = !note.hidden
+  e.currentTarget.setAttribute('aria-pressed', !note.hidden)
+})
+
+show('chat')
+</script>
+</body>
+</html>
