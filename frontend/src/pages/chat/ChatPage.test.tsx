@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import type { JsonBodyType } from 'msw'
@@ -209,5 +209,29 @@ describe('챗 — 오류와 다시 시도', () => {
     await screen.findByRole('alert')
 
     await waitFor(() => expect(screen.getByLabelText('질문')).toHaveFocus())
+  })
+})
+
+describe('챗 — 위로 스크롤해 이전 대화 불러오기', () => {
+  it('맨 위에 닿으면 이전 대화를 위에 붙인다 (아래가 최신)', async () => {
+    const all = Array.from({ length: 25 }, (_, i) => item(25 - i, `질문 ${25 - i}`, `답 ${25 - i}`))
+    server.use(
+      http.get(`${BASE}/api/me/chats`, ({ request }) => {
+        const offset = Number(new URL(request.url).searchParams.get('offset') ?? 0)
+        return HttpResponse.json({ code: 200, data: { total: 25, items: all.slice(offset, offset + 20) } })
+      }),
+    )
+    renderChat()
+    await waitFor(() => expect(bubbles()).toHaveLength(40))
+    // 맨 아래가 가장 최근 답
+    expect(bubbles().at(-1)?.querySelector('p')?.textContent).toBe('답 25')
+
+    const scroller = screen.getByLabelText('대화 스크롤 영역')
+    scroller.scrollTop = 0
+    fireEvent.scroll(scroller)
+
+    await waitFor(() => expect(bubbles()).toHaveLength(50))
+    expect(bubbles()[0].querySelector('p')?.textContent).toBe('질문 1')
+    expect(bubbles().at(-1)?.querySelector('p')?.textContent).toBe('답 25')
   })
 })
