@@ -80,6 +80,8 @@ export function ChatInput({ onSend, disabled, ref }: ChatInputProps) {
         placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈"
         aria-describedby="chat-input-count"
       />
+      {/* 이 입력이 호출하는 API. 평가자가 화면에서 바로 확인한다 (docs/05-ui-ux.md 화면 3) */}
+      <code>POST /api/chat</code>{' '}
       {/* 한도에 닿으면 data-limit 로 표시한다. 색은 스타일링 단계에서 주황으로 준다 */}
       <span id="chat-input-count" data-limit={atLimit || undefined}>
         {value.length} / {MAX_MESSAGE_LENGTH}

@@ -18,6 +18,12 @@ const SLOW_NOTICE_MS = 5000
  * 쌓는다. 위로 올리면 이전 대화를 더 불러온다 (내 대화 로그 화면과 같은 규칙).
  * 새로고침해도 대화가 사라지지 않는다.
  */
+/**
+ * AI 가 기억하는 이전 대화 수 — 서버 AI_CONTEXT_TURNS 와 같다 (docs/03-api.md 2-1절).
+ * 같은 사용자의 최근 **성공** 대화 5쌍을 프롬프트에 넣는다.
+ */
+export const CONTEXT_TURNS = 5
+
 export default function ChatPage() {
   const history = useChatHistory()
   const { messages, send, retry, isSending } = useChatMessages()
@@ -59,6 +65,14 @@ export default function ChatPage() {
   return (
     <section>
       <h1>챗</h1>
+
+      {/* 이전 대화가 있으면 이어서 하는 대화라 "새 대화" 는 붙이지 않는다 */}
+      <p aria-label="대화 정보">
+        {!history.isLoading && all.length === 0 ? '새 대화 · ' : ''}
+        <span title={`AI 는 최근 성공한 대화 ${CONTEXT_TURNS}개를 기억하고 답합니다`}>
+          context: 최근 {CONTEXT_TURNS}턴
+        </span>
+      </p>
 
       {history.loadError ? (
         <p role="alert">

@@ -87,6 +87,32 @@ describe('챗 — 이전 대화 복원', () => {
     expect(await screen.findByText('안녕하세요. 무엇이든 물어보세요.')).toBeInTheDocument()
   })
 
+  it('이전 대화가 없으면 "새 대화 · context: 최근 5턴"', async () => {
+    mockHistory([])
+    renderChat()
+
+    await screen.findByText('안녕하세요. 무엇이든 물어보세요.')
+    expect(screen.getByLabelText('대화 정보')).toHaveTextContent('새 대화 · context: 최근 5턴')
+  })
+
+  it('이전 대화가 있으면 이어지는 대화라 "새 대화" 없이 context 만', async () => {
+    mockHistory([item(1, '첫 질문', '첫 답')])
+    renderChat()
+
+    await waitFor(() => expect(bubbles()).toHaveLength(2))
+    expect(screen.getByLabelText('대화 정보')).toHaveTextContent(/^context: 최근 5턴$/)
+  })
+
+  it('첫 질문을 보내면 "새 대화" 가 빠진다', async () => {
+    mockHistory([])
+    mockChat(ok)
+    renderChat()
+    await screen.findByText('안녕하세요. 무엇이든 물어보세요.')
+
+    await ask('안녕')
+    expect(screen.getByLabelText('대화 정보')).toHaveTextContent(/^context: 최근 5턴$/)
+  })
+
   it('불러오지 못하면 안내하고 다시 불러올 수 있다', async () => {
     const user = userEvent.setup()
     server.use(http.get(`${BASE}/api/me/chats`, () => HttpResponse.json({ code: 500, data: { message: 'x' } })))
