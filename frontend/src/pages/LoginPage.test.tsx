@@ -177,3 +177,12 @@ describe('로그인 — 회원가입에서 넘어온 경우', () => {
     expect(emailInput()).toHaveValue('')
   })
 })
+
+describe('이동 안내 문장 (#42)', () => {
+  it('문장 전체가 하나의 링크다', () => {
+    renderLogin()
+
+    const guide = screen.getByRole('link', { name: '아직 계정이 없나요? 회원가입' })
+    expect(guide).toHaveAttribute('href', '/signup')
+  })
+})

@@ -202,3 +202,12 @@ describe('회원가입 — 입력 길이 상한 (#34)', () => {
     expect(screen.getByLabelText('닉네임')).toHaveAttribute('maxLength', '20')
   })
 })
+
+describe('이동 안내 문장 (#42)', () => {
+  it('문장 전체가 하나의 링크다', () => {
+    renderSignup()
+
+    const guide = screen.getByRole('link', { name: '이미 계정이 있나요? 로그인' })
+    expect(guide).toHaveAttribute('href', '/login')
+  })
+})
