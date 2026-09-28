@@ -138,8 +138,8 @@ curl -s -H "Authorization: Bearer $ATOKEN" $BASE/api/admin/failures
 | B17c | access 만료 상태에서 **API 를 2개 이상 동시에 호출하는 화면 진입**(챗: `/auth/me`+`/me/chats`, 관리자: stats+users) | Network 에 `POST /api/auth/refresh` **1회만** 기록(single-flight), 두 요청 모두 재시도 성공, 로그아웃되지 않음 ([12-decisions.md 15. 토큰 재발급 동시성 — single-flight](12-decisions.md#15-토큰-재발급-동시성--single-flight)) |
 | B18 | 375px 폭 | 가로 스크롤 0, 1열 |
 | B19 | 백엔드 중지 상태에서 질문 | "서버에 연결할 수 없습니다" 말풍선 |
-| B20 | 일반 사용자가 `/admin` 직접 입력 | `/chat` 으로 이동 |
-| B21 | 관리자 로그인 | 헤더에 "관리자" 탭, `/admin` 요약 카드 표시 |
+| B20 | 일반 사용자·비로그인이 `<관리자 주소>` 직접 입력 | 없는 주소와 똑같이 처리 (로그인 → 결국 `/chat`), `/admin` 은 없는 주소 |
+| B21 | 관리자 로그인 | 헤더에 "관리자" 탭, `<관리자 주소>` 요약 카드 표시 |
 | B22 | 관리자: 이메일 검색 → 사용자 선택 | 해당 사용자 대화(성공·실패 배지) 표시, 새로고침해도 `?user=` 유지 |
 | B23 | 관리자: AI 실패 기록 → request_id 클릭 | 요청 흐름 타임라인 표시 |
 | B24 | 관리자 화면 375px 폭 | 패널 세로 배치, 가로 스크롤 0 |
@@ -154,7 +154,7 @@ curl -s -H "Authorization: Bearer $ATOKEN" $BASE/api/admin/failures
 | D04 | 허용되지 않은 Origin 으로 preflight | `access-control-allow-origin` 헤더 없음 |
 | D05 | 프론트 번들 검색 | `COPA_API_KEY` 값 등 비밀값 미포함 |
 | D06 | 백엔드 재배포 후 기존 계정 로그인 | 성공 (Volume 에 DB 유지) |
-| D07 | `/chat`, `/admin` 에서 새로고침 | 404 없이 화면 로드 (SPA fallback) |
+| D07 | `/chat`, `<관리자 주소>` 에서 새로고침 | 404 없이 화면 로드 (SPA fallback) |
 | D08 | `git ls-files \| grep -E '(^\|/)\.env$'` | 출력 없음 |
 
 ### 1-5. L5 — 데이터 / 로그 증빙

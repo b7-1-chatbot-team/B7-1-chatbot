@@ -114,6 +114,7 @@ VITE_API_BASE_URL=https://<backend>.up.railway.app
 | 키 | 설명 |
 |----|------|
 | `VITE_API_BASE_URL` | 백엔드 Base URL. axios `baseURL` 로 사용 |
+| `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 무작위 값을 쓰고 **문서·코드에 적지 않는다**. 비우면 관리자 화면 미등록 (05-ui-ux.md 화면 5) |
 
 코드에서는 `import.meta.env.VITE_API_BASE_URL` 로 읽고, 현재 모드는 `import.meta.env.MODE`(`development` / `production`)로 확인한다. Node 생태계의 `NODE_ENV` 와 같은 역할이다.
 
@@ -208,10 +209,10 @@ Railway Project
 | Root Directory | `/frontend` |
 | Build | Railpack 자동 감지 (Node 버전은 `.nvmrc`·`engines`, `npm run build` → `dist`). `build` 는 `tsc -b` 로 **타입 검사를 먼저** 수행하므로 타입 오류가 있으면 배포 빌드가 실패한다 |
 | 도메인 | **Generate Domain** |
-| Variables | `VITE_API_BASE_URL=https://<backend>.up.railway.app` |
+| Variables | `VITE_API_BASE_URL=https://<backend>.up.railway.app`, `VITE_ADMIN_PATH=<무작위 주소>` |
 
 체크 포인트
-- SPA 라우팅: `/chat`, `/admin` 에서 **새로고침했을 때 404 가 나지 않는지** 확인. 404 가 나면 정적 서빙에 `index.html` fallback 설정을 추가한다 (첫 배포 빌드 로그로 서빙 방식 확인).
+- SPA 라우팅: `/chat`, 관리자 주소에서 **새로고침했을 때 404 가 나지 않는지** 확인. 404 가 나면 정적 서빙에 `index.html` fallback 설정을 추가한다 (첫 배포 빌드 로그로 서빙 방식 확인).
 
 ### 6-3. 배포 순서
 
