@@ -120,12 +120,15 @@ flowchart TD
 │       │                        # validators.ts (입력 검증 규칙·길이 상한)
 │       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth, useField(입력 상태), useSubmit(제출 상태)
 │       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의), guards.tsx
-│       ├── pages/               # Login, Signup, Chat, Logs, Admin (*.tsx)
+│       ├── layouts/             # AppLayout(헤더 + 본문), Header
+│       ├── pages/               # Login, Signup, Chat, Logs, Admin, NotFound(404) (*.tsx)
 │       ├── components/          # Field(라벨·입력·오류, 접근성), Button(제출 중 잠금) + *.module.css
 │       ├── mocks/               # 브라우저 MSW — handlers.ts(가짜 백엔드), browser.ts. VITE_ENABLE_MOCK=true 일 때만
 │       ├── styles/              # reset.css(브라우저 기본값), global.css(:root 토큰·공통 기본값)
 │       ├── types/               # 여러 화면이 공유하는 타입 (user.ts)
-│       └── test/                # server.ts(MSW), setup.ts — 테스트는 *.test.ts 로 대상 옆에 둔다
+│       ├── test/                # server.ts(MSW), setup.ts — 테스트는 *.test.ts 로 대상 옆에 둔다
+│       ├── App.tsx              # 앱 틀 — 레이아웃으로 라우트 전체를 감쌈
+│       └── main.tsx             # 진입 — MSW 시작, 마운트, Provider(Router·Auth)
 ├── .gitignore
 └── README.md
 ```
