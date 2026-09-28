@@ -1,0 +1,21 @@
+import { describe, expect, it } from 'vitest'
+
+import { formatResultCode, isRetryable } from './resultLabel'
+
+describe('resultLabel', () => {
+  it('코드와 구분 이름을 함께 표기한다', () => {
+    expect(formatResultCode(504)).toBe('504 · AI_TIMEOUT')
+    expect(formatResultCode(422)).toBe('422 · VALIDATION_ERROR')
+  })
+
+  it('서버에 닿지 못한 경우(0)는 이름만 쓴다', () => {
+    expect(formatResultCode(0)).toBe('NETWORK_ERROR')
+  })
+
+  it('다시 보낼 가치가 있는 것은 504·502 뿐이다', () => {
+    expect(isRetryable(504)).toBe(true)
+    expect(isRetryable(502)).toBe(true)
+    expect(isRetryable(500)).toBe(false)
+    expect(isRetryable(422)).toBe(false)
+  })
+})
