@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { instance } from '@/api/instance'
-import AppRoutes from '@/routes'
+import App from '@/App'
 import { AuthProvider } from '@/store/AuthProvider'
 import { server } from '@/test/server'
 import { getAccessToken, saveTokens } from '@/utils/tokenStorage'
@@ -31,11 +31,12 @@ function mockMe(data: unknown, delayMs = 0) {
   )
 }
 
+// 헤더는 레이아웃에 있으므로 레이아웃을 감싸는 App 을 렌더한다
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AuthProvider>
-        <AppRoutes />
+        <App />
       </AuthProvider>
     </MemoryRouter>,
   )

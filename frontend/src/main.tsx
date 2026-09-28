@@ -34,7 +34,8 @@ void startMocking().then(() => {
   createRoot(rootElement).render(
     <StrictMode>
       <BrowserRouter>
-        {/* 가드가 AuthStatus 를 읽어야 하므로 라우터 안쪽에서 인증 상태를 공급한다 */}
+        {/* 가드가 AuthStatus 를 읽어야 하므로 라우터 안쪽에서 인증 상태를 공급한다.
+            Provider 는 여기서 조립하고, 레이아웃은 App, 경로 정의는 routes 가 맡는다 */}
         <AuthProvider>
           <App />
         </AuthProvider>
