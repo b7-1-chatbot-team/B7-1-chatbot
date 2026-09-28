@@ -127,10 +127,11 @@ src/
 │   ├── paths.ts     # 경로 상수 PATHS
 │   ├── types.ts     # 경로 관련 타입
 │   ├── guards.tsx   # RequireAuth · RequireAdmin · GuestOnly
-│   └── index.tsx    # 라우트 정의 (경로 - 페이지 연결)
+│   └── index.tsx    # 경로 정의만 (경로 - 페이지 연결)
 ├── test/            # server.ts(MSW) · setup.ts — 테스트는 *.test.ts 로 대상 옆에
-├── App.tsx          # 앱 껍데기 (라우트는 routes 에서 가져옴)
-└── main.tsx         # 진입점 (BrowserRouter → AuthProvider → App)
+├── layouts/         # AppLayout(헤더 + 본문) · Header
+├── App.tsx          # 앱 틀 — 레이아웃으로 라우트 전체를 감쌈
+└── main.tsx         # 진입점 — MSW 시작, 마운트, Provider(BrowserRouter → AuthProvider)
 ```
 
 **`api/` 는 `store/` 를 import 하지 않습니다.** 인터셉터가 `AuthContext` 를 직접 부르면 `AuthContext → api/auth → instance → interceptors → AuthContext` 순환 참조가 됩니다. 재발급이 최종 실패하면 `clearTokens()` 만 호출하고, 토큰 변경 구독을 통해 인증 상태가 정리됩니다 (`docs/12-decisions.md` 17절).

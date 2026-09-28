@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { AppLayout } from '@/layouts/AppLayout'
 import AdminPage from '@/pages/AdminPage'
 import ChatPage from '@/pages/ChatPage'
 import LoginPage from '@/pages/LoginPage'
@@ -26,8 +25,6 @@ import { ADMIN_PATH, PATHS } from './paths'
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* 모든 화면을 공통 레이아웃(헤더) 안에 둔다 */}
-      <Route element={<AppLayout />}>
       <Route
         path={PATHS.login}
         element={
@@ -72,7 +69,6 @@ export default function AppRoutes() {
         />
       ) : null}
       <Route path="*" element={<Navigate to={PATHS.login} replace />} />
-      </Route>
     </Routes>
   )
 }
