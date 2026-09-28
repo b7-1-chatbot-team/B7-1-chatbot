@@ -104,6 +104,13 @@ describe('ChatInput — 전송 조건', () => {
   })
 })
 
+describe('ChatInput — API 표기', () => {
+  it('입력칸 아래에 호출하는 API 를 보여준다', () => {
+    setup()
+    expect(screen.getByText('POST /api/chat')).toBeInTheDocument()
+  })
+})
+
 describe('ChatInput — 입력칸 크기', () => {
   it('높이가 고정되고 넘치는 내용은 안에서 스크롤한다', () => {
     const { input } = setup()
