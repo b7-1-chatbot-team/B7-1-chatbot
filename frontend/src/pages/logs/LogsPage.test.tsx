@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router-dom'
@@ -54,16 +54,23 @@ function renderLogs() {
 const cards = () => within(screen.getByRole('list', { name: '대화 기록' })).queryAllByRole('article')
 const cardIds = () => cards().map((card) => card.getAttribute('aria-label'))
 const total = () => screen.getByLabelText('총 기록 수').textContent
-const moreButton = () => screen.queryByRole('button', { name: '더 보기' })
+/** 스크롤 영역을 맨 위로 올린다 — 이전 기록을 불러온다 */
+const scrollToTop = () => {
+  const scroller = screen.getByLabelText('대화 기록 스크롤 영역')
+  scroller.scrollTop = 0
+  fireEvent.scroll(scroller)
+}
 
 describe('내 대화 로그 — 첫 화면', () => {
-  it('총 기록 수와 최신순 카드 20건을 보여준다', async () => {
+  it('최근 20건을 아래가 최신이 되게 보여주고 총 기록 수를 표시한다', async () => {
     const requests = mockLogs(() => range(25, 1))
     renderLogs()
 
     await waitFor(() => expect(cards()).toHaveLength(20))
     expect(total()).toBe('25')
-    expect(cardIds()[0]).toBe('대화 #25')
+    // 위가 오래된 것, 아래가 최신 — 챗 화면과 같은 규칙
+    expect(cardIds()[0]).toBe('대화 #6')
+    expect(cardIds().at(-1)).toBe('대화 #25')
     expect(requests[0]).toEqual({ limit: '20', offset: '0' })
   })
 
@@ -78,12 +85,11 @@ describe('내 대화 로그 — 첫 화면', () => {
     expect(card).toHaveTextContent('답변 7')
   })
 
-  it('기록이 없으면 안내 문구를 보여주고 더 보기가 없다', async () => {
+  it('기록이 없으면 안내 문구를 보여준다', async () => {
     mockLogs(() => [])
     renderLogs()
 
     expect(await screen.findByText('아직 저장된 대화가 없습니다.')).toBeInTheDocument()
-    expect(moreButton()).toBeNull()
   })
 
   it('답변을 HTML 로 해석하지 않는다 (XSS 방지)', async () => {
@@ -119,23 +125,34 @@ describe('내 대화 로그 — 첫 화면', () => {
   })
 })
 
-describe('내 대화 로그 — 더 보기', () => {
-  it('이미 받은 개수만큼 offset 을 올려 이어 붙이고, 다 받으면 버튼을 숨긴다', async () => {
-    const user = userEvent.setup()
+describe('내 대화 로그 — 위로 스크롤해 이전 기록 불러오기', () => {
+  it('맨 위에 닿으면 받은 개수만큼 offset 을 올려 이전 기록을 위에 붙인다', async () => {
     const requests = mockLogs(() => range(25, 1))
     renderLogs()
     await waitFor(() => expect(cards()).toHaveLength(20))
 
-    await user.click(moreButton()!)
+    scrollToTop()
 
     await waitFor(() => expect(cards()).toHaveLength(25))
     expect(requests[1]).toEqual({ limit: '20', offset: '20' })
-    expect(cardIds().at(-1)).toBe('대화 #1')
-    expect(moreButton()).toBeNull()
+    expect(cardIds()[0]).toBe('대화 #1')
+    expect(cardIds().at(-1)).toBe('대화 #25')
+  })
+
+  it('다 받은 뒤에는 더 요청하지 않고 아무것도 표시하지 않는다', async () => {
+    const requests = mockLogs(() => range(25, 1))
+    renderLogs()
+    await waitFor(() => expect(cards()).toHaveLength(20))
+    scrollToTop()
+    await waitFor(() => expect(cards()).toHaveLength(25))
+
+    scrollToTop()
+
+    expect(requests).toHaveLength(2)
+    expect(screen.queryByText(/처음/)).toBeNull()
   })
 
   it('보는 도중 새 대화가 생겨 순서가 밀려도 같은 카드를 두 번 보여주지 않는다', async () => {
-    const user = userEvent.setup()
     let ids = range(25, 1)
     mockLogs(() => ids)
     renderLogs()
@@ -143,29 +160,27 @@ describe('내 대화 로그 — 더 보기', () => {
 
     // 챗에서 새 대화가 생겨 모든 기록이 한 칸씩 밀린다
     ids = range(26, 1)
-    await user.click(moreButton()!)
+    scrollToTop()
 
-    await waitFor(() => expect(cardIds().at(-1)).toBe('대화 #1'))
+    await waitFor(() => expect(cardIds()[0]).toBe('대화 #1'))
     expect(new Set(cardIds()).size).toBe(cardIds().length)
     expect(total()).toBe('26')
   })
 
-  it('두 번 눌러도 한 번만 요청한다', async () => {
-    const user = userEvent.setup()
+  it('스크롤이 여러 번 닿아도 한 번만 요청한다', async () => {
     const requests = mockLogs(() => range(25, 1), { delayMs: 50 })
     renderLogs()
     await waitFor(() => expect(cards()).toHaveLength(20))
 
-    const button = moreButton()!
-    await user.click(button)
-    await user.click(button)
+    scrollToTop()
+    scrollToTop()
+    scrollToTop()
 
     await waitFor(() => expect(cards()).toHaveLength(25))
     expect(requests).toHaveLength(2)
   })
 
   it('실패해도 이미 받은 목록은 그대로 둔다', async () => {
-    const user = userEvent.setup()
     let fail = false
     server.use(
       http.get(`${BASE}/api/me/chats`, ({ request }) => {
@@ -179,27 +194,27 @@ describe('내 대화 로그 — 더 보기', () => {
     await waitFor(() => expect(cards()).toHaveLength(20))
 
     fail = true
-    await user.click(moreButton()!)
+    scrollToTop()
 
-    expect(await screen.findByText(/더 불러오지 못했습니다/)).toBeInTheDocument()
+    expect(await screen.findByText(/이전 기록을 불러오지 못했습니다/)).toBeInTheDocument()
     expect(cards()).toHaveLength(20)
   })
 })
 
 describe('내 대화 로그 — 새로고침', () => {
-  it('처음부터 다시 불러와 새 대화를 맨 위에 보여준다', async () => {
+  it('처음부터 다시 불러와 새 대화를 맨 아래(최신)에 보여준다', async () => {
     const user = userEvent.setup()
     let ids = range(25, 1)
     mockLogs(() => ids)
     renderLogs()
     await waitFor(() => expect(cards()).toHaveLength(20))
-    await user.click(moreButton()!)
+    scrollToTop()
     await waitFor(() => expect(cards()).toHaveLength(25))
 
     ids = range(26, 1)
     await user.click(screen.getByRole('button', { name: '새로고침' }))
 
-    await waitFor(() => expect(cardIds()[0]).toBe('대화 #26'))
+    await waitFor(() => expect(cardIds().at(-1)).toBe('대화 #26'))
     expect(cards()).toHaveLength(20)
     expect(total()).toBe('26')
   })
