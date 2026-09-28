@@ -438,7 +438,7 @@ GET /api/admin/stats
   }
 }
 ```
-- `avg_latency_ms`: 성공 기록의 평균 AI 응답시간
+- `avg_latency_ms`: 성공 기록의 평균 AI 응답시간. **성공 기록이 하나도 없으면 `null`** (배포 직후, 모든 대화가 실패했을 때). `0` 으로 바꾸지 않는다 — "0ms, 아주 빠름"으로 읽힌다. 화면은 "–" 로 표시
 
 ### 4-2. 사용자 목록 · 검색
 
@@ -456,11 +456,13 @@ GET /api/admin/users?q=example&limit=20&offset=0
   "data": {
     "total": 1,
     "items": [
-      { "id": 1, "email": "user@example.com", "nickname": "어썸체크", "role": "user", "created_at": "2026-09-14T10:00:00+09:00", "chat_count": 42, "last_chat_at": "2026-09-14T10:05:12+09:00" }
+      { "id": 1, "email": "user@example.com", "nickname": "어썸체크", "role": "user", "created_at": "2026-09-14T10:00:00+09:00", "chat_count": 44, "last_chat_at": "2026-09-14T10:06:00+09:00" }
     ]
   }
 }
 ```
+- **정렬: 최근 활동 순** (`last_chat_at` 최신순). 대화가 없는 사용자(`last_chat_at: null`)는 뒤에 최근 가입 순. 가입만 하고 쓰지 않는 계정보다 지금 쓰는 사용자를 먼저 본다
+- `chat_count`: 성공 + 실패 **전체** 대화 수. 선택하면 나오는 사용자별 대화([4-3](#4-3-사용자별-대화-기록))의 `total` 과 같다
 
 ### 4-3. 사용자별 대화 기록
 

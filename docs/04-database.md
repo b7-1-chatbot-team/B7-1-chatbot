@@ -150,7 +150,9 @@ SELECT u.id, u.email, u.nickname, u.role, u.created_at,
        COUNT(c.id) AS chat_count, MAX(c.created_at) AS last_chat_at
 FROM users u LEFT JOIN chat_logs c ON c.user_id = u.id
 WHERE (:q IS NULL OR u.email LIKE '%' || :q || '%')
-GROUP BY u.id ORDER BY u.id DESC LIMIT :limit OFFSET :offset;
+GROUP BY u.id
+ORDER BY last_chat_at IS NULL, last_chat_at DESC, u.id DESC  -- 최근 활동 순, 대화 없는 사용자는 뒤
+LIMIT :limit OFFSET :offset;
 ```
 
 **요청 흐름** (`GET /api/admin/requests/{request_id}/logs`)
