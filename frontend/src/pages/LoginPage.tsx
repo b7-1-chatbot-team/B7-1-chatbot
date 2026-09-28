@@ -85,8 +85,9 @@ export default function LoginPage() {
         </Button>
       </form>
 
+      {/* 문장 전체가 링크다. 한 단어만 누르게 하면 누를 곳이 좁다 */}
       <p>
-        아직 계정이 없나요? <Link to={PATHS.signup}>회원가입</Link>
+        <Link to={PATHS.signup}>아직 계정이 없나요? 회원가입</Link>
       </p>
     </section>
   )

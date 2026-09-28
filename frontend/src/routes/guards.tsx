@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 
 import { useAuth } from '@/hooks/useAuth'
+import NotFoundPage from '@/pages/NotFoundPage'
 import { PATHS } from './paths'
 
 /**
@@ -32,9 +33,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 /**
  * 관리자 전용 경로.
  *
- * 관리자가 아니면 비로그인이든 일반 사용자든 **없는 주소와 똑같이** 처리한다.
- * 비로그인을 로그인 화면으로 돌려보내면서 원래 경로를 기억하거나, 일반 사용자만 챗으로
- * 보내는 식으로 다르게 반응하면 "이 주소에 무언가 있다"는 것이 드러난다.
+ * 관리자가 아니면 비로그인이든 일반 사용자든 **없는 주소와 똑같은 404 화면**을 보여준다.
+ * 로그인 화면으로 돌려보내거나 일반 사용자만 챗으로 보내는 식으로 다르게 반응하면
+ * "이 주소에 무언가 있다"는 것이 드러난다.
  * 관리자는 먼저 로그인한 뒤 주소로 들어온다.
  */
 export function RequireAdmin({ children }: { children: ReactNode }) {
@@ -42,10 +43,8 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
 
   if (status === 'checking') return null
 
-  // 없는 주소(*)와 같은 목적지. 로그인 상태면 GuestOnly 가 다시 챗으로 넘긴다
-  if (status !== 'authenticated' || user?.role !== 'admin') {
-    return <Navigate to={PATHS.login} replace />
-  }
+  // 없는 주소(*)와 똑같은 404 화면. 주소도 바꾸지 않는다
+  if (status !== 'authenticated' || user?.role !== 'admin') return <NotFoundPage />
 
   return children
 }

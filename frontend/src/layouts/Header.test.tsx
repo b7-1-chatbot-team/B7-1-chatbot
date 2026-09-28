@@ -46,11 +46,11 @@ function renderAt(path: string) {
 const link = (name: string) => within(screen.getByRole('banner')).queryByRole('link', { name })
 
 describe('헤더 — 인증 상태별 메뉴', () => {
-  it('비로그인은 로그인·회원가입 메뉴만 본다', () => {
+  it('비로그인은 로그인 메뉴만 본다 (회원가입은 헤더에 없다)', () => {
     renderAt('/login')
 
     expect(link('로그인')).toBeInTheDocument()
-    expect(link('회원가입')).toBeInTheDocument()
+    expect(link('회원가입')).toBeNull()
     expect(link('챗')).toBeNull()
     expect(screen.queryByRole('button', { name: '로그아웃' })).toBeNull()
   })
