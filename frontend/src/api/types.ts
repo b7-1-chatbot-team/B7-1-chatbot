@@ -1,6 +1,5 @@
 /**
  * API 요청·응답 타입. docs/03-api.md 와 1:1 로 맞춘다.
- * 관리자 API 타입은 관리자 화면 이슈에서 추가한다.
  */
 import type { Role, User } from '@/types/user'
 
@@ -129,4 +128,91 @@ export interface ChatLogItem {
 export interface ChatLogList {
   total: number
   items: ChatLogItem[]
+}
+
+/* ------------------------------------------------------------------ */
+/* 관리자 (docs/03-api.md 4절) — role=admin 만 호출할 수 있다           */
+/* ------------------------------------------------------------------ */
+
+/** 목록 API 공통 쿼리 — limit 기본 20, offset 기본 0 */
+export interface PageQuery {
+  limit?: number
+  offset?: number
+}
+
+/** 목록 API 공통 응답. total 은 조건에 맞는 전체 개수 */
+export interface PageResult<T> {
+  total: number
+  items: T[]
+}
+
+/** GET /api/admin/stats */
+export interface AdminStats {
+  users: number
+  chats: { total: number; success: number; failed: number }
+  failures: { AI_TIMEOUT: number; AI_CALL_FAILED: number }
+  /** 성공 기록의 평균 AI 응답시간. 기록이 없으면 null 일 수 있다 */
+  avg_latency_ms: number | null
+}
+
+/** GET /api/admin/users?q= — q 는 이메일 부분 검색 */
+export interface AdminUserQuery extends PageQuery {
+  q?: string
+}
+
+export interface AdminUser extends User {
+  role: Role
+  created_at: string
+  chat_count: number
+  /** 대화가 없으면 null */
+  last_chat_at: string | null
+}
+
+export type ChatStatus = 'success' | 'error'
+
+/** 관리자가 보는 대화 기록 한 건. 실패 기록도 포함된다 */
+export interface AdminChat {
+  chat_id: number
+  question: string
+  /** 실패 기록은 null */
+  answer: string | null
+  status: ChatStatus
+  /** AI_TIMEOUT · AI_CALL_FAILED. 성공은 null */
+  error_code: string | null
+  latency_ms: number | null
+  request_id: string
+  created_at: string
+}
+
+/** GET /api/admin/users/{user_id}/chats — 성공·실패 모두 최신순. 없는 사용자는 404 */
+export interface AdminUserChats extends PageResult<AdminChat> {
+  user: User
+}
+
+/** GET /api/admin/failures — status=error 기록, 최신순 */
+export interface AdminFailure {
+  chat_id: number
+  user_id: number
+  email: string
+  question: string
+  error_code: string
+  latency_ms: number | null
+  request_id: string
+  created_at: string
+}
+
+export type LogLevel = 'INFO' | 'WARN' | 'WARNING' | 'ERROR'
+
+export interface RequestLogEvent {
+  event: string
+  level: LogLevel
+  user_id: number | null
+  detail: string
+  created_at: string
+}
+
+/** GET /api/admin/requests/{request_id}/logs — 시간순. 기록이 없으면 404 */
+export interface RequestLogs {
+  request_id: string
+  items: RequestLogEvent[]
 }

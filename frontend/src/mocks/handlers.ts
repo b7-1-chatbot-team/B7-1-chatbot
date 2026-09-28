@@ -38,13 +38,21 @@ interface MockChat {
   chatId: number
   userId: number
   question: string
-  answer: string
+  /** 실패 기록은 null */
+  answer: string | null
+  status: 'success' | 'error'
+  errorCode: 'AI_TIMEOUT' | 'AI_CALL_FAILED' | null
+  latencyMs: number
+  requestId: string
   createdAt: string
 }
 
 interface MockDb {
   users: MockUser[]
-  /** 성공한 대화만 쌓는다. 실패 기록은 내 대화 로그에 나오지 않는다 (docs/03-api.md 3-1절) */
+  /**
+   * 성공·실패 모두 쌓는다 (실서버의 chat_logs). 내 대화 로그는 성공만,
+   * 관리자 화면은 둘 다 본다 (docs/03-api.md 3-1절·4-3절)
+   */
   chats: MockChat[]
   accessTokens: Record<string, TokenEntry>
   refreshTokens: Record<string, TokenEntry>
@@ -82,7 +90,16 @@ function loadDb(): MockDb {
     const raw = localStorage.getItem(DB_KEY)
     if (!raw) return emptyDb()
     // 챗 기능 이전에 저장된 데이터에는 chats 가 없다
-    return { chats: [], ...(JSON.parse(raw) as Partial<MockDb>) } as MockDb
+    const saved = { chats: [], ...(JSON.parse(raw) as Partial<MockDb>) } as MockDb
+    // 관리자 화면 이전의 대화에는 상태·요청 번호가 없다. 성공 기록으로 채운다
+    saved.chats = saved.chats.map((chat) => ({
+      ...chat,
+      status: chat.status ?? 'success',
+      errorCode: chat.errorCode ?? null,
+      latencyMs: chat.latencyMs ?? 500,
+      requestId: chat.requestId ?? makeRequestId(chat.chatId),
+    }))
+    return saved
   } catch {
     // 저장소를 못 쓰거나 내용이 깨졌으면 새로 시작한다
     return emptyDb()
@@ -95,6 +112,11 @@ function saveDb(next: MockDb): void {
   } catch {
     // 저장소를 못 써도 이번 세션 동안은 메모리 값으로 계속 동작한다
   }
+}
+
+/** 실서버처럼 12자리 16진수. chat_id 로 만들어 새로고침해도 같은 값이다 */
+function makeRequestId(seed: number): string {
+  return (seed * 2654435761 + 0x351990af2cf2).toString(16).slice(-12).padStart(12, '0')
 }
 
 let db = loadDb()
@@ -149,6 +171,62 @@ async function forcedScenario(email: string) {
   if (email.startsWith('error422@')) return fail(422, '입력값을 다시 확인해 주세요.')
   if (email.startsWith('offline@')) return HttpResponse.error()
   return null
+}
+
+/** 관리자 API 권한 검사. 통과하면 null (실서버 require_admin 과 같은 순서: 401 → 403) */
+function requireAdmin(request: Request) {
+  const user = authenticate(request)
+  if (!user) return fail(401, '로그인이 필요합니다.')
+  if (user.role !== 'admin') return fail(403, '관리자만 접근할 수 있습니다.')
+  return null
+}
+
+function pageParams(request: Request) {
+  const url = new URL(request.url)
+  return {
+    url,
+    limit: Math.min(Number(url.searchParams.get('limit') ?? 20), 100),
+    offset: Number(url.searchParams.get('offset') ?? 0),
+  }
+}
+
+function toAdminChat(chat: MockChat) {
+  return {
+    chat_id: chat.chatId,
+    question: chat.question,
+    answer: chat.answer,
+    status: chat.status,
+    error_code: chat.errorCode,
+    latency_ms: chat.latencyMs,
+    request_id: chat.requestId,
+    created_at: chat.createdAt,
+  }
+}
+
+/** 실서버가 한 요청에서 남기는 이벤트 순서 (docs/03-api.md 4-5절) */
+function requestEvents(chat: MockChat) {
+  const end = chat.createdAt
+  const start = new Date(new Date(end).getTime() - chat.latencyMs).toISOString()
+  const event = (at: string, level: string, name: string, detail: string) => ({
+    event: name,
+    level,
+    user_id: chat.userId,
+    detail,
+    created_at: at,
+  })
+  // 이전 성공 대화 중 최근 5턴까지 AI 에 문맥으로 넘긴다
+  const previous = db.chats.filter(
+    (other) => other.userId === chat.userId && other.chatId < chat.chatId && other.status === 'success',
+  )
+  const reason = chat.errorCode === 'AI_TIMEOUT' ? 'timeout' : 'upstream_error'
+  return [
+    event(start, 'INFO', 'request_received', 'path=/api/chat'),
+    event(start, 'INFO', 'ai_call_start', `context_turns=${Math.min(previous.length, 5)}`),
+    chat.status === 'success'
+      ? event(end, 'INFO', 'ai_call_success', `latency_ms=${chat.latencyMs}`)
+      : event(end, 'ERROR', 'ai_call_failed', `reason=${reason} latency_ms=${chat.latencyMs}`),
+    event(end, 'INFO', 'db_save_success', `chat_id=${chat.chatId} status=${chat.status}`),
+  ]
 }
 
 export const handlers = [
@@ -252,22 +330,43 @@ export const handlers = [
     if (!question || question.length > 1000) return fail(422, '질문은 1~1000자로 입력해 주세요.')
 
     // 질문에 표시어를 넣어 AI 실패를 강제한다. 실제 AI API 로는 재현하기 어렵다
+    const started = Date.now()
     if (question.includes('#slow')) await delay(6000)
     else await delay(500) // AI 가 답하는 시간 흉내 — 응답 대기 표시를 볼 수 있게
-    if (question.includes('#timeout')) {
-      return fail(504, '현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.')
-    }
-    if (question.includes('#fail')) {
-      return fail(502, 'AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.')
-    }
+    // 500 은 서버 자체 오류라 기록이 남지 않는다
     if (question.includes('#500')) return fail(500, '서버 내부 오류가 발생했습니다.')
 
-    const chat: MockChat = {
-      chatId: db.chats.length + 1,
+    const chatId = db.chats.length + 1
+    const base = {
+      chatId,
       userId: user.id,
       question,
-      answer: `(모킹 응답) "${question}" 에 대한 답변입니다.\n실제 AI 는 백엔드 연결 후 응답합니다.`,
+      requestId: makeRequestId(chatId),
       createdAt: new Date().toISOString(),
+    }
+
+    // AI 실패도 실서버처럼 status=error 로 저장한다 — 관리자 화면의 실패 기록에 나온다
+    if (question.includes('#timeout') || question.includes('#fail')) {
+      const timeout = question.includes('#timeout')
+      db.chats.push({
+        ...base,
+        answer: null,
+        status: 'error',
+        errorCode: timeout ? 'AI_TIMEOUT' : 'AI_CALL_FAILED',
+        latencyMs: timeout ? 30_000 : Date.now() - started,
+      })
+      saveDb(db)
+      return timeout
+        ? fail(504, '현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.')
+        : fail(502, 'AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.')
+    }
+
+    const chat: MockChat = {
+      ...base,
+      answer: `(모킹 응답) "${question}" 에 대한 답변입니다.\n실제 AI 는 백엔드 연결 후 응답합니다.`,
+      status: 'success',
+      errorCode: null,
+      latencyMs: Date.now() - started,
     }
     db.chats.push(chat)
     saveDb(db)
@@ -291,7 +390,9 @@ export const handlers = [
     const url = new URL(request.url)
     const limit = Math.min(Number(url.searchParams.get('limit') ?? 20), 100)
     const offset = Number(url.searchParams.get('offset') ?? 0)
-    const mine = db.chats.filter((chat) => chat.userId === user.id).reverse()
+    const mine = db.chats
+      .filter((chat) => chat.userId === user.id && chat.status === 'success')
+      .reverse()
 
     return HttpResponse.json({
       code: 200,
@@ -304,6 +405,125 @@ export const handlers = [
           created_at: chat.createdAt,
         })),
       },
+    })
+  }),
+
+  // ---- 관리자 (docs/03-api.md 4절) ---------------------------------------
+
+  // 요약 통계 (4-1절)
+  http.get('*/api/admin/stats', ({ request }) => {
+    const denied = requireAdmin(request)
+    if (denied) return denied
+
+    const success = db.chats.filter((chat) => chat.status === 'success')
+    const failed = db.chats.filter((chat) => chat.status === 'error')
+    const latency = success.reduce((sum, chat) => sum + chat.latencyMs, 0)
+
+    return HttpResponse.json({
+      code: 200,
+      data: {
+        users: db.users.length,
+        chats: { total: db.chats.length, success: success.length, failed: failed.length },
+        failures: {
+          AI_TIMEOUT: failed.filter((chat) => chat.errorCode === 'AI_TIMEOUT').length,
+          AI_CALL_FAILED: failed.filter((chat) => chat.errorCode === 'AI_CALL_FAILED').length,
+        },
+        avg_latency_ms: success.length ? Math.round(latency / success.length) : null,
+      },
+    })
+  }),
+
+  // 사용자 목록·이메일 검색 (4-2절) — 최근 활동 순, 대화가 없는 사용자는 뒤에서 최근 가입 순
+  http.get('*/api/admin/users', ({ request }) => {
+    const denied = requireAdmin(request)
+    if (denied) return denied
+
+    const { limit, offset, url } = pageParams(request)
+    const q = url.searchParams.get('q')?.trim().toLowerCase() ?? ''
+    const rows = db.users
+      .filter((user) => user.email.includes(q))
+      .map((user) => {
+        const chats = db.chats.filter((chat) => chat.userId === user.id)
+        return {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+          role: user.role,
+          created_at: user.createdAt,
+          chat_count: chats.length,
+          last_chat_at: chats.at(-1)?.createdAt ?? null,
+        }
+      })
+      .sort(
+        (a, b) =>
+          // ISO 시각은 문자열 비교로 순서가 맞다. 대화가 없으면('') 맨 뒤
+          (b.last_chat_at ?? '').localeCompare(a.last_chat_at ?? '') || b.id - a.id,
+      )
+
+    return HttpResponse.json({
+      code: 200,
+      data: { total: rows.length, items: rows.slice(offset, offset + limit) },
+    })
+  }),
+
+  // 사용자별 대화 기록 (4-3절) — 성공·실패 모두 최신순
+  http.get('*/api/admin/users/:userId/chats', ({ request, params }) => {
+    const denied = requireAdmin(request)
+    if (denied) return denied
+
+    const target = db.users.find((user) => user.id === Number(params.userId))
+    if (!target) return fail(404, '사용자를 찾을 수 없습니다.')
+
+    const { limit, offset } = pageParams(request)
+    const chats = db.chats.filter((chat) => chat.userId === target.id).reverse()
+
+    return HttpResponse.json({
+      code: 200,
+      data: {
+        user: { id: target.id, email: target.email, nickname: target.nickname },
+        total: chats.length,
+        items: chats.slice(offset, offset + limit).map(toAdminChat),
+      },
+    })
+  }),
+
+  // AI 실패 기록 (4-4절) — 최신순
+  http.get('*/api/admin/failures', ({ request }) => {
+    const denied = requireAdmin(request)
+    if (denied) return denied
+
+    const { limit, offset } = pageParams(request)
+    const failed = db.chats.filter((chat) => chat.status === 'error').reverse()
+
+    return HttpResponse.json({
+      code: 200,
+      data: {
+        total: failed.length,
+        items: failed.slice(offset, offset + limit).map((chat) => ({
+          chat_id: chat.chatId,
+          user_id: chat.userId,
+          email: db.users.find((user) => user.id === chat.userId)?.email ?? '',
+          question: chat.question,
+          error_code: chat.errorCode,
+          latency_ms: chat.latencyMs,
+          request_id: chat.requestId,
+          created_at: chat.createdAt,
+        })),
+      },
+    })
+  }),
+
+  // 요청 흐름 로그 (4-5절) — 대화 기록으로 서버 로그를 재구성한다
+  http.get('*/api/admin/requests/:requestId/logs', ({ request, params }) => {
+    const denied = requireAdmin(request)
+    if (denied) return denied
+
+    const chat = db.chats.find((candidate) => candidate.requestId === params.requestId)
+    if (!chat) return fail(404, '해당 요청의 로그가 없습니다.')
+
+    return HttpResponse.json({
+      code: 200,
+      data: { request_id: chat.requestId, items: requestEvents(chat) },
     })
   }),
 
