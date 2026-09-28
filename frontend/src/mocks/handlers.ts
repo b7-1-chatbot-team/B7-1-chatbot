@@ -34,8 +34,18 @@ interface TokenEntry {
   expiresAt: number
 }
 
+interface MockChat {
+  chatId: number
+  userId: number
+  question: string
+  answer: string
+  createdAt: string
+}
+
 interface MockDb {
   users: MockUser[]
+  /** 성공한 대화만 쌓는다. 실패 기록은 내 대화 로그에 나오지 않는다 (docs/03-api.md 3-1절) */
+  chats: MockChat[]
   accessTokens: Record<string, TokenEntry>
   refreshTokens: Record<string, TokenEntry>
   nextId: number
@@ -59,6 +69,7 @@ const SEED_ADMIN: MockUser = {
 function emptyDb(): MockDb {
   return {
     users: [SEED_ADMIN],
+    chats: [],
     accessTokens: {},
     refreshTokens: {},
     nextId: 2,
@@ -70,7 +81,8 @@ function loadDb(): MockDb {
   try {
     const raw = localStorage.getItem(DB_KEY)
     if (!raw) return emptyDb()
-    return JSON.parse(raw) as MockDb
+    // 챗 기능 이전에 저장된 데이터에는 chats 가 없다
+    return { chats: [], ...(JSON.parse(raw) as Partial<MockDb>) } as MockDb
   } catch {
     // 저장소를 못 쓰거나 내용이 깨졌으면 새로 시작한다
     return emptyDb()
@@ -227,6 +239,71 @@ export const handlers = [
     return HttpResponse.json({
       code: 200,
       data: { id: user.id, email: user.email, nickname: user.nickname, role: user.role },
+    })
+  }),
+
+  // 질문 전송 (docs/03-api.md 2-1절)
+  http.post('*/api/chat', async ({ request }) => {
+    const user = authenticate(request)
+    if (!user) return fail(401, '로그인이 필요합니다.')
+
+    const body = (await request.json().catch(() => null)) as { message?: string } | null
+    const question = body?.message?.trim() ?? ''
+    if (!question || question.length > 1000) return fail(422, '질문은 1~1000자로 입력해 주세요.')
+
+    // 질문에 표시어를 넣어 AI 실패를 강제한다. 실제 AI API 로는 재현하기 어렵다
+    if (question.includes('#slow')) await delay(6000)
+    else await delay(500) // AI 가 답하는 시간 흉내 — 응답 대기 표시를 볼 수 있게
+    if (question.includes('#timeout')) {
+      return fail(504, '현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.')
+    }
+    if (question.includes('#fail')) {
+      return fail(502, 'AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.')
+    }
+    if (question.includes('#500')) return fail(500, '서버 내부 오류가 발생했습니다.')
+
+    const chat: MockChat = {
+      chatId: db.chats.length + 1,
+      userId: user.id,
+      question,
+      answer: `(모킹 응답) "${question}" 에 대한 답변입니다.\n실제 AI 는 백엔드 연결 후 응답합니다.`,
+      createdAt: new Date().toISOString(),
+    }
+    db.chats.push(chat)
+    saveDb(db)
+
+    return HttpResponse.json({
+      code: 200,
+      data: {
+        chat_id: chat.chatId,
+        question: chat.question,
+        answer: chat.answer,
+        created_at: chat.createdAt,
+      },
+    })
+  }),
+
+  // 내 대화 로그 (docs/03-api.md 3-1절) — 최신순, 성공 기록만
+  http.get('*/api/me/chats', ({ request }) => {
+    const user = authenticate(request)
+    if (!user) return fail(401, '로그인이 필요합니다.')
+
+    const url = new URL(request.url)
+    const limit = Math.min(Number(url.searchParams.get('limit') ?? 20), 100)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    const mine = db.chats.filter((chat) => chat.userId === user.id).reverse()
+
+    return HttpResponse.json({
+      code: 200,
+      data: {
+        total: mine.length,
+        items: mine.slice(offset, offset + limit).map((chat) => ({
+          chat_id: chat.chatId,
+          question: chat.question,
+          answer: chat.answer,
+          created_at: chat.createdAt,
+        })),
+      },
     })
   }),
 
