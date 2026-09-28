@@ -29,19 +29,23 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return children
 }
 
-/** 관리자 전용 경로. 일반 사용자는 챗으로 보낸다 */
+/**
+ * 관리자 전용 경로.
+ *
+ * 관리자가 아니면 비로그인이든 일반 사용자든 **없는 주소와 똑같이** 처리한다.
+ * 비로그인을 로그인 화면으로 돌려보내면서 원래 경로를 기억하거나, 일반 사용자만 챗으로
+ * 보내는 식으로 다르게 반응하면 "이 주소에 무언가 있다"는 것이 드러난다.
+ * 관리자는 먼저 로그인한 뒤 주소로 들어온다.
+ */
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const { status, user } = useAuth()
-  const location = useLocation()
 
   if (status === 'checking') return null
 
-  if (status !== 'authenticated') {
-    return <Navigate to={PATHS.login} replace state={{ from: location }} />
+  // 없는 주소(*)와 같은 목적지. 로그인 상태면 GuestOnly 가 다시 챗으로 넘긴다
+  if (status !== 'authenticated' || user?.role !== 'admin') {
+    return <Navigate to={PATHS.login} replace />
   }
-
-  // 로그인은 했으나 권한이 없다. 로그인 화면으로 보내면 이미 로그인한 사용자가 혼란스럽다
-  if (user?.role !== 'admin') return <Navigate to={PATHS.chat} replace />
 
   return children
 }

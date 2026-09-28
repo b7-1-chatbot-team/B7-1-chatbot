@@ -56,6 +56,9 @@ npm run dev                                    # http://localhost:5173
 |----|------|
 | `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`) |
 | `VITE_ENABLE_MOCK` | `true` 면 백엔드 없이 MSW 로 API 를 모킹 (개발 모드 전용) |
+| `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 값을 쓰고 **코드·문서에 적지 않는다**. 비우면 관리자 화면 미등록 |
+
+**관리자 화면 주소는 일부러 환경변수로 뺐습니다.** `/admin` 처럼 짐작하기 쉬운 주소는 찔러보기 좋은 표적이 됩니다. 관리자가 아닌 사람이 그 주소로 오면 비로그인·일반 사용자 모두 **없는 주소와 똑같이** 처리해 존재가 드러나지 않게 합니다. 다만 번들을 뒤지면 주소는 보이므로 이것은 무작위 탐색을 줄이는 장치이고, 권한 검사는 서버 `require_admin` 이 최종입니다.
 
 모드별로 읽는 파일이 다릅니다 — `npm run dev`·`build:dev` 는 `.env.development`, `npm run build` 는 `.env.production`.
 실제 `.env.*` 파일은 커밋하지 않고, 저장소에는 `*.example` 만 둡니다.
