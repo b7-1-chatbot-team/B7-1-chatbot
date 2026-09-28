@@ -6,6 +6,7 @@ import { server } from '@/test/server'
 import { saveTokens } from '@/utils/tokenStorage'
 import type { ApiError } from './ApiError'
 import { isApiError } from './ApiError'
+import { getAdminFailures, getAdminStats, getAdminUserChats, getAdminUsers, getRequestLogs } from './admin'
 import { login, logout, me, refresh, signup } from './auth'
 import { sendMessage } from './chat'
 import { instance } from './instance'
@@ -188,6 +189,60 @@ describe('logs 엔드포인트', () => {
     expect(url!.searchParams.get('offset')).toBe('20')
     expect(result.total).toBe(42)
     expect(result.items).toHaveLength(1)
+  })
+})
+
+describe('admin 엔드포인트', () => {
+  /** 요청 주소(경로+쿼리)를 기록하고 빈 목록을 돌려준다 */
+  function recordGet(path: string, data: unknown = { total: 0, items: [] }) {
+    const urls: string[] = []
+    server.use(
+      http.get(`${BASE}${path}`, ({ request }) => {
+        const url = new URL(request.url)
+        urls.push(url.pathname + url.search)
+        return HttpResponse.json({ code: 200, data })
+      }),
+    )
+    return urls
+  }
+
+  it('통계를 돌려준다', async () => {
+    recordGet('/api/admin/stats', { users: 3 })
+    expect(await getAdminStats()).toEqual({ users: 3 })
+  })
+
+  it('사용자 목록은 검색어가 있을 때만 q 를 보낸다', async () => {
+    const urls = recordGet('/api/admin/users')
+    await getAdminUsers()
+    await getAdminUsers({ q: 'kim', offset: 20 })
+    expect(urls).toEqual(['/api/admin/users?limit=20&offset=0', '/api/admin/users?q=kim&limit=20&offset=20'])
+  })
+
+  it('사용자별 대화·실패 기록은 limit·offset 을 보낸다', async () => {
+    const chats = recordGet('/api/admin/users/:id/chats')
+    const failures = recordGet('/api/admin/failures')
+    await getAdminUserChats(12, { offset: 40 })
+    await getAdminFailures()
+    expect(chats).toEqual(['/api/admin/users/12/chats?limit=20&offset=40'])
+    expect(failures).toEqual(['/api/admin/failures?limit=20&offset=0'])
+  })
+
+  it('request_id 는 주소에 안전하게 넣는다', async () => {
+    const urls = recordGet('/api/admin/requests/:id/logs', { request_id: 'a/b', items: [] })
+    await getRequestLogs('a/b')
+    expect(urls).toEqual(['/api/admin/requests/a%2Fb/logs'])
+  })
+
+  it('관리자가 아니면 403 ApiError', async () => {
+    server.use(
+      http.get(`${BASE}/api/admin/stats`, () =>
+        HttpResponse.json({ code: 403, data: { message: '관리자만 접근할 수 있습니다.' } }),
+      ),
+    )
+    const error = (await getAdminStats().catch((e: unknown) => e)) as ApiError
+    expect(isApiError(error)).toBe(true)
+    expect(error.code).toBe(RESULT_CODE.forbidden)
+    expect(error.message).toBe('관리자만 접근할 수 있습니다.')
   })
 })
 
