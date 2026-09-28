@@ -190,6 +190,21 @@ describe('관리자 — 사용자 목록', () => {
     expect(userRequests[1]).toContain('q=example')
   })
 
+  it('[목록 새로고침] 은 검색어를 유지한 채 사용자 목록만 다시 불러온다', async () => {
+    let statsCalls = 0
+    server.use(http.get(`${BASE}/api/admin/stats`, () => (statsCalls++, ok(STATS))))
+    renderAdmin()
+    await screen.findByRole('list', { name: '사용자' })
+    await userEvent.type(screen.getByRole('searchbox', { name: '이메일 검색' }), 'kim')
+    await waitFor(() => expect(userButtons()).toEqual(['kim@example.com']))
+
+    await userEvent.click(screen.getByRole('button', { name: '목록 새로고침' }))
+    await waitFor(() => expect(userRequests).toHaveLength(3))
+    expect(userRequests[2]).toContain('q=kim')
+    await screen.findByRole('list', { name: '사용자' })
+    expect(statsCalls).toBe(1)
+  })
+
   it('검색 결과가 없으면 안내한다', async () => {
     renderAdmin()
     await screen.findByRole('list', { name: '사용자' })
