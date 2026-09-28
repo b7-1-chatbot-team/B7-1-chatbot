@@ -103,3 +103,17 @@ describe('ChatInput — 전송 조건', () => {
     expect(counter).toHaveAttribute('data-limit', 'true')
   })
 })
+
+describe('ChatInput — 입력칸 크기', () => {
+  it('높이가 고정되고 넘치는 내용은 안에서 스크롤한다', () => {
+    const { input } = setup()
+
+    fireEvent.change(input, { target: { value: '줄\n'.repeat(20) } })
+
+    expect(input).toHaveAttribute('rows', '3')
+    expect(input.style.resize).toBe('none')
+    expect(input.style.overflowY).toBe('auto')
+    // 내용에 따라 높이를 바꾸지 않는다
+    expect(input.style.height).toBe('')
+  })
+})

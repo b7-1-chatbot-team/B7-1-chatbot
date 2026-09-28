@@ -1,12 +1,15 @@
-import { useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
+import { useImperativeHandle, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, KeyboardEvent, Ref } from 'react'
 
 import { Button } from '@/components/Button'
 
 /** 질문 최대 글자 수 — 서버 MAX_MESSAGE_LENGTH 와 같다 (docs/03-api.md 2-1절) */
 export const MAX_MESSAGE_LENGTH = 1000
-/** 입력칸이 늘어나는 최대 높이 */
-const MAX_HEIGHT_PX = 140
+/**
+ * 입력칸 줄 수. 높이는 고정하고 넘치는 내용은 입력칸 안에서 스크롤한다.
+ * 내용에 따라 입력칸이 늘었다 줄었다 하면 대화 영역이 함께 밀려 읽던 위치를 잃는다.
+ */
+const INPUT_ROWS = 3
 
 export interface ChatInputHandle {
   focus: () => void
@@ -35,15 +38,6 @@ export function ChatInput({ onSend, disabled, ref }: ChatInputProps) {
 
   const question = value.trim()
   const canSend = question.length > 0 && !disabled
-
-  // 내용에 맞춰 높이를 맞춘다. 값이 화면에 반영된 뒤 재야 한다 — 전송 직후 비울 때
-  // 이벤트 안에서 재면 아직 이전 내용이 남아 있어 두 줄 높이가 그대로 남는다
-  useLayoutEffect(() => {
-    const element = textareaRef.current
-    if (!element) return
-    element.style.height = 'auto'
-    element.style.height = `${Math.min(element.scrollHeight, MAX_HEIGHT_PX)}px`
-  }, [value])
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setValue(event.target.value)
@@ -80,7 +74,9 @@ export function ChatInput({ onSend, disabled, ref }: ChatInputProps) {
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         maxLength={MAX_MESSAGE_LENGTH}
-        rows={1}
+        rows={INPUT_ROWS}
+        // 높이 고정. 사용자가 끌어서 크기를 바꾸지도 못하게 하고, 넘치면 안에서 스크롤한다
+        style={{ resize: 'none', overflowY: 'auto' }}
         placeholder="질문을 입력하세요 — Enter 전송, Shift+Enter 줄바꿈"
         aria-describedby="chat-input-count"
       />
