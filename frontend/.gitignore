@@ -1,5 +1,6 @@
-# Logs
-logs
+# Logs — 앞에 / 를 붙여 frontend/ 바로 아래 폴더만 무시한다.
+# / 없이 logs 라고 쓰면 src/pages/logs 처럼 어느 깊이의 logs 폴더든 전부 무시된다
+/logs
 *.log
 npm-debug.log*
 yarn-debug.log*
