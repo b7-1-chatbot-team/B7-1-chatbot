@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 
 import AdminPage from '@/pages/AdminPage'
-import ChatPage from '@/pages/ChatPage'
+import ChatPage from '@/pages/chat/ChatPage'
 import LoginPage from '@/pages/LoginPage'
 import LogsPage from '@/pages/LogsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
