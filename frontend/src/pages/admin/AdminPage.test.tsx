@@ -5,6 +5,8 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { instance } from '@/api/instance'
+import { ToastRegion } from '@/components/Toast'
+import { ToastProvider } from '@/store/ToastProvider'
 import { server } from '@/test/server'
 import AdminPage from './AdminPage'
 
@@ -122,17 +124,24 @@ function LocationProbe() {
 function renderAdmin(search = '') {
   render(
     <MemoryRouter initialEntries={[`/console${search}`]}>
-      <AdminPage />
+      <ToastProvider>
+        <AdminPage />
+        <ToastRegion />
+      </ToastProvider>
       <LocationProbe />
     </MemoryRouter>,
   )
 }
 
 const query = () => screen.getByLabelText('현재 쿼리').textContent
+/** 사용자 목록의 이메일 — 버튼 안 첫 칸(email). 관리자는 뒤에 " (관리자)" 를 붙여 비교한다 */
 const userButtons = () =>
   within(screen.getByRole('list', { name: '사용자' }))
     .getAllByRole('button')
-    .map((b) => b.textContent?.split(' ·')[0])
+    .map((b) => {
+      const [email, badge] = b.querySelectorAll('span')
+      return badge?.textContent ? `${email.textContent} (${badge.textContent})` : email.textContent
+    })
 
 describe('관리자 — 요약 통계', () => {
   it('6칸을 보여준다', async () => {
@@ -210,6 +219,30 @@ describe('관리자 — 사용자 목록', () => {
     await screen.findByRole('list', { name: '사용자' })
     await userEvent.type(screen.getByRole('searchbox', { name: '이메일 검색' }), 'zzz')
     expect(await screen.findByText('"zzz" 에 해당하는 사용자가 없습니다.')).toBeInTheDocument()
+  })
+
+  it('[더 보기] 가 실패하면 토스트로 알리고 받은 목록은 그대로 둔다', async () => {
+    server.use(
+      http.get(`${BASE}/api/admin/users`, ({ request }) => {
+        const offset = Number(new URL(request.url).searchParams.get('offset'))
+        if (offset > 0) return HttpResponse.error()
+        return ok({ total: 25, items: Array.from({ length: 20 }, (_, i) => user(100 - i)) })
+      }),
+    )
+    renderAdmin()
+    await screen.findByRole('list', { name: '사용자' })
+    await userEvent.click(screen.getByRole('button', { name: '더 보기' }))
+
+    const toast = await screen.findByRole('alert')
+    expect(toast).toHaveTextContent('더 불러오지 못했습니다.')
+    expect(within(toast).getByRole('button', { name: '다시 불러오기' })).toBeInTheDocument()
+    expect(userButtons()).toHaveLength(20)
+  })
+
+  it('대화가 없는 사용자는 "대화 없음"', async () => {
+    server.use(http.get(`${BASE}/api/admin/users`, () => ok({ total: 1, items: [{ ...user(9), chat_count: 0, last_chat_at: null }] })))
+    renderAdmin()
+    expect(await screen.findByText('0건 · 대화 없음')).toBeInTheDocument()
   })
 
   it('[더 보기] 는 받은 개수만큼 offset 을 올리고 다 받으면 사라진다', async () => {
