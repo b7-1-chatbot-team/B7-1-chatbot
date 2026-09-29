@@ -37,16 +37,27 @@ function renderToasts() {
   )
 }
 
-const toasts = () => [...screen.queryAllByRole('status'), ...screen.queryAllByRole('alert')]
+/** 알림 영역(항상 있는 aria-live 영역) 안의 토스트들 */
+const region = () => document.querySelector('[aria-live="polite"]')!
+const toasts = () => [...region().children]
 
 describe('토스트', () => {
-  it('정보는 status, 오류는 alert 로 뜬다', () => {
+  it('토스트가 없어도 알림 영역은 미리 있다 — 뜰 때 만들면 스크린리더가 놓칠 수 있다', () => {
+    renderToasts()
+    expect(region()).toBeInTheDocument()
+    expect(toasts()).toHaveLength(0)
+  })
+
+  it('알림 영역은 늘 있고, 정보는 그 영역이 읽고 오류는 alert 로 바로 읽는다', () => {
     renderToasts()
     act(() => {
       show('로그아웃되었습니다.')
       show('이전 기록을 불러오지 못했습니다.', { tone: 'error' })
     })
-    expect(screen.getByRole('status')).toHaveTextContent('로그아웃되었습니다.')
+    // 정보에 role 을 또 주면 바깥 영역과 겹쳐 두 번 읽힌다
+    const info = screen.getByText('로그아웃되었습니다.').parentElement!
+    expect(info).not.toHaveAttribute('role')
+    expect(region()).toContainElement(info)
     expect(screen.getByRole('alert')).toHaveTextContent('이전 기록을 불러오지 못했습니다.')
   })
 
@@ -67,7 +78,7 @@ describe('토스트', () => {
   it('마우스를 올린 동안은 사라지지 않고, 떼면 남은 시간만큼 뒤 사라진다', () => {
     renderToasts()
     act(() => show('읽는 중'))
-    const toast = screen.getByRole('status')
+    const toast = screen.getByText('읽는 중').parentElement!
 
     act(() => vi.advanceTimersByTime(3000))
     fireEvent.mouseEnter(toast)

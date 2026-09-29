@@ -385,3 +385,36 @@ describe('관리자 — AI 실패 기록과 요청 흐름', () => {
     expect(screen.queryByRole('list', { name: '요청 흐름' })).not.toBeInTheDocument()
   })
 })
+
+describe('관리자 — 탭 접근성 (ARIA 탭 패턴)', () => {
+  it('탭과 패널이 서로 연결되고, 선택된 탭만 Tab 순서에 있다', () => {
+    renderAdmin()
+    const users = screen.getByRole('tab', { name: '사용자' })
+    const failures = screen.getByRole('tab', { name: 'AI 실패 기록' })
+
+    const panel = screen.getByRole('tabpanel', { name: '사용자' })
+    expect(users).toHaveAttribute('aria-controls', panel.id)
+    expect(users).toHaveAttribute('tabindex', '0')
+    expect(failures).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('방향키로 다음 탭을 고르고 초점도 옮긴다 — 끝에서는 처음으로', async () => {
+    renderAdmin()
+    screen.getByRole('tab', { name: '사용자' }).focus()
+
+    await userEvent.keyboard('{ArrowRight}')
+    const failures = screen.getByRole('tab', { name: 'AI 실패 기록' })
+    expect(failures).toHaveFocus()
+    expect(failures).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel', { name: 'AI 실패 기록' })).toBeInTheDocument()
+
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: '사용자' })).toHaveFocus()
+
+    await userEvent.keyboard('{End}')
+    expect(failures).toHaveFocus()
+    await userEvent.keyboard('{Home}')
+    expect(screen.getByRole('tab', { name: '사용자' })).toHaveFocus()
+  })
+})
+

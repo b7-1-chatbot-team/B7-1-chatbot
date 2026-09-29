@@ -179,7 +179,7 @@ describe('헤더 — 로그아웃', () => {
     await user.click(await screen.findByRole('button', { name: '로그아웃' }))
 
     const banner = screen.getByRole('banner')
-    expect(await within(banner).findByRole('status')).toHaveTextContent('로그아웃되었습니다.')
+    expect(await within(banner).findByText('로그아웃되었습니다.')).toBeInTheDocument()
     expect(screen.queryByText(/로그인이 만료되었습니다/)).toBeNull()
   })
 
@@ -202,3 +202,17 @@ describe('헤더 — 로그아웃', () => {
     )
   })
 })
+
+describe('본문 바로가기', () => {
+  it('화면 맨 앞에 "본문 바로가기" 링크가 있고 본문(main)을 가리킨다', async () => {
+    renderAt('/login')
+    const skip = screen.getByRole('link', { name: '본문 바로가기' })
+    expect(skip).toHaveAttribute('href', '#main')
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main')
+
+    // 키보드로 처음 Tab 을 누르면 가장 먼저 닿는다
+    await userEvent.tab()
+    expect(skip).toHaveFocus()
+  })
+})
+
