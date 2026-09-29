@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { Button } from '@/components/Button'
@@ -50,6 +51,25 @@ export default function AdminPage() {
 
   const openRequest = (id: string) => update({ request: id })
 
+  const selectTab = (id: Tab) => update({ tab: id === 'users' ? null : id, request: null })
+
+  // ARIA 탭 패턴: 방향키·Home·End 로 탭 사이를 옮기고 바로 고른다. Tab 키는 탭 목록을 한 번에 지나간다
+  const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({})
+  const handleTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const index = TABS.findIndex(({ id }) => id === tab)
+    const moves: Record<string, number> = {
+      ArrowRight: (index + 1) % TABS.length,
+      ArrowLeft: (index - 1 + TABS.length) % TABS.length,
+      Home: 0,
+      End: TABS.length - 1,
+    }
+    const next = moves[event.key]
+    if (next === undefined) return
+    event.preventDefault()
+    selectTab(TABS[next].id)
+    tabRefs.current[TABS[next].id]?.focus()
+  }
+
   return (
     <section className={styles.page}>
       <div className={styles.head}>
@@ -64,11 +84,19 @@ export default function AdminPage() {
           {TABS.map(({ id, label }) => (
             <button
               key={id}
+              ref={(element) => {
+                tabRefs.current[id] = element
+              }}
+              id={`admin-tab-${id}`}
               type="button"
               role="tab"
               className={styles.tab}
               aria-selected={tab === id}
-              onClick={() => update({ tab: id === 'users' ? null : id, request: null })}
+              aria-controls={`admin-panel-${id}`}
+              // 선택된 탭만 Tab 순서에 넣는다. 나머지는 방향키로 간다
+              tabIndex={tab === id ? 0 : -1}
+              onClick={() => selectTab(id)}
+              onKeyDown={handleTabKey}
             >
               {label}
             </button>
@@ -76,7 +104,7 @@ export default function AdminPage() {
         </div>
 
         {tab === 'users' ? (
-          <div role="tabpanel" aria-label="사용자" className={styles.grid}>
+          <div role="tabpanel" id="admin-panel-users" aria-labelledby="admin-tab-users" className={styles.grid}>
             <UserList
               selectedId={selectedUser}
               onSelect={(id) => update({ user: String(id), request: null })}
@@ -88,7 +116,7 @@ export default function AdminPage() {
             )}
           </div>
         ) : (
-          <div role="tabpanel" aria-label="AI 실패 기록">
+          <div role="tabpanel" id="admin-panel-failures" aria-labelledby="admin-tab-failures">
             <FailureList onOpenRequest={openRequest} />
           </div>
         )}

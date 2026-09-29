@@ -3,3 +3,27 @@
   margin: 0 auto;
   padding: var(--space-page-top) var(--page-pad) var(--space-16);
 }
+
+/* 본문 바로가기 — 평소엔 화면 밖, 초점을 받으면 왼쪽 위에 나타난다 */
+.skip {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: calc(var(--z-toast) + 1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--btn-primary-bg);
+  border-radius: var(--radius-control);
+  color: var(--btn-primary-text);
+  font-weight: var(--weight-semibold);
+  transform: translateY(calc(-100% - var(--space-4)));
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.skip:focus {
+  transform: none;
+}
+
+/* 바로가기로 초점을 받은 본문에는 링을 그리지 않는다 — 본문 전체가 테두리로 둘러싸여 보인다 */
+.main:focus {
+  outline: none;
+}
