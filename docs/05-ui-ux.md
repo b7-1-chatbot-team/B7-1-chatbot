@@ -65,6 +65,7 @@ Google Fonts 로드 + `system-ui` 폴백.
 
 | 경로 | 화면 | 접근 |
 |------|------|------|
+| `/` | (이동) | `/chat` 으로 보낸다. 비로그인이면 챗의 가드가 다시 로그인으로 보낸다 — 경로가 없으면 배포 주소를 열자마자 404 가 뜬다 |
 | `/login` | 로그인 | 게스트 전용 (로그인 상태면 `/chat` 으로) |
 | `/signup` | 회원가입 | 게스트 전용 |
 | `/chat` | 챗 | **로그인 필수** |
@@ -482,3 +483,31 @@ export async function login(body: LoginRequest, signal?: AbortSignal): Promise<T
 | "응답 시뮬레이션" 패널 (AI_TIMEOUT / AI_CALL_FAILED 강제 발생) | `POST /api/chat` 에 데모 전용 파라미터 + 서버 플래그 |
 | 챗 화면 "서버 로그" 패널 (본인 요청 이벤트 실시간 표시) | `GET /api/me/server-logs` 같은 조회 API (관리자 요청 흐름 화면으로 대체 가능) |
 | 헤더 연결 상태 점 (`/api/health`) | `GET /api/health` 엔드포인트 |
+
+## 9. SEO · 접근성
+
+### SEO
+
+| 항목 | 규칙 |
+|------|------|
+| 화면 제목 | `로그인 · Chatlog` 형식 (`usePageMeta`). SPA 는 `<title>` 하나를 공유해 화면마다 바꿔야 탭·방문 기록·검색 결과에서 구분된다 |
+| 검색 허용 | 로그인 · 회원가입 |
+| 검색 제외 | 챗 · 내 대화 로그 · 관리자 · 404 — 화면마다 `<meta name="robots" content="noindex, nofollow">` |
+| robots.txt | 빌드 때 생성. `User-agent: *` · `Allow: /`. **관리자 주소를 `Disallow` 로 적지 않는다** — robots.txt 는 누구나 읽어 숨긴 주소가 드러난다. 막는 것은 화면별 noindex 가 맡는다 |
+| sitemap.xml | 빌드 때 `VITE_SITE_URL` 이 있으면 생성 (공개 화면만). robots.txt 에 `Sitemap:` 줄 추가 |
+| canonical · og:url | 공개 화면에만, `VITE_SITE_URL` + 경로 (쿼리는 뺀다) |
+| 메타데이터 | description, Open Graph(type·site_name·title·description·locale), Twitter 카드(summary) — 검색 결과 설명과 메신저 링크 미리보기 |
+| JS 꺼짐 | `<noscript>` 안내 |
+
+### 접근성
+
+| 항목 | 규칙 |
+|------|------|
+| 본문 바로가기 | 화면 맨 앞 링크, Tab 으로 초점을 받으면 나타난다. `main#main` 으로 이동 |
+| 제목 구조 | 화면마다 `h1` 하나(챗은 스크린리더용으로 숨김), 영역 제목은 `h2` |
+| 랜드마크 | `header`(헤더) · `nav`(주 메뉴·계정 메뉴) · `main` |
+| 알림 | 토스트 알림 영역(`aria-live=polite`)은 비어 있어도 늘 둔다. 정보 토스트는 그 영역이 읽고, 오류만 `role="alert"` |
+| 탭 | 관리자 탭은 WAI-ARIA 탭 패턴 — 탭·패널 연결, 선택된 탭만 Tab 순서, 방향키·Home·End 이동 |
+| 아이콘 버튼 | 글자 없이 아이콘만, 이름은 `aria-label`·툴팁. 아이콘은 `aria-hidden` |
+| 포커스 | 키보드 이동 시 청록 링 (1절), 입력칸은 클릭해도 표시 |
+
