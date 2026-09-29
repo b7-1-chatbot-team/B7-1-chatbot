@@ -14,7 +14,7 @@ from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
 from app.core.responses import register_exception_handlers
 from app.database import Base, SessionLocal, engine
-from app.routers import auth
+from app.routers import auth, me
 from app.services import auth_service
 
 logger = logging.getLogger("app")
@@ -78,4 +78,6 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],  # 토큰 헤더와 JSON 본문 헤더만 허용
 )
 
+# 라우터 등록 — 각 파일의 경로(/api/auth/*, /api/me/*)를 앱에 연결
 app.include_router(auth.router)
+app.include_router(me.router)
