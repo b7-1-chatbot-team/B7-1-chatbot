@@ -177,7 +177,7 @@ grep ai_call_failed backend/logs/app.log
 |------|:----:|------|
 | L1 서버 단위 | ⬜ 미실행 | 스펙 구현 후 |
 | L2 API 흐름 | ⬜ 미실행 | 스펙 구현 후 |
-| L3 브라우저 | ⬜ 미실행 | 스펙 구현 후 |
+| L3 브라우저 | 🟡 일부 | 프론트 기준 자동 테스트 260건·수동 확인 119항목 — [frontend/TESTING.md](../frontend/TESTING.md). 인증(B01~B06·B20)은 **실서버**로, 챗·로그·관리자(B07~B24)는 백엔드 API 가 없어 **MSW 로만** 확인. 실서버 확인은 백엔드 API 완성 후 |
 | L4 배포/외부망 | 🟡 일부 | 2026-09-14 Railway 서비스 2개 첫 배포 시도: 프론트 배포 성공, 백엔드 `ModuleNotFoundError: dotenv` 로 기동 실패. CORS 는 미검증 |
 | L5 데이터/로그 | ⬜ 미실행 | 스펙 구현 후 |
 

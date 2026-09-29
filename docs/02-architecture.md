@@ -114,17 +114,21 @@ flowchart TD
 │       │   └── axios.d.ts       # _retried 플래그 모듈 확장
 │       ├── store/
 │       │   ├── authContext.ts   # Context 객체 (컴포넌트와 파일을 나눈다)
-│       │   ├── AuthProvider.tsx # 토큰 구독·사용자 복원·login/logout
+│       │   ├── AuthProvider.tsx # 토큰 구독·사용자 복원·login/logout·로그인 만료 알림
+│       │   ├── toastContext.ts · ToastProvider.tsx # 토스트 목록·show (AuthProvider 바깥)
 │       │   └── types.ts         # AuthStatus, AuthContextValue
-│       ├── utils/               # tokenStorage.ts (토큰 저장 + 변경 구독, 저장소 차단 시 메모리 대체, 아무것도 import 안 함),
-│       │                        # validators.ts (입력 검증 규칙·길이 상한)
-│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth, useField(입력 상태), useSubmit(제출 상태)
+│       ├── utils/               # tokenStorage.ts (토큰 저장 + 변경 구독·지운 이유, 저장소 차단 시 메모리 대체, 아무것도 import 안 함),
+│       │                        # validators.ts (입력 검증 규칙·길이 상한), datetime.ts (시간 표기 규칙), resultLabel.ts
+│       ├── hooks/               # useAccessToken(useSyncExternalStore), useAuth, useField(입력 상태), useSubmit(제출 상태),
+│       │                        # useAbortableRequest(요청·취소), useChatHistory·usePagedList(목록), useDebouncedValue, useToast, usePageMeta(제목·noindex·canonical)
 │       ├── routes/              # paths.ts(경로 상수), types.ts, index.tsx(라우트 정의), guards.tsx
-│       ├── layouts/             # AppLayout(헤더 + 본문), Header
-│       ├── pages/               # Login, Signup, Chat, Logs, Admin, NotFound(404) (*.tsx)
-│       ├── components/          # Field(라벨·입력·오류, 접근성), Button(제출 중 잠금) + *.module.css
+│       ├── layouts/             # AppLayout(본문 바로가기 + 헤더 + 본문·오류 경계), Header(메뉴·토스트 자리)
+│       ├── pages/               # Login, Signup, NotFound(404), chat/, logs/, admin/ (화면별 폴더 + *.module.css)
+│       ├── components/          # Button(6상태·아이콘 버튼), Field, Alert, Icon, Spinner·LoadingStatus, Toast, Timestamp,
+│       │                        # HistoryScroller(위로 스크롤·[새 메시지]), ErrorBoundary + *.module.css
 │       ├── mocks/               # 브라우저 MSW — handlers.ts(가짜 백엔드), browser.ts. VITE_ENABLE_MOCK=true 일 때만
-│       ├── styles/              # reset.css(브라우저 기본값), global.css(:root 토큰·공통 기본값)
+│       ├── styles/              # reset.css(브라우저 기본값), global.css(디자인 토큰·공통 기본값),
+│       │                        # motion.module.css·text.module.css (composes 로 쓰는 공용 애니메이션·글자)
 │       ├── types/               # 여러 화면이 공유하는 타입 (user.ts)
 │       ├── test/                # server.ts(MSW), setup.ts — 테스트는 *.test.ts 로 대상 옆에 둔다
 │       ├── App.tsx              # 앱 틀 — 레이아웃으로 라우트 전체를 감쌈
@@ -133,7 +137,7 @@ flowchart TD
 └── README.md
 ```
 
-아직 만들지 않은 것: `hooks/useAbortableRequest`(요청 취소 공통 훅)와 `types/chat.ts` 는 화면 이슈에서 추가한다.
+빌드 때 `vite.config.ts` 의 플러그인이 `robots.txt`·`sitemap.xml`(VITE_SITE_URL 이 있을 때)을 만들고, 운영 빌드에서 MSW 워커 파일을 뺀다 (05-ui-ux.md 9절).
 
 프론트엔드 타입은 구현 파일과 섞지 않고 타입 파일로 분리한다. **여러 페이지·컴포넌트가 공유하는 타입은 `src/types/`** 에, **한 영역에서만 쓰는 타입은 그 폴더의 `types.ts`**(`routes/types.ts`, `api/types.ts`) 에 둔다. 한 컴포넌트 전용 props 는 그 컴포넌트 파일 안에 둔다.
 
@@ -173,12 +177,13 @@ flowchart TD
 | `frontend/src/api/` | axios 인스턴스 + 인터셉터 (Authorization 자동 첨부, `code` 판단, 401 재발급 single-flight, 봉투 없는 응답 처리) |
 | `frontend/src/utils/tokenStorage.ts` | 토큰 읽기·쓰기·삭제 + **변경 구독**. 아무것도 import 하지 않는 끝점 |
 | `frontend/src/hooks/` | `useAccessToken`(토큰 구독) · `useAuth`(인증 상태 소비) · `useField`(입력 값·검증·터치) · `useSubmit`(제출 중 상태·중복 차단, `{ ok, data \| error }` 반환) |
-| `frontend/src/components/` | `Field`(label 연결·`aria-invalid`·`role="alert"`) · `Button`(제출 중 잠금·문구 교체) |
+| `frontend/src/components/` | `Field`(label 연결·`aria-invalid`·`role="alert"`, 오류 시 도움말 숨김) · `Button`(6가지 상태·제출 중 잠금·아이콘 버튼) · `Alert`(문구만, 코드 미표시) · `Toast`(상시 알림 영역) · `HistoryScroller`(아래가 최신·위로 스크롤·[새 메시지]) · `ErrorBoundary`(앱 오류 화면) · `Timestamp`(목록 시각) |
 | `frontend/src/utils/validators.ts` | 이메일·비밀번호·닉네임 검증과 입력 길이 상한. 클라이언트 검증은 서버 검증의 보조 |
 | `frontend/src/mocks/` | 개발용 가짜 백엔드(브라우저 MSW). 운영 빌드에서 코드와 워커 파일 모두 제거됨 |
+| `frontend/src/store/ToastProvider.tsx` | 토스트 목록과 `show()`. AuthProvider 바깥에 둬 로그인 만료 알림을 인증 쪽에서 띄운다 |
 | `frontend/src/store/AuthProvider.tsx` | 인증 상태 전역 관리, 앱 로드 시 `/api/auth/me` (role 포함). 사용자를 **확인에 쓴 토큰과 함께** 보관해 토큰이 바뀌면 재확인. 토큰을 직접 지우지 않음(연결 실패 시 이 탭만 비로그인). Context 객체는 `store/authContext.ts` 에 분리 |
 | `frontend/src/routes/guards.tsx` | `RequireAuth` · `RequireAdmin` · `GuestOnly` |
-| `frontend/src/pages/` | Login · Signup · Chat · Logs · Admin |
+| `frontend/src/pages/` | Login · Signup · NotFound · chat/ · logs/ · admin/ — 화면마다 `usePageMeta` 로 제목·noindex |
 
 ## 4. 인증 방식 결정: JWT vs 서버 측 세션
 
