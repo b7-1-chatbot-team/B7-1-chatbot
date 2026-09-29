@@ -1,4 +1,136 @@
+/* 내 대화 로그 (docs/05-ui-ux.md 화면 4) — 챗과 같은 방향: 아래가 최신 */
+.page {
+  composes: enter from '../../styles/motion.module.css';
+  display: grid;
+  gap: var(--space-4);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.title {
+  font-size: var(--fs-h1);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-title);
+  line-height: var(--lh-tight);
+}
+
+.description {
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.api {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.total {
+  display: grid;
+  min-width: 90px;
+  padding: var(--space-1-5) var(--space-3-5);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-card);
+  text-align: center;
+}
+
+.totalLabel {
+  color: var(--text-secondary);
+  font-size: var(--fs-caption);
+}
+
+.total strong {
+  font-family: var(--font-mono);
+  font-size: var(--fs-h2);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-tight);
+}
+
+.empty {
+  padding: var(--space-10);
+  border: var(--border-width) dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 /* 스크롤이 생기려면 높이 상한이 있어야 한다 */
 .scroller {
   max-height: 62vh;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 var(--space-1) 0 0;
+  list-style: none;
+}
+
+/* 기록 카드 한 장: 번호·시각 / 질문 / 답변 */
+.card {
+  padding: var(--space-3-5) var(--space-4-5);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-card);
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+}
+
+.qa {
+  display: grid;
+  grid-template-columns: var(--qa-label-width) 1fr;
+  gap: var(--space-1-5) var(--space-3);
+  font-size: var(--fs-body-sm);
+}
+
+.qa dt {
+  padding-top: var(--space-0-5);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-mono-caps);
+}
+
+.qa dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 질문과 답변 사이 선 — 라벨과 내용 모두에 */
+.qa dt:nth-of-type(2),
+.answer {
+  padding-top: var(--space-1-5);
+  border-top: var(--border-width) solid var(--border-default);
+}
+
+.answer {
+  color: var(--text-secondary);
+}
+
+/* 모바일: 라벨 위·내용 아래로 세운다 (--qa-label-width 가 100%) */
+@media (max-width: 560px) {
+  .qa dt:nth-of-type(2) {
+    border-top: 0;
+  }
 }
