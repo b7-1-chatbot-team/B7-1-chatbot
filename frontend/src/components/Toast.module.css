@@ -1,0 +1,49 @@
+/* 헤더 바로 아래 가운데 (docs/05-ui-ux.md 1절). 헤더(sticky)에 붙어 스크롤해도 따라온다.
+   아래쪽에 두면 챗 입력칸·모바일 키보드와 겹친다 */
+.region {
+  position: absolute;
+  top: calc(100% + var(--toast-offset));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--space-2);
+  width: min(var(--toast-width), calc(100% - 2 * var(--page-pad)));
+  /* 빈 자리는 클릭을 막지 않는다 */
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3-5);
+  background: var(--toast-bg);
+  border: var(--border-width) solid var(--toast-border);
+  border-left: var(--toast-accent-width) solid var(--status-success);
+  border-radius: var(--radius-control);
+  box-shadow: var(--toast-shadow);
+  font-size: var(--fs-body-sm);
+  pointer-events: auto;
+  animation: toast-in var(--duration-enter) var(--ease-enter);
+}
+
+.error {
+  border-left-color: var(--status-error);
+}
+
+.message {
+  flex: 1;
+}
+
+/* CSS Modules 는 animation 이름을 파일 안으로 한정하므로 여기 둔다. 위에서 살짝 내려온다 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--rise-distance) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

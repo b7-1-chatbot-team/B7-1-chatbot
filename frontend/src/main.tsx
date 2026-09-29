@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 
 import { AuthProvider } from '@/store/AuthProvider'
+import { ToastProvider } from '@/store/ToastProvider'
 import App from './App'
 // reset 이 먼저, 그 위에 프로젝트 전역 스타일을 얹는다
 import './styles/reset.css'
@@ -36,9 +37,12 @@ void startMocking().then(() => {
       <BrowserRouter>
         {/* 가드가 AuthStatus 를 읽어야 하므로 라우터 안쪽에서 인증 상태를 공급한다.
             Provider 는 여기서 조립하고, 레이아웃은 App, 경로 정의는 routes 가 맡는다 */}
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        {/* 토스트는 인증보다 바깥 — 로그인 만료 알림을 인증 상태 쪽에서 띄운다 */}
+        <ToastProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ToastProvider>
       </BrowserRouter>
     </StrictMode>,
   )
