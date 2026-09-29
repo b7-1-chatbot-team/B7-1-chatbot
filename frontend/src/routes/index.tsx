@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
 import AdminPage from '@/pages/admin/AdminPage'
 import ChatPage from '@/pages/chat/ChatPage'
@@ -14,6 +14,7 @@ import { ADMIN_PATH, PATHS } from './paths'
  *
  * | 경로     | 화면        | 접근 |
  * |----------|-------------|------|
+ * | /        | (이동)      | 챗으로 보낸다. 비로그인이면 챗의 가드가 다시 로그인으로 보낸다 |
  * | /login   | 로그인      | 게스트 전용 |
  * | /signup  | 회원가입    | 게스트 전용 |
  * | /chat    | 챗          | 로그인 필수 |
@@ -25,6 +26,8 @@ import { ADMIN_PATH, PATHS } from './paths'
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* 배포 주소를 그대로 열면 오는 곳. 경로가 없으면 404 가 떠 첫인상과 검색 결과가 404 가 된다 */}
+      <Route path="/" element={<Navigate to={PATHS.chat} replace />} />
       <Route
         path={PATHS.login}
         element={
