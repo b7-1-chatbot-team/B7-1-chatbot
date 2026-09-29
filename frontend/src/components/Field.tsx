@@ -27,7 +27,9 @@ export function Field({ label, field, hint, ...inputProps }: FieldProps) {
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
-  const describedBy = [field.error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ')
+  // 오류가 있으면 도움말 대신 오류를 보여준다. 둘은 대개 같은 규칙을 말해 두 줄이 겹친다
+  const showHint = Boolean(hint) && !field.error
+  const describedBy = [field.error ? errorId : null, showHint ? hintId : null].filter(Boolean).join(' ')
 
   return (
     <div className={styles.field}>
@@ -44,7 +46,7 @@ export function Field({ label, field, hint, ...inputProps }: FieldProps) {
         aria-invalid={field.error ? true : undefined}
         aria-describedby={describedBy || undefined}
       />
-      {hint ? (
+      {showHint ? (
         <p id={hintId} className={styles.hint}>
           {hint}
         </p>

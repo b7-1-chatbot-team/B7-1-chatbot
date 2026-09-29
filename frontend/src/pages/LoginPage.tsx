@@ -2,12 +2,14 @@ import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { RESULT_CODE } from '@/api/types'
+import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
 import { useAuth } from '@/hooks/useAuth'
 import { useField } from '@/hooks/useField'
 import { useSubmit } from '@/hooks/useSubmit'
 import { PATHS } from '@/routes/paths'
+import styles from './AuthPage.module.css'
 import {
   validateEmail, validateLoginPassword,
   EMAIL_MAX_LENGTH,
@@ -61,13 +63,14 @@ export default function LoginPage() {
   }
 
   return (
-    <section>
-      <h1>로그인</h1>
-      <p>챗봇 질문·응답 기능은 로그인한 사용자만 사용할 수 있습니다.</p>
+    <section className={styles.page}>
+      <h1 className={styles.title}>로그인</h1>
+      <p className={styles.description}>챗봇 질문·응답 기능은 로그인한 사용자만 사용할 수 있습니다.</p>
 
-      {signedUpEmail ? <p role="status">가입이 완료되었습니다. 로그인해 주세요.</p> : null}
+      <form onSubmit={handleSubmit} noValidate className={styles.card}>
+        {/* 이메일이 채워진 폼과 짝이라 토스트가 아니라 폼 안에 둔다 — 사라지면 이유를 잃는다 */}
+        {signedUpEmail ? <Alert tone="success">가입이 완료되었습니다. 로그인해 주세요.</Alert> : null}
 
-      <form onSubmit={handleSubmit} noValidate>
         <Field
           label="이메일"
           field={email}
@@ -78,17 +81,20 @@ export default function LoginPage() {
         />
         <Field label="비밀번호" field={password} type="password" autoComplete="current-password" maxLength={PASSWORD_MAX_LENGTH} />
 
-        {error ? <p role="alert">{error.message}</p> : null}
+        {/* 문구만 보여준다. 결과 코드는 사용자에게 필요 없는 정보다 */}
+        {error ? <Alert tone="error">{error.message}</Alert> : null}
 
-        <Button type="submit" isLoading={isSubmitting} disabled={!canSubmit || isSubmitting}>
+        <Button type="submit" variant="primary" block isLoading={isSubmitting} disabled={!canSubmit || isSubmitting}>
           로그인
         </Button>
+
+        {/* 문장 전체가 링크다. 한 단어만 누르게 하면 누를 곳이 좁다 */}
+        <Link to={PATHS.signup} className={styles.switch}>
+          아직 계정이 없나요? <strong>회원가입</strong>
+        </Link>
       </form>
 
-      {/* 문장 전체가 링크다. 한 단어만 누르게 하면 누를 곳이 좁다 */}
-      <p>
-        <Link to={PATHS.signup}>아직 계정이 없나요? 회원가입</Link>
-      </p>
+      <p className={styles.apiNote}>POST /api/auth/login · JWT 발급</p>
     </section>
   )
 }

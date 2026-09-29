@@ -4,11 +4,13 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { signup } from '@/api/auth'
 import { RESULT_CODE } from '@/api/types'
+import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
 import { useField } from '@/hooks/useField'
 import { useSubmit } from '@/hooks/useSubmit'
 import { PATHS } from '@/routes/paths'
+import styles from './AuthPage.module.css'
 import {
   validateEmail, validateNickname, validatePassword,
   EMAIL_MAX_LENGTH,
@@ -59,10 +61,11 @@ export default function SignupPage() {
   }
 
   return (
-    <section>
-      <h1>회원가입</h1>
+    <section className={styles.page}>
+      <h1 className={styles.title}>회원가입</h1>
+      <p className={styles.description}>이메일로 가입하고 챗봇을 사용해 보세요.</p>
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate className={styles.card}>
         <Field
           label="이메일"
           field={email}
@@ -83,17 +86,19 @@ export default function SignupPage() {
         <Field label="닉네임" field={nickname} autoComplete="nickname" maxLength={NICKNAME_MAX_LENGTH} hint="1~20자, 중복 가능" />
 
         {/* 이메일 중복은 위 필드에서 안내하므로 여기서 다시 보여주지 않는다 */}
-        {error && error.code !== RESULT_CODE.conflict ? <p role="alert">{error.message}</p> : null}
+        {error && error.code !== RESULT_CODE.conflict ? <Alert tone="error">{error.message}</Alert> : null}
 
-        <Button type="submit" isLoading={isSubmitting} disabled={!canSubmit || isSubmitting}>
+        <Button type="submit" variant="primary" block isLoading={isSubmitting} disabled={!canSubmit || isSubmitting}>
           가입하기
         </Button>
+
+        {/* 문장 전체가 링크다. 한 단어만 누르게 하면 누를 곳이 좁다 */}
+        <Link to={PATHS.login} className={styles.switch}>
+          이미 계정이 있나요? <strong>로그인</strong>
+        </Link>
       </form>
 
-      {/* 문장 전체가 링크다. 한 단어만 누르게 하면 누를 곳이 좁다 */}
-      <p>
-        <Link to={PATHS.login}>이미 계정이 있나요? 로그인</Link>
-      </p>
+      <p className={styles.apiNote}>POST /api/auth/signup · 비밀번호는 bcrypt 로 해싱되어 저장됩니다</p>
     </section>
   )
 }
