@@ -1,7 +1,9 @@
+import { Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { LoadingStatus } from '@/components/Spinner'
 import styles from './AppLayout.module.css'
 import { Header } from './Header'
 
@@ -23,7 +25,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <Header />
       {/* 바로가기로 온 초점을 받도록 tabIndex -1 (Tab 순서에는 넣지 않는다) */}
       <main id="main" tabIndex={-1} className={styles.main}>
-        <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
+        {/*
+          화면 코드를 받는 동안(lazy) 본문 자리에만 스피너. 헤더·메뉴는 그대로 있다.
+          오류 경계가 바깥이라, 새 배포로 옛 조각 파일이 사라져 받기에 실패해도 앱 오류 화면(새로고침)이 받는다
+        */}
+        <ErrorBoundary resetKey={pathname}>
+          <Suspense fallback={<LoadingStatus>화면을 불러오는 중…</LoadingStatus>}>{children}</Suspense>
+        </ErrorBoundary>
       </main>
     </>
   )

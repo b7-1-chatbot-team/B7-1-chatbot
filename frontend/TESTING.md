@@ -292,6 +292,22 @@ npm run dev
 | 118 | `VITE_SITE_URL=https://example.up.railway.app npm run build` | robots.txt 에 `Sitemap:` 줄, `sitemap.xml` 에 /login·/signup 만. **두 파일에 관리자 주소 없음** | ✅ |
 | 119 | 빌드된 `index.html` | description · Open Graph · Twitter 카드 · `<noscript>` 안내 | ✅ |
 
+### O. 첫 화면 성능 — 폰트 preload·화면별 코드 나누기 (2026-09-29 ✅)
+
+Lighthouse **모바일**, `/login`, 로컬 운영 빌드(`vite preview`) 3회 측정 중앙값. 배포 사이트 측정(모바일 73·데스크톱 96, 접근성·권장사항·SEO 100)에서 시작했다.
+
+| # | 단계 | 성능 | 첫 글자(FCP) | 가장 큰 요소(LCP) | 화면 밀림(CLS) | 로그인 화면 JS |
+|---|------|:---:|:---:|:---:|:---:|:---:|
+| 120 | 적용 전 | 70 | 4.85s | 4.91s | 0 | 111KB |
+| 121 | 폰트 CSS `preload` | **99** | **1.5s** | **2.1s** | 0.0003 | 111KB |
+| 122 | + 챗·로그·관리자 `lazy` | 99 | 1.5s | 2.1s | 0.0003 | **105KB** |
+| 123 | 브라우저 확인 | 폰트 링크가 `stylesheet` 로 바뀌고 IBM Plex 가 실제로 적용됨 | | | | ✅ |
+| 124 | 빌드 결과 | ChatPage 6.6KB · LogsPage 3.1KB · AdminPage 12.3KB 로 나뉨, 나누기 무효 경고 없음 | | | | ✅ |
+
+- 효과는 대부분 **preload** 에서 났다. 폰트 CSS(40KB)를 기다리지 않고 기본 글꼴로 먼저 그린다
+- lazy 의 크기 이득은 6KB 로 작다. 첫 파일의 대부분이 React·Router·axios 이고, 남은 "쓰지 않는 JS" 57KB 도 로그인 화면이 안 쓰는 라이브러리 부분이다. 대신 **일반 사용자는 관리자 코드를 받지 않는다**
+- 측정 결과 파일(`lh-*.json`)은 저장소 밖에 둔다 — `frontend/` 에서 돌리면 그 폴더에 생기므로 커밋 전에 확인
+
 ## 3. 실제 백엔드 통합 테스트
 
 MSW 가 아닌 **실제 백엔드**(PR #25 인증 API)에 붙여 확인한 결과입니다. 모킹이 명세를 잘못 흉내 내면 모킹으로는 통과하고 실서버에서 깨지므로, 모킹 테스트와 별도로 진행합니다.

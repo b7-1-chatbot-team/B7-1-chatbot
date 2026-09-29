@@ -1,13 +1,23 @@
+import { lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import AdminPage from '@/pages/admin/AdminPage'
-import ChatPage from '@/pages/chat/ChatPage'
 import LoginPage from '@/pages/LoginPage'
-import LogsPage from '@/pages/logs/LogsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import SignupPage from '@/pages/SignupPage'
 import { GuestOnly, RequireAdmin, RequireAuth } from './guards'
 import { ADMIN_PATH, PATHS } from './paths'
+
+/**
+ * 로그인해야 쓰는 화면은 **그 화면에 갈 때 코드를 받는다** (빌드하면 파일이 나뉜다).
+ * 로그인·회원가입·404 는 첫 방문자가 바로 보는 작은 화면이라 그대로 둔다.
+ * 관리자 화면은 RequireAdmin 이 비관리자에게 404 를 먼저 그리므로, 일반 사용자는 이 코드를 받지 않는다.
+ *
+ * 받는 동안의 표시와 받기 실패는 레이아웃(AppLayout)의 Suspense·ErrorBoundary 가 맡는다.
+ * 주의: 이 화면 파일을 다른 곳에서 평범하게 import 하면 나누기가 무효가 된다 (빌드 경고로 알 수 있다)
+ */
+const ChatPage = lazy(() => import('@/pages/chat/ChatPage'))
+const LogsPage = lazy(() => import('@/pages/logs/LogsPage'))
+const AdminPage = lazy(() => import('@/pages/admin/AdminPage'))
 
 /**
  * 라우트 정의 (docs/05-ui-ux.md 2절)
