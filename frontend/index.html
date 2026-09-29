@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0e1113" />
     <title>Chatlog</title>
+    <!-- 검색 결과 설명·링크 미리보기 (docs/05-ui-ux.md 8절 SEO). 화면별 제목은 usePageMeta 가 바꾼다 -->
+    <meta name="description" content="AI 챗봇과 대화하고, 내 대화 기록을 다시 볼 수 있는 서비스입니다. 이메일로 가입해 바로 질문해 보세요." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Chatlog" />
+    <meta property="og:title" content="Chatlog" />
+    <meta property="og:description" content="AI 챗봇과 대화하고, 내 대화 기록을 다시 볼 수 있는 서비스입니다." />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,6 +22,8 @@
     />
   </head>
   <body>
+    <!-- 화면을 전부 스크립트로 그리므로, 꺼져 있으면 빈 화면 대신 이유를 알린다 -->
+    <noscript>Chatlog 는 JavaScript 가 필요합니다. 브라우저 설정에서 JavaScript 를 켠 뒤 새로고침해 주세요.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

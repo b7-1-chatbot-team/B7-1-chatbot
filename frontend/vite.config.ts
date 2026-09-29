@@ -2,6 +2,8 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath, URL } from 'node:url'
 
 import react from '@vitejs/plugin-react'
+import { loadEnv } from 'vite'
+import type { Plugin } from 'vite'
 // test 설정을 포함하려면 vite 가 아니라 vitest 의 defineConfig 를 써야 한다
 import { defineConfig } from 'vitest/config'
 
@@ -25,9 +27,43 @@ function stripMockWorker(mode: string) {
   }
 }
 
+/** 검색에 내보낼 공개 화면. 로그인해야 보이는 화면·관리자는 넣지 않는다 (routes/paths.ts 와 맞춘다) */
+const PUBLIC_PATHS = ['/login', '/signup']
+
+/**
+ * 빌드 때 robots.txt 와 sitemap.xml 을 만든다 (docs/05-ui-ux.md 8절 SEO).
+ *
+ * - robots.txt 는 모두 허용한다. 로그인 필요 화면·관리자·404 는 각 화면의 noindex 로 막는다.
+ *   **관리자 주소를 Disallow 로 적지 않는다** — robots.txt 는 누구나 읽을 수 있어 주소가 드러난다
+ * - sitemap.xml 은 절대 주소가 필요해 VITE_SITE_URL 이 있을 때만 만든다
+ * public/ 에 고정 파일로 두지 않는 이유: 배포 주소를 빌드 환경변수로 받아야 한다
+ */
+function seoFiles(siteUrl: string | undefined): Plugin {
+  const base = siteUrl?.replace(/\/$/, '')
+  return {
+    name: 'seo-files',
+    apply: 'build',
+    generateBundle() {
+      const robots = ['User-agent: *', 'Allow: /', ...(base ? ['', `Sitemap: ${base}/sitemap.xml`] : [])]
+      this.emitFile({ type: 'asset', fileName: 'robots.txt', source: `${robots.join('\n')}\n` })
+
+      if (!base) return
+      const today = new Date().toISOString().slice(0, 10)
+      const urls = PUBLIC_PATHS.map((path) => `  <url><loc>${base}${path}</loc><lastmod>${today}</lastmod></url>`)
+      const sitemap = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ...urls,
+        '</urlset>',
+      ]
+      this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: `${sitemap.join('\n')}\n` })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), stripMockWorker(mode)],
+  plugins: [react(), stripMockWorker(mode), seoFiles(loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL)],
   resolve: {
     // 타입 검사용 설정은 tsconfig.app.json 의 paths 에 있다. 둘을 항상 같이 수정한다.
     alias: {
@@ -43,6 +79,7 @@ export default defineConfig(({ mode }) => ({
     globals: false,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     // 테스트 전용 관리자 주소. 실제 값은 .env 에만 둔다
-    env: { VITE_ADMIN_PATH: '/test-admin-console' },
+    // 테스트 전용 배포 주소 — canonical·og:url 확인용
+    env: { VITE_ADMIN_PATH: '/test-admin-console', VITE_SITE_URL: 'https://chatlog.test' },
   },
 }))

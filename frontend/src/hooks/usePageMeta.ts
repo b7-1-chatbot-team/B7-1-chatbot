@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 
 const SITE_NAME = 'Chatlog'
+/** 배포 주소. 없으면 canonical·og:url 을 넣지 않는다 */
+const SITE_URL = import.meta.env.VITE_SITE_URL?.replace(/\/$/, '')
 
 interface PageMeta {
   /** 화면 이름. 탭에는 "로그인 · Chatlog" 처럼 보인다 */
@@ -20,18 +22,45 @@ interface PageMeta {
  */
 export function usePageMeta({ title, noindex = false }: PageMeta) {
   useEffect(() => {
-    document.title = `${title} · ${SITE_NAME}`
+    const fullTitle = `${title} · ${SITE_NAME}`
+    document.title = fullTitle
+    setMeta('property', 'og:title', fullTitle)
 
-    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
-    if (noindex) {
-      if (!robots) {
-        robots = document.createElement('meta')
-        robots.name = 'robots'
-        document.head.appendChild(robots)
-      }
-      robots.content = 'noindex, nofollow'
-    } else {
-      robots?.remove()
-    }
+    // 같은 화면을 가리키는 주소가 여럿이어도(쿼리 등) 검색에는 하나로 모이게 한다.
+    // 검색 제외 화면은 대표 주소가 필요 없다
+    const canonical = SITE_URL && !noindex ? `${SITE_URL}${window.location.pathname}` : null
+    setLink('canonical', canonical)
+    setMeta('property', 'og:url', canonical)
+
+    setMeta('name', 'robots', noindex ? 'noindex, nofollow' : null)
   }, [title, noindex])
+}
+
+/** <meta> 를 넣거나 바꾼다. value 가 null 이면 뺀다 */
+function setMeta(attribute: 'name' | 'property', key: string, value: string | null) {
+  let meta = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`)
+  if (value === null) {
+    meta?.remove()
+    return
+  }
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.setAttribute(attribute, key)
+    document.head.appendChild(meta)
+  }
+  meta.content = value
+}
+
+function setLink(rel: string, href: string | null) {
+  let link = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`)
+  if (href === null) {
+    link?.remove()
+    return
+  }
+  if (!link) {
+    link = document.createElement('link')
+    link.rel = rel
+    document.head.appendChild(link)
+  }
+  link.href = href
 }
