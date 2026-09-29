@@ -8,6 +8,7 @@ import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
 import { useField } from '@/hooks/useField'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import { useSubmit } from '@/hooks/useSubmit'
 import { PATHS } from '@/routes/paths'
 import styles from './AuthPage.module.css'
@@ -24,6 +25,7 @@ import {
  * 클라이언트 검증을 통과해야 요청을 보낸다. 서버가 거절하면(409·422) 그 문구를 그대로 보여준다.
  */
 export default function SignupPage() {
+  usePageMeta({ title: '회원가입' })
   const navigate = useNavigate()
   const emailInputRef = useRef<HTMLInputElement>(null)
 

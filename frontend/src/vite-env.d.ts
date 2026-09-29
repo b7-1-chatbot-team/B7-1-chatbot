@@ -11,6 +11,11 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_MOCK?: string
   /** 관리자 화면 주소. 짐작하기 어려운 값을 쓰고 코드·문서에 적지 않는다. 없으면 관리자 라우트 미등록 */
   readonly VITE_ADMIN_PATH?: string
+  /**
+   * 배포된 프론트 주소 — 예) https://<frontend>.up.railway.app (끝에 / 없이).
+   * canonical·og:url·sitemap.xml 에 쓴다. 없으면 셋 다 만들지 않는다 (주소를 모르고 쓸 수 없다)
+   */
+  readonly VITE_SITE_URL?: string
 }
 
 interface ImportMeta {

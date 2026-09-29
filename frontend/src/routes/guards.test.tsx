@@ -179,3 +179,27 @@ describe('미정의 경로', () => {
     expect(await findHeading('404 Not Found')).toBeTruthy()
   })
 })
+
+describe('첫 화면 /', () => {
+  it('비로그인이면 로그인 화면이 뜬다 (404 가 아니다)', () => {
+    renderAt('/')
+    expect(heading('로그인')).toBeTruthy()
+    expect(queryHeading('404 Not Found')).toBeNull()
+  })
+
+  it('로그인했으면 챗 화면으로 간다', async () => {
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    renderAt('/')
+    expect(await findHeading('챗')).toBeTruthy()
+  })
+
+  it('없는 주소는 "페이지를 찾을 수 없음" 제목에 검색 제외 (비관리자의 관리자 주소도 같은 화면이라 같다)', async () => {
+    renderAt('/nowhere')
+    await findHeading('404 Not Found')
+    const notFoundTitle = document.title
+    expect(notFoundTitle).toBe('페이지를 찾을 수 없음 · Chatlog')
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, nofollow')
+  })
+})
+

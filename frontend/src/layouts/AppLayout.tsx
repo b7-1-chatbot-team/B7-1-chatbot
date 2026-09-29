@@ -16,8 +16,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   return (
     <>
+      {/* 키보드 사용자가 매 화면 헤더 메뉴를 다 지나지 않고 본문으로 바로 간다. Tab 을 누르면 나타난다 */}
+      <a href="#main" className={styles.skip}>
+        본문 바로가기
+      </a>
       <Header />
-      <main className={styles.main}>
+      {/* 바로가기로 온 초점을 받도록 tabIndex -1 (Tab 순서에는 넣지 않는다) */}
+      <main id="main" tabIndex={-1} className={styles.main}>
         <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
       </main>
     </>

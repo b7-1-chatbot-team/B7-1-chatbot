@@ -5,6 +5,7 @@ import { Button } from '@/components/Button'
 import { HistoryScroller } from '@/components/HistoryScroller'
 import { LoadingStatus } from '@/components/Spinner'
 import { useChatHistory } from '@/hooks/useChatHistory'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import { useToast } from '@/hooks/useToast'
 import { formatDayLabel, isSameDay } from '@/utils/datetime'
 import { ChatInput } from './ChatInput'
@@ -31,6 +32,7 @@ const SLOW_NOTICE_MS = 5000
 export const CONTEXT_TURNS = 5
 
 export default function ChatPage() {
+  usePageMeta({ title: '챗', noindex: true })
   const history = useChatHistory()
   const { messages, send, retry, isSending } = useChatMessages()
   const inputRef = useRef<ChatInputHandle>(null)

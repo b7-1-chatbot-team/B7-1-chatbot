@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 
+import { usePageMeta } from '@/hooks/usePageMeta'
 import { PATHS } from '@/routes/paths'
 import styles from './NotFoundPage.module.css'
 
@@ -11,6 +12,7 @@ import styles from './NotFoundPage.module.css'
  * 그래서 로그인 상태나 권한을 짐작하게 하는 문구를 넣지 않고, 주소도 바꾸지 않는다.
  */
 export default function NotFoundPage() {
+  usePageMeta({ title: '페이지를 찾을 수 없음', noindex: true })
   return (
     <section className={styles.page}>
       <p className={styles.code} aria-hidden="true">

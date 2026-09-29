@@ -5,13 +5,16 @@ import type { ToastItem } from '@/store/toastContext'
 import { Button } from './Button'
 import styles from './Toast.module.css'
 
-/** 헤더 안에 두는 토스트 자리. 비어 있으면 아무것도 그리지 않는다 */
+/**
+ * 헤더 안에 두는 토스트 자리.
+ * 비어 있어도 영역은 늘 둔다 — 알림 영역(aria-live)이 미리 있어야 스크린리더가 새 알림을 안정적으로 읽는다.
+ * 뜰 때 영역까지 새로 만들면 읽지 않고 넘어가는 경우가 있다
+ */
 export function ToastRegion() {
   const { toasts, dismiss } = useContext(ToastContext)
-  if (toasts.length === 0) return null
 
   return (
-    <div className={styles.region}>
+    <div className={styles.region} aria-live="polite">
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onDismiss={() => dismiss(toast.id)} />
       ))}
@@ -47,7 +50,8 @@ function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }
 
   return (
     <div
-      role={toast.tone === 'error' ? 'alert' : 'status'}
+      // 정보는 바깥 영역(aria-live=polite)이 읽는다. 오류만 alert 로 바로 읽게 한다 — 겹치면 두 번 읽힌다
+      role={toast.tone === 'error' ? 'alert' : undefined}
       className={`${styles.toast} ${toast.tone === 'error' ? styles.error : ''}`}
       onMouseEnter={pause}
       onMouseLeave={start}
