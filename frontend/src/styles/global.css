@@ -173,10 +173,7 @@
   --border-width: 1px;
   --tab-indicator: 2px;
 
-  /* ==== 7. 투명도 ==== */
-  --opacity-disabled: 0.45;
-
-  /* ==== 8. 움직임 ==== */
+  /* ==== 7. 움직임 ==== */
   --duration-instant: 0ms;
   --duration-fast: 120ms;
   --duration-base: 200ms;
@@ -190,7 +187,7 @@
   --rise-distance: 6px;
   --press-scale: 0.98;
 
-  /* ==== 9. 겹침 순서 ==== */
+  /* ==== 8. 겹침 순서 ==== */
   --z-header: 40;
 }
 
