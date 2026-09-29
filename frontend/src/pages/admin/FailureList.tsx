@@ -1,6 +1,6 @@
 import { getAdminFailures } from '@/api/admin'
 import { usePagedList } from '@/hooks/usePagedList'
-import { formatDateTime } from '@/utils/datetime'
+import { Timestamp } from '@/components/Timestamp'
 import { formatErrorCode, formatLatency } from '@/utils/resultLabel'
 import { RequestIdButton } from './ChatRecord'
 import { LoadError } from './LoadError'
@@ -28,7 +28,7 @@ export function FailureList({ onOpenRequest }: { onOpenRequest: (requestId: stri
             {list.items.map((failure) => (
               <li key={failure.chat_id}>
                 <article aria-label={`실패 #${failure.chat_id}`}>
-                  <time dateTime={failure.created_at}>{formatDateTime(failure.created_at)}</time>{' '}
+                  <Timestamp iso={failure.created_at} />{' '}
                   <span>{failure.email}</span> <strong>{formatErrorCode(failure.error_code)}</strong>{' '}
                   <span>{formatLatency(failure.latency_ms)}</span>{' '}
                   <RequestIdButton requestId={failure.request_id} onOpen={onOpenRequest} />

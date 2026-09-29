@@ -1,5 +1,5 @@
 import type { ChatLogItem } from '@/api/types'
-import { formatDateTime } from '@/utils/datetime'
+import { Timestamp } from '@/components/Timestamp'
 
 /** 대화 기록 한 건 (docs/05-ui-ux.md 화면 4) */
 export function LogCard({ item }: { item: ChatLogItem }) {
@@ -7,7 +7,7 @@ export function LogCard({ item }: { item: ChatLogItem }) {
     <article aria-label={`대화 #${item.chat_id}`}>
       <header>
         <span>#{item.chat_id}</span>{' '}
-        <time dateTime={item.created_at}>{formatDateTime(item.created_at)}</time>
+        <Timestamp iso={item.created_at} />
       </header>
       <dl>
         <dt>질문</dt>

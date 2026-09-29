@@ -1,5 +1,5 @@
 import type { AdminChat } from '@/api/types'
-import { formatDateTime } from '@/utils/datetime'
+import { Timestamp } from '@/components/Timestamp'
 import { formatErrorCode, formatLatency } from '@/utils/resultLabel'
 
 interface ChatRecordProps {
@@ -13,7 +13,7 @@ export function ChatRecord({ chat, onOpenRequest }: ChatRecordProps) {
   return (
     <article aria-label={`대화 #${chat.chat_id}`} data-status={chat.status}>
       <header>
-        <span>#{chat.chat_id}</span> <time dateTime={chat.created_at}>{formatDateTime(chat.created_at)}</time>{' '}
+        <span>#{chat.chat_id}</span> <Timestamp iso={chat.created_at} />{' '}
         <strong>{failed ? `ERROR ${formatErrorCode(chat.error_code ?? '')}` : 'SUCCESS'}</strong>{' '}
         <span>{formatLatency(chat.latency_ms)}</span>{' '}
         <RequestIdButton requestId={chat.request_id} onOpen={onOpenRequest} />

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { getAdminUsers } from '@/api/admin'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { usePagedList } from '@/hooks/usePagedList'
-import { formatDateTime } from '@/utils/datetime'
+import { formatListTime } from '@/utils/datetime'
 import { LoadError } from './LoadError'
 import { PagedFooter } from './PagedFooter'
 
@@ -67,7 +67,7 @@ function UserListResult({ q, selectedId, onSelect }: UserListProps & { q: string
             <button type="button" aria-pressed={user.id === selectedId} onClick={() => onSelect(user.id)}>
               {user.email}
               {user.role === 'admin' ? ' (관리자)' : ''} · {user.chat_count}건
-              {user.last_chat_at ? ` · ${formatDateTime(user.last_chat_at)}` : ''}
+              {user.last_chat_at ? ` · ${formatListTime(user.last_chat_at)}` : ''}
             </button>
           </li>
         ))}
