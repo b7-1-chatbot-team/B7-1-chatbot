@@ -54,7 +54,8 @@ export function createRefreshInterceptor(client: AxiosInstance) {
       // 재발급이 최종 실패했다. 토큰만 지우면 저장소가 구독자에게 알려
       // AuthContext 가 로그아웃 상태로 전환한다 (docs/12-decisions.md 17절).
       // 여기서 AuthContext 를 직접 부르지 않는 이유도 순환 참조 때문이다.
-      clearTokens()
+      // 이유를 남겨 화면이 "로그인이 만료되었습니다" 를 알릴 수 있게 한다
+      clearTokens('expired')
       throw error
     } finally {
       refreshing = null

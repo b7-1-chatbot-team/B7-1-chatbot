@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { PATHS } from '@/routes/paths'
+import styles from './NotFoundPage.module.css'
 
 /**
  * 404 화면.
@@ -11,11 +12,16 @@ import { PATHS } from '@/routes/paths'
  */
 export default function NotFoundPage() {
   return (
-    <section>
-      <h1>404 Not Found</h1>
-      <p>요청하신 페이지를 찾을 수 없습니다.</p>
+    <section className={styles.page}>
+      <p className={styles.code} aria-hidden="true">
+        404
+      </p>
+      <h1 className={styles.title}>404 Not Found</h1>
+      <p className={styles.description}>요청하신 페이지를 찾을 수 없습니다.</p>
       {/* 로그인 상태면 GuestOnly 가 다시 챗으로 넘긴다. 상태에 따라 링크를 바꾸지 않는다 */}
-      <Link to={PATHS.login}>첫 화면으로 돌아가기</Link>
+      <Link to={PATHS.login} className={styles.home}>
+        첫 화면으로 돌아가기
+      </Link>
     </section>
   )
 }

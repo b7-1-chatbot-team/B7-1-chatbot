@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { instance } from '@/api/instance'
 import App from '@/App'
 import { AuthProvider } from '@/store/AuthProvider'
+import { ToastProvider } from '@/store/ToastProvider'
 import { server } from '@/test/server'
 import { getAccessToken, saveTokens } from '@/utils/tokenStorage'
 
@@ -35,9 +36,11 @@ function mockMe(data: unknown, delayMs = 0) {
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ToastProvider>
     </MemoryRouter>,
   )
 }
@@ -164,6 +167,20 @@ describe('헤더 — 로그아웃', () => {
 
     expect(await screen.findByRole('heading', { name: '로그인' })).toBeInTheDocument()
     expect(getAccessToken()).toBeNull()
+  })
+
+  it('로그아웃하면 헤더 아래에 "로그아웃되었습니다" 를 띄운다 (만료 알림은 아님)', async () => {
+    const user = userEvent.setup()
+    saveTokens('access-1', 'refresh-1')
+    mockMe(USER)
+    server.use(http.post(`${BASE}/api/auth/logout`, () => HttpResponse.json({ code: 200, data: {} })))
+    renderAt('/chat')
+
+    await user.click(await screen.findByRole('button', { name: '로그아웃' }))
+
+    const banner = screen.getByRole('banner')
+    expect(await within(banner).findByRole('status')).toHaveTextContent('로그아웃되었습니다.')
+    expect(screen.queryByText(/로그인이 만료되었습니다/)).toBeNull()
   })
 
   it('로그아웃 중에는 버튼을 잠근다', async () => {

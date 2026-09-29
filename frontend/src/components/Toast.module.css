@@ -1,0 +1,58 @@
+/* 헤더(sticky)에 붙어 스크롤해도 따라온다 (docs/05-ui-ux.md 1절).
+   PC 는 헤더 아래 오른쪽 — 가장 흔한 자리이고, 아래 가운데는 챗 입력칸·[전송] 과 겹친다.
+   모바일은 헤더 아래 가운데 꽉 찬 폭 — 아래쪽은 키보드와 겹친다 */
+.region {
+  position: absolute;
+  top: calc(100% + var(--toast-offset));
+  /* 화면 끝이 아니라 본문 열(최대 1180px)의 오른쪽 끝에 맞춘다 — 넓은 화면에서 동떨어져 보이지 않게 */
+  right: max(var(--page-pad), calc((100% - var(--page-max)) / 2 + var(--page-pad)));
+  z-index: var(--z-toast);
+  display: grid;
+  gap: var(--space-2);
+  width: min(var(--toast-width), calc(100% - 2 * var(--page-pad)));
+  /* 빈 자리는 클릭을 막지 않는다 */
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3-5);
+  background: var(--toast-bg);
+  border: var(--border-width) solid var(--toast-border);
+  border-left: var(--toast-accent-width) solid var(--status-success);
+  border-radius: var(--radius-control);
+  box-shadow: var(--toast-shadow);
+  font-size: var(--fs-body-sm);
+  pointer-events: auto;
+  animation: toast-in var(--duration-enter) var(--ease-enter);
+}
+
+.error {
+  border-left-color: var(--status-error);
+}
+
+.message {
+  flex: 1;
+}
+
+/* CSS Modules 는 animation 이름을 파일 안으로 한정하므로 여기 둔다. 위에서 살짝 내려온다 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--rise-distance) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .region {
+    right: 0;
+    left: 0;
+    margin: 0 auto;
+  }
+}

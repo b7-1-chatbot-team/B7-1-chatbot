@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { HistoryScroller } from './HistoryScroller'
@@ -100,5 +100,53 @@ describe('HistoryScroller — 마지막 항목이 제자리에서 바뀔 때', (
     rerender({ firstKey: 1, lastKey: 'a-9:bot' })
 
     expect(element.scrollTop).toBe(1300)
+  })
+
+  describe('위로 올려 읽는 중에 새 항목이 붙을 때', () => {
+    function scrolledUp() {
+      const utils = renderScroller({ firstKey: 1, lastKey: 30 })
+      const element = screen.getByLabelText('기록')
+      const heights = { scrollHeight: 1000, clientHeight: 400 }
+      setHeights(element, heights)
+      // 맨 아래(600)에서 한참 위(100)로 올려 읽는 중
+      element.scrollTop = 100
+      fireEvent.scroll(element)
+      heights.scrollHeight = 1200
+      return { ...utils, element }
+    }
+
+    it('따라 내려가지 않고 [새 메시지] 버튼을 띄운다 — 읽던 곳에서 화면이 튀지 않게', () => {
+      const { rerender, element } = scrolledUp()
+      rerender({ firstKey: 1, lastKey: 31 })
+
+      expect(element.scrollTop).toBe(100)
+      expect(screen.getByRole('button', { name: '새 메시지' })).toBeInTheDocument()
+    })
+
+    it('[새 메시지] 를 누르면 맨 아래로 가고 버튼이 사라진다', () => {
+      const { rerender, element } = scrolledUp()
+      rerender({ firstKey: 1, lastKey: 31 })
+
+      fireEvent.click(screen.getByRole('button', { name: '새 메시지' }))
+      expect(element.scrollTop).toBe(1200)
+      expect(screen.queryByRole('button', { name: '새 메시지' })).toBeNull()
+    })
+
+    it('직접 맨 아래까지 내려도 버튼이 사라진다', () => {
+      const { rerender, element } = scrolledUp()
+      rerender({ firstKey: 1, lastKey: 31 })
+
+      element.scrollTop = 800
+      fireEvent.scroll(element)
+      expect(screen.queryByRole('button', { name: '새 메시지' })).toBeNull()
+    })
+
+    it('본인이 보낸 항목(alwaysFollowLatest)이면 위치와 상관없이 맨 아래로', () => {
+      const { rerender, element } = scrolledUp()
+      rerender({ firstKey: 1, lastKey: 31, alwaysFollowLatest: true })
+
+      expect(element.scrollTop).toBe(1200)
+      expect(screen.queryByRole('button', { name: '새 메시지' })).toBeNull()
+    })
   })
 })

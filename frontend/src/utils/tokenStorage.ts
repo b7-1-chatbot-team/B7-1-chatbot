@@ -79,10 +79,29 @@ export function saveTokens(accessToken: string, refreshToken: string): void {
 }
 
 /** 로그아웃·재발급 실패 시 호출. 둘을 함께 지운다 */
-export function clearTokens(): void {
+/**
+ * 토큰이 지워진 이유. 화면이 "로그아웃되었습니다" 와 "로그인이 만료되었습니다" 를 구분해 알릴 때 쓴다.
+ * - logout: 사용자가 로그아웃했다 (기본값)
+ * - expired: 재발급까지 실패해 인터셉터가 지웠다
+ *
+ * 같은 탭 안에서만 알 수 있다. 다른 탭에서 지워진 경우(storage 이벤트)는 이유가 없다.
+ */
+export type ClearReason = 'logout' | 'expired'
+
+let lastClearReason: ClearReason | null = null
+
+export function clearTokens(reason: ClearReason = 'logout'): void {
+  lastClearReason = reason
   remove(ACCESS_KEY)
   remove(REFRESH_KEY)
   notify()
+}
+
+/** 마지막으로 토큰을 지운 이유를 꺼낸다. 한 번 꺼내면 비운다 — 같은 알림을 두 번 띄우지 않게 */
+export function takeClearReason(): ClearReason | null {
+  const reason = lastClearReason
+  lastClearReason = null
+  return reason
 }
 
 /**

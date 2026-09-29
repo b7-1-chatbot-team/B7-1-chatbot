@@ -1,5 +1,7 @@
 import { getAdminUserChats } from '@/api/admin'
+import { LoadingStatus } from '@/components/Spinner'
 import { usePagedList } from '@/hooks/usePagedList'
+import styles from './Admin.module.css'
 import { ChatRecord } from './ChatRecord'
 import { LoadError } from './LoadError'
 import { PagedFooter } from './PagedFooter'
@@ -21,17 +23,19 @@ export function UserChats({ userId, onOpenRequest }: UserChatsProps) {
   const user = list.firstPage?.user
 
   return (
-    <section aria-labelledby="admin-user-chats-title">
-      <h2 id="admin-user-chats-title">{user ? `${user.email} 의 대화 (${list.total})` : '사용자의 대화'}</h2>
+    <section aria-labelledby="admin-user-chats-title" className={styles.panel}>
+      <h2 id="admin-user-chats-title" className={styles.panelTitle}>
+        {user ? `${user.email} 의 대화 (${list.total})` : '사용자의 대화'}
+      </h2>
       {list.loadError ? (
         <LoadError what="대화 기록" error={list.loadError} onRetry={list.retry} />
       ) : list.isLoading ? (
-        <p role="status">불러오는 중…</p>
+        <LoadingStatus>불러오는 중…</LoadingStatus>
       ) : list.items.length === 0 ? (
-        <p>대화 기록이 없습니다.</p>
+        <p className={styles.muted}>대화 기록이 없습니다.</p>
       ) : (
         <>
-          <ol aria-label="사용자 대화">
+          <ol aria-label="사용자 대화" className={styles.records}>
             {list.items.map((chat) => (
               <li key={chat.chat_id}>
                 <ChatRecord chat={chat} onOpenRequest={onOpenRequest} />

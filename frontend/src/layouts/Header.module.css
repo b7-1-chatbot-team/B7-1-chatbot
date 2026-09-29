@@ -1,0 +1,104 @@
+/* 헤더 — 위에 붙어 따라오고 뒤 내용이 흐리게 비친다 (docs/05-ui-ux.md 3절) */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--bg-header);
+  border-bottom: var(--border-width) solid var(--border-default);
+  /* Safari 14~17 은 접두어가 필요하다. 지원하지 않으면 반투명 배경만 남는다 */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-pad);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: var(--brand-mark);
+  height: var(--brand-mark);
+  border-radius: var(--radius-sm);
+  background: var(--bg-bubble-user);
+  font-size: var(--fs-small);
+}
+
+.nav {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.nav a {
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .nav a:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.nav a[aria-current='page'] {
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 var(--border-width) var(--border-strong);
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  min-width: 0;
+}
+
+.nickname {
+  overflow: hidden;
+  max-width: 12em;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 비로그인 [로그인] — 링크지만 버튼처럼 보이게 */
+.loginLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-primary);
+  font-size: var(--fs-small);
+}
+
+/* 모바일: 1줄 브랜드·계정, 2줄 메뉴 (docs/05-ui-ux.md 7절) */
+@media (max-width: 560px) {
+  .nav {
+    order: 3;
+    width: 100%;
+  }
+}

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { login as loginApi, logout as logoutApi, me as meApi } from '@/api/auth'
 import type { MeResponse } from '@/api/types'
 import { useAccessToken } from '@/hooks/useAccessToken'
-import { clearTokens, getRefreshToken, saveTokens } from '@/utils/tokenStorage'
+import { useToast } from '@/hooks/useToast'
+import { clearTokens, getRefreshToken, saveTokens, takeClearReason } from '@/utils/tokenStorage'
 import { AuthContext } from './authContext'
 import type { AuthContextValue, AuthStatus } from './types'
 
@@ -63,6 +64,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => controller.abort()
   }, [accessToken, isConfirmed])
+
+  // 재발급까지 실패해 토큰이 지워졌으면 알린다. 가드가 로그인 화면으로 보내므로 그 위에 뜬다.
+  // 직접 로그아웃(헤더가 따로 알림)·다른 탭 로그아웃(이유 없음)은 여기서 알리지 않는다
+  const showToast = useToast()
+  const hadToken = useRef(accessToken !== null)
+  useEffect(() => {
+    if (hadToken.current && !accessToken && takeClearReason() === 'expired') {
+      showToast('로그인이 만료되었습니다. 다시 로그인해 주세요.')
+    }
+    hadToken.current = accessToken !== null
+  }, [accessToken, showToast])
 
   const login = useCallback(async (email: string, password: string) => {
     const tokens = await loginApi({ email, password })

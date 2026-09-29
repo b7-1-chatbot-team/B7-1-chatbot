@@ -1,0 +1,18 @@
+/* 공용 움직임. CSS Modules 는 @keyframes 이름을 파일 안으로 한정해, 쓰는 곳마다 복사하지 않도록
+   여기 한 번 두고 `composes: enter from '@/styles/motion.module.css'` 로 가져다 쓴다 */
+
+/* 등장 — 살짝 떠오르며 나타난다 (화면·말풍선·카드) */
+.enter {
+  animation: enter var(--duration-enter) var(--ease-enter);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-distance));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

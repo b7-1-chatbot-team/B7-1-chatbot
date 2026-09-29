@@ -1,0 +1,28 @@
+/* 스크롤 영역과 그 위에 뜨는 [새 메시지] 버튼의 기준 */
+.frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 모바일에서 끝까지 당겨도 페이지 전체가 튕기지 않게 */
+  overscroll-behavior: contain;
+}
+
+/* 위로 올려 읽는 중에 새 메시지가 오면 아래 가운데에 뜬다 */
+.newMessage {
+  composes: enter from '../styles/motion.module.css';
+  position: absolute;
+  right: 0;
+  bottom: var(--space-3);
+  left: 0;
+  /* 가운데 정렬을 transform 으로 하면 등장 애니메이션(transform)과 겹쳐 위치가 튄다 */
+  width: max-content;
+  margin: 0 auto;
+  box-shadow: var(--toast-shadow);
+}

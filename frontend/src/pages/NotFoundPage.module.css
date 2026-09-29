@@ -1,0 +1,42 @@
+.page {
+  composes: enter from '../styles/motion.module.css';
+  margin-top: var(--space-22);
+  text-align: center;
+}
+
+/* 큰 숫자는 장식 — 제목이 같은 내용을 가진다 */
+.code {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-display);
+  line-height: var(--lh-tight);
+}
+
+.title {
+  composes: pageTitle from '../styles/text.module.css';
+}
+
+.description {
+  margin: var(--space-2) 0 var(--space-5);
+  color: var(--text-secondary);
+}
+
+/* 링크지만 보조 버튼 모양 */
+.home {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3-5);
+  border: var(--border-width) solid var(--btn-secondary-border);
+  border-radius: var(--radius-control);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-size: var(--fs-body-sm);
+}
+
+@media (hover: hover) {
+  .home:hover {
+    border-color: var(--btn-secondary-border-hover);
+    color: var(--btn-secondary-text);
+  }
+}

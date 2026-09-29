@@ -1,0 +1,348 @@
+/* 관리자 화면 (docs/05-ui-ux.md 화면 5). 영역 컴포넌트가 함께 쓴다 */
+.page {
+  composes: enter from '../../styles/motion.module.css';
+  display: grid;
+  gap: var(--space-5);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  composes: pageTitle from '../../styles/text.module.css';
+}
+
+/* 요약 6칸 — 태블릿 이하 2칸 */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2-5);
+  margin: 0;
+}
+
+.stat {
+  padding: var(--space-3) var(--space-3-5);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-card);
+}
+
+.stat dt {
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+}
+
+.stat dd {
+  margin: var(--space-0-5) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-stat);
+}
+
+/* 실패 관련 숫자는 주황 */
+.warn dd {
+  color: var(--text-error);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* 탭 — 선택된 탭은 청록 밑줄 */
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: var(--border-width) solid var(--border-default);
+}
+
+.tab {
+  margin-bottom: calc(var(--border-width) * -1);
+  padding: var(--space-2) var(--space-3-5);
+  background: none;
+  border: 0;
+  border-bottom: var(--tab-indicator) solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--text-link);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--text-primary);
+  }
+}
+
+/* 사용자 탭: 목록 + 선택한 사용자의 대화 */
+.grid {
+  display: grid;
+  grid-template-columns: var(--admin-list-width) 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.panel {
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-card);
+}
+
+.panelTitle {
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-h3);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.tools {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2-5);
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-2-5);
+  background: var(--bg-input);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--fs-input);
+}
+
+.count {
+  margin-bottom: var(--space-1-5);
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+}
+
+.users {
+  display: grid;
+  gap: var(--space-0-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-0-5) var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-2-5);
+  background: none;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .user:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.user[aria-pressed='true'] {
+  background: var(--bg-selected);
+  border-color: var(--border-selected);
+}
+
+/* 긴 이메일은 한 줄에서 말줄임 */
+.email {
+  overflow: hidden;
+  font-size: var(--fs-body-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+
+.chip {
+  padding: 0 var(--space-1-5);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  white-space: nowrap;
+}
+
+.chipOk {
+  border-color: var(--status-success-border);
+  color: var(--text-success);
+}
+
+.chipError {
+  border-color: var(--status-error-border);
+  color: var(--text-error);
+}
+
+/* 대화·실패 기록 한 건 */
+.records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record {
+  padding: var(--space-3) 0;
+  border-top: var(--border-width) solid var(--border-default);
+}
+
+.records > li:first-child .record {
+  border-top: 0;
+}
+
+.recordHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1-5);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+}
+
+.who {
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-small);
+}
+
+/* request_id — 누르면 요청 흐름. 링크처럼 보인다 */
+.requestId {
+  margin-left: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--text-link);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .requestId:hover {
+    text-decoration: underline;
+  }
+}
+
+.qa {
+  display: grid;
+  grid-template-columns: var(--qa-label-width) 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--fs-body-sm);
+}
+
+.qa dt {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-mono-caps);
+}
+
+.qa dd,
+.question {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.answer {
+  color: var(--text-secondary);
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-2-5);
+}
+
+/* 요청 흐름 타임라인 */
+.flowHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2-5);
+}
+
+.flowHead .panelTitle {
+  margin-bottom: 0;
+}
+
+.flow {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  list-style: none;
+}
+
+.flow li {
+  display: grid;
+  grid-template-columns: 76px 56px minmax(0, 170px) 1fr;
+  gap: var(--space-2-5);
+  padding: var(--space-1) 0;
+  border-top: var(--border-width) solid var(--border-default);
+}
+
+.flow li:first-child {
+  border-top: 0;
+}
+
+.flow time,
+.flow .detail {
+  color: var(--text-secondary);
+}
+
+.levelInfo {
+  color: var(--text-success);
+}
+
+.levelError {
+  color: var(--text-error);
+}
+
+@media (max-width: 900px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .flow li {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .flow .detail,
+  .flow .event {
+    grid-column: 2;
+  }
+}

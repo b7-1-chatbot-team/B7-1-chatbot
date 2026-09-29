@@ -1,0 +1,231 @@
+/* 챗 화면 (docs/05-ui-ux.md 화면 3) */
+.page {
+  composes: enter from '../../styles/motion.module.css';
+  max-width: var(--chat-max);
+  margin: 0 auto;
+}
+
+/* 카드가 화면 높이를 채우고, 안에서 대화 영역만 스크롤한다.
+   dvh 를 모르는 브라우저(Safari 15.3 이하)는 앞의 vh 를 쓴다 */
+.card {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 190px);
+  height: calc(100dvh - 190px);
+  min-height: 420px;
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-card);
+}
+
+.top {
+  padding: var(--space-3) var(--space-4-5);
+  border-bottom: var(--border-width) solid var(--border-default);
+  font-size: var(--fs-body-sm);
+}
+
+.context {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  cursor: help;
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4-5) 0;
+}
+
+.greet {
+  margin: auto 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.scroller {
+  flex: 1;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3-5);
+  margin: 0;
+  padding: var(--space-5) var(--space-4-5);
+  list-style: none;
+}
+
+/* 날짜 구분선 — 가운데 글자, 양옆 선 */
+.day {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+}
+
+.day::before,
+.day::after {
+  content: '';
+  flex: 1;
+  height: var(--border-width);
+  background: var(--border-default);
+}
+
+/* 말풍선 한 개: 풍선 + 아래 시각 */
+.item {
+  composes: enter from '../../styles/motion.module.css';
+  display: flex;
+  flex-direction: column;
+  max-width: var(--bubble-max);
+}
+
+.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.bot {
+  align-items: flex-start;
+}
+
+.bubble {
+  padding: var(--space-2-5) var(--space-3-5);
+  border-radius: var(--radius-bubble);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.user .bubble {
+  background: var(--bg-bubble-user);
+  border-bottom-right-radius: var(--radius-tail);
+}
+
+.bot .bubble {
+  background: var(--bg-bubble-bot);
+  border-bottom-left-radius: var(--radius-tail);
+}
+
+.error .bubble {
+  background: var(--status-error-bg);
+  border: var(--border-width) solid var(--status-error-border);
+}
+
+.item time {
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+
+/* 오류 말풍선은 말풍선 폭만큼만 차지하고, 아래 줄이 그 폭을 채운다 */
+.error {
+  align-self: flex-start;
+  align-items: stretch;
+}
+
+/* 오류 말풍선 아래 한 줄: 왼쪽 시각 · 오른쪽 끝 다시 시도 아이콘 */
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-1-5);
+}
+
+.meta time {
+  margin-top: 0;
+}
+
+/* 응답 대기 — 점 3개가 차례로 깜빡인다 */
+.dots {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-3-5) var(--space-4);
+  background: var(--bg-bubble-bot);
+  border-radius: var(--radius-bubble);
+  border-bottom-left-radius: var(--radius-tail);
+}
+
+.dots i {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: var(--radius-pill);
+  background: var(--text-secondary);
+  animation: blink var(--duration-blink) infinite;
+}
+
+.dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.slow {
+  padding: 0 var(--space-4-5) var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--fs-small);
+}
+
+/* 입력 영역 */
+.composer {
+  padding: var(--space-3) var(--space-3-5);
+  border-top: var(--border-width) solid var(--border-default);
+}
+
+.composerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2-5);
+}
+
+.textarea {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2-5) var(--space-3);
+  background: var(--bg-input);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-primary);
+  font-size: var(--fs-input);
+  line-height: var(--lh-input);
+}
+
+.composerFoot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-1-5);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+}
+
+.api {
+  font: inherit;
+}
+
+.counter[data-limit] {
+  color: var(--text-error);
+}
+
+/* 모바일: 헤더가 두 줄이라 카드 높이를 더 뺀다 (docs/05-ui-ux.md 7절 — 화면 - 220px) */
+@media (max-width: 560px) {
+  .card {
+    height: calc(100vh - 220px);
+    height: calc(100dvh - 220px);
+  }
+}
