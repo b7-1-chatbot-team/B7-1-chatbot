@@ -293,6 +293,10 @@ describe('챗 — 위로 스크롤해 이전 대화 불러오기', () => {
     expect(toast).toHaveTextContent('이전 기록을 불러오지 못했습니다.')
     expect(bubbles()).toHaveLength(40)
 
+    // 화면이 다시 그려져도(입력) 같은 토스트가 또 뜨지 않는다 — 한 번의 실패에 한 번
+    await user.type(screen.getByLabelText('질문'), '다시 그리기')
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
+
     // 토스트의 다시 불러오기 아이콘으로 이어서 받는다
     await user.click(within(toast).getByRole('button', { name: '다시 불러오기' }))
     await waitFor(() => expect(bubbles()).toHaveLength(50))

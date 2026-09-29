@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { instance } from '@/api/instance'
+import { ToastRegion } from '@/components/Toast'
+import { ToastProvider } from '@/store/ToastProvider'
 import { server } from '@/test/server'
 import LogsPage from './LogsPage'
 
@@ -46,7 +48,10 @@ const range = (from: number, to: number) => Array.from({ length: from - to + 1 }
 function renderLogs() {
   render(
     <MemoryRouter>
-      <LogsPage />
+      <ToastProvider>
+        <LogsPage />
+        <ToastRegion />
+      </ToastProvider>
     </MemoryRouter>,
   )
 }
@@ -200,7 +205,10 @@ describe('내 대화 로그 — 위로 스크롤해 이전 기록 불러오기',
     fail = true
     scrollToTop()
 
-    expect(await screen.findByText(/이전 기록을 불러오지 못했습니다/)).toBeInTheDocument()
+    // 흐름을 막지 않게 토스트로 알리고, 다시 불러오기 아이콘을 준다
+    const toast = await screen.findByRole('alert')
+    expect(toast).toHaveTextContent('이전 기록을 불러오지 못했습니다.')
+    expect(within(toast).getByRole('button', { name: '다시 불러오기' })).toBeInTheDocument()
     expect(cards()).toHaveLength(20)
   })
 })
@@ -216,7 +224,10 @@ describe('내 대화 로그 — 새로고침', () => {
     await waitFor(() => expect(cards()).toHaveLength(25))
 
     ids = range(26, 1)
-    await user.click(screen.getByRole('button', { name: '새로고침' }))
+    const refresh = screen.getByRole('button', { name: '새로고침' })
+    // 새로고침은 글자 없이 아이콘만 (이름은 스크린리더·툴팁)
+    expect(refresh.textContent).toBe('')
+    await user.click(refresh)
 
     await waitFor(() => expect(cardIds().at(-1)).toBe('대화 #26'))
     expect(cards()).toHaveLength(20)
