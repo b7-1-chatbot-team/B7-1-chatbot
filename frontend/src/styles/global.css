@@ -132,15 +132,12 @@
   --space-5-5: 22px;
   --space-6: 24px;
   --space-7: 28px;
-  --space-8: 32px;
   --space-10: 40px;
-  --space-14: 56px;
   --space-16: 64px;
   --space-22: 90px;
   --space-page-top: 40px;
 
   /* ==== 5. 모서리 ==== */
-  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-control: 10px;
@@ -169,7 +166,6 @@
 
   /* ==== 7. 움직임 ==== */
   --duration-fast: 120ms;
-  --duration-base: 200ms;
   --duration-enter: 280ms;
   --duration-blink: 1.2s;
   --duration-spin: 0.8s;
@@ -227,7 +223,6 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --duration-fast: 0ms;
-    --duration-base: 0ms;
     --duration-enter: 0ms;
     --rise-distance: 0px;
     --press-scale: 1;

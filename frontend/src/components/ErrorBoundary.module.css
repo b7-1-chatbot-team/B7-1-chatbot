@@ -7,9 +7,7 @@
 }
 
 .title {
-  font-size: var(--fs-h1);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-title);
+  composes: pageTitle from '../styles/text.module.css';
 }
 
 .description {

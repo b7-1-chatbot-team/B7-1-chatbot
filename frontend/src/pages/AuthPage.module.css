@@ -6,10 +6,7 @@
 }
 
 .title {
-  font-size: var(--fs-h1);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-title);
-  line-height: var(--lh-tight);
+  composes: pageTitle from '../styles/text.module.css';
 }
 
 .description {

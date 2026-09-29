@@ -12,10 +12,7 @@
 }
 
 .title {
-  font-size: var(--fs-h1);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-title);
-  line-height: var(--lh-tight);
+  composes: pageTitle from '../../styles/text.module.css';
 }
 
 /* 요약 6칸 — 태블릿 이하 2칸 */
