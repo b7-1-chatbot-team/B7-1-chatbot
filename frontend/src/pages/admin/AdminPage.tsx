@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { Button } from '@/components/Button'
+import styles from './Admin.module.css'
 import { FailureList } from './FailureList'
 import { RequestFlow } from './RequestFlow'
 import { StatsCards } from './StatsCards'
@@ -48,19 +49,22 @@ export default function AdminPage() {
   const openRequest = (id: string) => update({ request: id })
 
   return (
-    <section>
-      <h1>관리자</h1>
-      <Button onClick={() => setVersion((v) => v + 1)}>새로고침</Button>
+    <section className={styles.page}>
+      <div className={styles.head}>
+        <h1 className={styles.title}>관리자</h1>
+        <Button icon="refresh" label="새로고침" onClick={() => setVersion((v) => v + 1)} />
+      </div>
 
-      <div key={version}>
+      <div key={version} className={styles.page}>
         <StatsCards />
 
-        <div role="tablist" aria-label="관리자 보기">
+        <div role="tablist" aria-label="관리자 보기" className={styles.tabs}>
           {TABS.map(({ id, label }) => (
             <button
               key={id}
               type="button"
               role="tab"
+              className={styles.tab}
               aria-selected={tab === id}
               onClick={() => update({ tab: id === 'users' ? null : id, request: null })}
             >
@@ -70,7 +74,7 @@ export default function AdminPage() {
         </div>
 
         {tab === 'users' ? (
-          <div role="tabpanel" aria-label="사용자">
+          <div role="tabpanel" aria-label="사용자" className={styles.grid}>
             <UserList
               selectedId={selectedUser}
               onSelect={(id) => update({ user: String(id), request: null })}
@@ -78,7 +82,7 @@ export default function AdminPage() {
             {selectedUser ? (
               <UserChats key={selectedUser} userId={selectedUser} onOpenRequest={openRequest} />
             ) : (
-              <p>목록에서 사용자를 선택하면 대화 기록이 보입니다.</p>
+              <p className={`${styles.panel} ${styles.muted}`}>목록에서 사용자를 선택하면 대화 기록이 보입니다.</p>
             )}
           </div>
         ) : (
