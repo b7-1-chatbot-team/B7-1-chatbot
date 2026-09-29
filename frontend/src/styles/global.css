@@ -18,25 +18,24 @@
   --gray-800: #22282b;
   --gray-750: #262c30;
   --gray-600: #3a4246;
-  /* 명도 대비 4.5:1 이상 (페이지·카드·말풍선 배경 모두). 시안 값 #5d666a 는 3.2:1 이라 작은 글씨에 부족했다 */
-  --gray-500: #7e888c;
+  /* 보조 글자. 대비 6:1. 시안의 3차 글자(#5d666a, 3.2:1)는 대비가 부족했고, 기준까지 올리면
+     이 색과 거의 같아져 보조 글자를 한 단계로 합쳤다 */
   --gray-400: #8b9599;
   --gray-100: #e3e7e6;
-  --teal-500: oklch(0.72 0.07 186);
-  --teal-600: oklch(0.66 0.07 186);
-  --teal-800: oklch(0.42 0.045 186);
-  --orange-500: oklch(0.72 0.09 55);
+  --teal-500: #70b3ab;
+  --teal-600: #5da098;
+  --teal-800: #2e5551;
+  --orange-500: #d1966d;
 
   /* ==== 2. 의미 색 ==== */
   /* 텍스트 */
   --text-primary: var(--gray-100);
   --text-secondary: var(--gray-400);
-  --text-tertiary: var(--gray-500);
   --text-disabled: var(--gray-600);
-  --text-placeholder: var(--gray-500);
+  --text-placeholder: var(--gray-400);
   --text-on-accent: var(--gray-950);
   --text-link: var(--teal-500);
-  --text-link-hover: color-mix(in oklch, var(--teal-500) 80%, white);
+  --text-link-hover: #8dc2bb;
   --text-error: var(--orange-500);
   --text-success: var(--teal-500);
 
@@ -49,29 +48,29 @@
   --bg-input: var(--gray-925);
   --bg-input-disabled: var(--gray-900);
   --bg-hover: var(--gray-875);
-  --bg-selected: color-mix(in oklch, var(--teal-500) 12%, var(--gray-900));
-  --bg-header: color-mix(in srgb, var(--gray-950) 82%, transparent);
+  --bg-selected: #1e2829;
+  --bg-header: rgba(14, 17, 19, 0.82);
 
   /* 테두리 */
   --border-default: var(--gray-800);
   --border-strong: var(--gray-750);
-  --border-hover: var(--gray-500);
-  --border-selected: color-mix(in oklch, var(--teal-500) 35%, transparent);
-  --border-error: color-mix(in oklch, var(--orange-500) 55%, transparent);
+  --border-hover: var(--gray-400);
+  --border-selected: rgba(112, 179, 171, 0.35);
+  --border-error: rgba(209, 150, 109, 0.55);
 
   /* 포커스 링 */
-  --focus-ring-color: color-mix(in oklch, var(--teal-500) 60%, transparent);
+  --focus-ring-color: rgba(112, 179, 171, 0.6);
   --focus-ring-width: 2px;
   --focus-ring-offset: 1px;
 
   /* 주 버튼 */
   --btn-primary-bg: var(--teal-500);
-  --btn-primary-bg-hover: color-mix(in oklch, var(--teal-500) 88%, white);
+  --btn-primary-bg-hover: #82bcb5;
   --btn-primary-bg-active: var(--teal-600);
   --btn-primary-text: var(--text-on-accent);
-  --btn-primary-bg-disabled: color-mix(in oklch, var(--teal-500) 30%, var(--gray-900));
-  --btn-primary-text-disabled: color-mix(in oklch, var(--gray-950) 60%, var(--teal-500));
-  --btn-primary-bg-loading: color-mix(in oklch, var(--teal-500) 70%, var(--gray-900));
+  --btn-primary-bg-disabled: #2e4141;
+  --btn-primary-text-disabled: #324b4a;
+  --btn-primary-bg-loading: #52807b;
 
   /* 보조 버튼 */
   --btn-secondary-bg: var(--gray-900);
@@ -85,11 +84,11 @@
 
   /* 상태 */
   --status-success: var(--teal-500);
-  --status-success-bg: color-mix(in oklch, var(--teal-500) 12%, var(--gray-900));
-  --status-success-border: color-mix(in oklch, var(--teal-500) 35%, transparent);
+  --status-success-bg: #1e2829;
+  --status-success-border: rgba(112, 179, 171, 0.35);
   --status-error: var(--orange-500);
-  --status-error-bg: color-mix(in oklch, var(--orange-500) 10%, var(--gray-900));
-  --status-error-border: color-mix(in oklch, var(--orange-500) 35%, transparent);
+  --status-error-bg: #242322;
+  --status-error-border: rgba(209, 150, 109, 0.35);
 
   /* 로딩 */
   --loading-track: var(--gray-750);
@@ -187,8 +186,21 @@
   --rise-distance: 6px;
   --press-scale: 0.98;
 
-  /* ==== 8. 겹침 순서 ==== */
+  /* ==== 8. 토스트 ==== */
+  --toast-bg: var(--gray-850);
+  --toast-border: var(--border-strong);
+  /* 떠 있는 요소에만 쓰는 유일한 그림자 */
+  --toast-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --toast-width: 420px;
+  --toast-offset: var(--space-3);
+  /* 자동으로 사라지기까지. 오류는 읽을 시간이 더 필요하다 */
+  --toast-duration-info: 4s;
+  --toast-duration-error: 6s;
+  --toast-accent-width: 3px;
+
+  /* ==== 9. 겹침 순서 ==== */
   --z-header: 40;
+  --z-toast: 45;
 }
 
 /* 태블릿 (docs/05-ui-ux.md 7절). CSS 변수는 미디어 조건에 쓸 수 없어 숫자로 둔다 */
@@ -261,24 +273,22 @@ a {
 }
 
 ::selection {
-  background: color-mix(in oklch, var(--teal-500) 35%, transparent);
+  background: rgba(112, 179, 171, 0.35);
   color: var(--text-primary);
 }
 
-/* 포커스 링 — 키보드로 이동할 때만 보인다. 마우스 클릭에는 표시하지 않는다 */
-:where(a, button, input, textarea, [tabindex]):focus-visible {
+/* 포커스 링 — 키보드로 이동할 때만 보인다. 마우스 클릭에는 표시하지 않는다.
+   :focus-visible 이 없는 브라우저(Safari 15.3 이하)는 :focus 로 항상 보인다. 기능 문제는 없다 */
+:where(a, button, input, textarea, [tabindex]):focus {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
 
-/* 입력칸은 클릭해도 표시한다. 어디에 입력 중인지 보여야 한다 */
-input:focus,
-textarea:focus {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
+:where(a, button, [tabindex]):focus:not(:focus-visible) {
+  outline: none;
 }
 
-/* 스크롤바 — 어두운 화면에서 기본 밝은 막대가 튀지 않게 */
+/* 스크롤바 — 어두운 화면에서 기본 밝은 막대가 튀지 않게 (지원하지 않는 브라우저는 기본 모양) */
 * {
   scrollbar-color: var(--gray-750) transparent;
   scrollbar-width: thin;
@@ -294,6 +304,11 @@ textarea:focus {
     opacity: 1;
     transform: none;
   }
+}
+
+/* hidden 속성은 display 를 지정한 요소에서도 숨긴다 */
+[hidden] {
+  display: none !important;
 }
 
 /* 화면에는 보이지 않고 스크린리더만 읽는 글자 */

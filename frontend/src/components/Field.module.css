@@ -37,7 +37,7 @@
 
 .hint {
   font-size: var(--fs-label);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .error {

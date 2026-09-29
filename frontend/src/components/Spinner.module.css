@@ -9,9 +9,10 @@
   animation: spin var(--duration-spin) var(--ease-linear) infinite;
 }
 
-/* 버튼 안에서는 글자색을 따른다 — 청록 버튼 위에서도 보이게 */
+/* 버튼 안에서는 글자색을 따른다 — 청록 버튼 위에서도 보이게.
+   바탕 원은 어느 버튼 위에서도 보이는 반투명 회색 (color-mix 를 쓰지 않는다) */
 .inherit {
-  border-color: color-mix(in srgb, currentColor 30%, transparent);
+  border-color: rgba(128, 128, 128, 0.35);
   border-top-color: currentColor;
 }
 
