@@ -93,17 +93,13 @@
   /* 로딩 */
   --loading-track: var(--gray-750);
   --loading-indicator: var(--teal-500);
-  --skeleton-base: var(--gray-875);
-  --skeleton-shine: var(--gray-800);
 
   /* ==== 3. 글꼴 ==== */
   --font-sans: 'IBM Plex Sans KR', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
 
-  --fs-micro: 10px;
   --fs-caption: 11px;
   --fs-label: 12px;
   --fs-small: 13px;
@@ -161,7 +157,6 @@
   --admin-list-width: 360px;
   --control-height: 40px;
   --control-height-sm: 32px;
-  --touch-target: 44px;
   --bubble-max: 78%;
   --qa-label-width: 72px;
   --icon-sm: 16px;
@@ -173,13 +168,11 @@
   --tab-indicator: 2px;
 
   /* ==== 7. 움직임 ==== */
-  --duration-instant: 0ms;
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-enter: 280ms;
   --duration-blink: 1.2s;
   --duration-spin: 0.8s;
-  --duration-shimmer: 1.4s;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-enter: cubic-bezier(0, 0, 0, 1);
   --ease-linear: linear;
@@ -193,9 +186,6 @@
   --toast-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   --toast-width: 420px;
   --toast-offset: var(--space-3);
-  /* 자동으로 사라지기까지. 오류는 읽을 시간이 더 필요하다 */
-  --toast-duration-info: 4s;
-  --toast-duration-error: 6s;
   --toast-accent-width: 3px;
 
   /* ==== 9. 겹침 순서 ==== */
@@ -243,7 +233,6 @@
     --press-scale: 1;
     --duration-spin: 1.6s;
     --duration-blink: 0s;
-    --duration-shimmer: 0s;
   }
 }
 
@@ -294,17 +283,6 @@ a {
   scrollbar-width: thin;
 }
 
-/* 등장 애니메이션 — 말풍선·화면이 살짝 떠오르며 나타난다 */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(var(--rise-distance));
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 
 /* hidden 속성은 display 를 지정한 요소에서도 숨긴다 */
 [hidden] {
