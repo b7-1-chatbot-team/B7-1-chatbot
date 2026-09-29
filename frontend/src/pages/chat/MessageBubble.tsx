@@ -31,6 +31,7 @@ export function MessageBubble({ message, onRetry, retryDisabled }: MessageBubble
         {/* 문구만 보여준다. 결과 코드는 사용자에게 필요 없는 정보다 (2026-09-29 결정) */}
         <p className={styles.bubble}>{message.message}</p>
         <div className={styles.meta}>
+          <time dateTime={message.createdAt}>{formatClock(message.createdAt)}</time>
           {/* 504·502 만 다시 보낼 가치가 있다. 422·500 은 같은 질문을 다시 보내도 결과가 같다 */}
           {isRetryable(message.code) ? (
             <Button
@@ -42,7 +43,6 @@ export function MessageBubble({ message, onRetry, retryDisabled }: MessageBubble
               disabled={retryDisabled}
             />
           ) : null}
-          <time dateTime={message.createdAt}>{formatClock(message.createdAt)}</time>
         </div>
       </li>
     )
