@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
+import { Alert } from '@/components/Alert'
+import { Button } from '@/components/Button'
 import { HistoryScroller } from '@/components/HistoryScroller'
+import { LoadingStatus } from '@/components/Spinner'
 import { useChatHistory } from '@/hooks/useChatHistory'
+import { useToast } from '@/hooks/useToast'
+import { formatDayLabel, isSameDay } from '@/utils/datetime'
 import { ChatInput } from './ChatInput'
 import type { ChatInputHandle } from './ChatInput'
 import styles from './ChatPage.module.css'
@@ -41,6 +46,18 @@ export default function ChatPage() {
     [history.items],
   )
   const all = [...historyMessages, ...messages]
+  const last = all.at(-1)
+
+  // 이전 기록을 더 불러오지 못해도 보던 대화는 그대로다. 흐름을 막지 않게 토스트로 알린다
+  const showToast = useToast()
+  const { olderError, loadOlder } = history
+  useEffect(() => {
+    if (!olderError) return
+    showToast(`이전 기록을 불러오지 못했습니다. ${olderError.message}`, {
+      tone: 'error',
+      action: { label: '다시 불러오기', onClick: () => void loadOlder() },
+    })
+  }, [olderError, loadOlder, showToast])
 
   // 응답이 늦으면 보조 안내를 띄운다
   useEffect(() => {
@@ -63,62 +80,81 @@ export default function ChatPage() {
     inputRef.current?.focus()
   }
 
+  const isEmpty = !history.isLoading && all.length === 0
+
   return (
-    <section>
-      <h1>챗</h1>
+    <section className={styles.page}>
+      {/* 화면 제목은 보이지 않게 둔다 — 헤더의 현재 메뉴가 같은 뜻을 보여 준다. 스크린리더용 */}
+      <h1 className="visually-hidden">챗</h1>
 
-      {/* 이전 대화가 있으면 이어서 하는 대화라 "새 대화" 는 붙이지 않는다 */}
-      <p aria-label="대화 정보">
-        {!history.isLoading && all.length === 0 ? '새 대화 · ' : ''}
-        <span title={`AI 는 최근 성공한 대화 ${CONTEXT_TURNS}개를 기억하고 답합니다`}>
-          context: 최근 {CONTEXT_TURNS}턴
-        </span>
-      </p>
-
-      {history.loadError ? (
-        <p role="alert">
-          이전 대화를 불러오지 못했습니다.{' '}
-          <button type="button" onClick={history.retry}>
-            다시 불러오기
-          </button>
+      <div className={styles.card}>
+        {/* 이전 대화가 있으면 이어서 하는 대화라 "새 대화" 는 붙이지 않는다 */}
+        <p aria-label="대화 정보" className={styles.top}>
+          {isEmpty ? '새 대화 · ' : ''}
+          <span className={styles.context} title={`AI 는 최근 성공한 대화 ${CONTEXT_TURNS}개를 기억하고 답합니다`}>
+            context: 최근 {CONTEXT_TURNS}턴
+          </span>
         </p>
-      ) : null}
 
-      {!history.isLoading && all.length === 0 ? (
-        <p>안녕하세요. 무엇이든 물어보세요.</p>
-      ) : null}
+        {history.loadError ? (
+          <div className={styles.notice}>
+            <Alert
+              tone="error"
+              action={<Button variant="ghost" size="sm" icon="refresh" label="다시 불러오기" onClick={history.retry} />}
+            >
+              이전 대화를 불러오지 못했습니다.
+            </Alert>
+          </div>
+        ) : null}
 
-      {history.olderError ? (
-        <p role="alert">이전 대화를 불러오지 못했습니다. {history.olderError.message}</p>
-      ) : null}
+        {history.isLoading ? <LoadingStatus>이전 대화를 불러오는 중…</LoadingStatus> : null}
+        {isEmpty ? <p className={styles.greet}>안녕하세요. 무엇이든 물어보세요.</p> : null}
 
-      <HistoryScroller
-        label="대화 스크롤 영역"
-        className={styles.scroller}
-        firstKey={all[0]?.id}
-        // 응답 대기 자리는 같은 id 로 답·오류로 바뀐다. 종류까지 넣어야 답이 들어와
-        // 말풍선이 길어질 때도 맨 아래로 따라간다
-        lastKey={all.length ? `${all.at(-1)!.id}:${all.at(-1)!.kind}` : undefined}
-        hasOlder={history.hasOlder}
-        isLoadingOlder={history.isLoadingOlder}
-        onReachTop={history.loadOlder}
-      >
-        {/* 새 응답을 스크린리더가 읽어 준다 */}
-        <ol aria-label="대화" aria-live="polite">
-          {all.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              onRetry={handleRetry}
-              retryDisabled={isSending}
-            />
-          ))}
-        </ol>
-      </HistoryScroller>
+        <HistoryScroller
+          label="대화 스크롤 영역"
+          className={styles.scroller}
+          firstKey={all[0]?.id}
+          // 응답 대기 자리는 같은 id 로 답·오류로 바뀐다. 종류까지 넣어야 답이 들어와
+          // 말풍선이 길어질 때도 맨 아래로 따라간다
+          lastKey={last ? `${last.id}:${last.kind}` : undefined}
+          // 방금 보낸 질문(과 그 대기 자리)은 어디를 보고 있든 따라 내려간다. 답은 보던 위치를 지킨다
+          alwaysFollowLatest={last?.kind === 'user' || last?.kind === 'pending'}
+          hasOlder={history.hasOlder}
+          isLoadingOlder={history.isLoadingOlder}
+          onReachTop={history.loadOlder}
+        >
+          {/* 새 응답을 스크린리더가 읽어 준다 */}
+          <ol aria-label="대화" aria-live="polite" className={styles.list}>
+            {all.map((message, index) => {
+              // 날짜가 바뀌는 곳에 구분선. 대기 자리는 시각이 없어 지금으로 본다
+              const at = messageTime(message)
+              const before = index > 0 ? messageTime(all[index - 1]) : null
+              return (
+                <Fragment key={message.id}>
+                  {before === null || !isSameDay(before, at) ? (
+                    <li role="separator" className={styles.day}>
+                      {formatDayLabel(at)}
+                    </li>
+                  ) : null}
+                  <MessageBubble message={message} onRetry={handleRetry} retryDisabled={isSending} />
+                </Fragment>
+              )
+            })}
+          </ol>
+        </HistoryScroller>
 
-      {isSlow ? <p role="status">응답이 늦어지고 있습니다. 서버를 깨우는 중일 수 있어요.</p> : null}
+        {isSlow ? (
+          <p role="status" className={styles.slow}>
+            응답이 늦어지고 있습니다. 서버를 깨우는 중일 수 있어요.
+          </p>
+        ) : null}
 
-      <ChatInput ref={inputRef} onSend={handleSend} disabled={isSending} />
+        <ChatInput ref={inputRef} onSend={handleSend} disabled={isSending} />
+      </div>
     </section>
   )
+}
+
+function messageTime(message: ChatMessage): string {
+  return message.kind === 'pending' ? new Date().toISOString() : message.createdAt
 }
