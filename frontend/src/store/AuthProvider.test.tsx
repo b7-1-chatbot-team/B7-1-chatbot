@@ -7,7 +7,9 @@ import { useAccessToken } from '@/hooks/useAccessToken'
 import { useAuth } from '@/hooks/useAuth'
 import { server } from '@/test/server'
 import { clearTokens, getAccessToken, getRefreshToken, saveTokens } from '@/utils/tokenStorage'
+import { ToastRegion } from '@/components/Toast'
 import { AuthProvider } from './AuthProvider'
+import { ToastProvider } from './ToastProvider'
 
 const BASE = 'https://api.test'
 
@@ -309,5 +311,41 @@ describe('AuthProvider — 계정 전환과 일시 실패 (#34)', () => {
     // checking 으로 떨어지면 가드가 화면을 비워 15분마다 깜빡인다
     expect(result.current.status).toBe('authenticated')
     expect(result.current.user?.nickname).toBe('테스터')
+  })
+})
+
+describe('AuthProvider — 로그인 만료 알림', () => {
+  function renderWithToasts() {
+    render(
+      <ToastProvider>
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>
+        <ToastRegion />
+      </ToastProvider>,
+    )
+  }
+
+  it('재발급 실패로 토큰이 지워지면 "로그인이 만료되었습니다" 를 띄운다', async () => {
+    mockMe(USER)
+    saveTokens('access-1', 'refresh-1')
+    renderWithToasts()
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('authenticated'))
+
+    act(() => clearTokens('expired'))
+
+    expect(await screen.findByText('로그인이 만료되었습니다. 다시 로그인해 주세요.')).toBeInTheDocument()
+  })
+
+  it('직접 로그아웃하거나 다른 이유로 지워지면 만료 알림을 띄우지 않는다', async () => {
+    mockMe(USER)
+    saveTokens('access-1', 'refresh-1')
+    renderWithToasts()
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('authenticated'))
+
+    act(() => clearTokens())
+
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('anonymous'))
+    expect(screen.queryByText(/로그인이 만료되었습니다/)).toBeNull()
   })
 })
