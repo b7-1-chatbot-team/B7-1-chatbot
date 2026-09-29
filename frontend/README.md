@@ -57,6 +57,7 @@ npm run dev                                    # http://localhost:5173
 | `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`) |
 | `VITE_ENABLE_MOCK` | `true` 면 백엔드 없이 MSW 로 API 를 모킹 (개발 모드 전용) |
 | `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 값을 쓰고 **코드·문서에 적지 않는다**. 비우면 관리자 화면 미등록 |
+| `VITE_SITE_URL` | **운영 전용.** 배포된 프론트 주소(`https://` 부터, 끝에 `/` 없이). `sitemap.xml`·robots.txt 의 Sitemap 줄·canonical 에 쓴다. 개발에서는 비운다. 값을 바꾸면 **새로 빌드**해야 반영된다 |
 
 **관리자 화면 주소는 일부러 환경변수로 뺐습니다.** `/admin` 처럼 짐작하기 쉬운 주소는 찔러보기 좋은 표적이 됩니다. 관리자가 아닌 사람이 그 주소로 오면 비로그인·일반 사용자 모두 **없는 주소와 똑같이** 처리해 존재가 드러나지 않게 합니다. 다만 번들을 뒤지면 주소는 보이므로 이것은 무작위 탐색을 줄이는 장치이고, 권한 검사는 서버 `require_admin` 이 최종입니다.
 
@@ -104,12 +105,12 @@ VITE_ENABLE_MOCK=false   # 실제 백엔드에 연결
 
 | 질문에 포함 | 결과 |
 |------|------|
-| `#timeout` | `code: 504` — 오류 말풍선 + [다시 시도] |
-| `#fail` | `code: 502` — 오류 말풍선 + [다시 시도] |
-| `#500` | `code: 500` — [다시 시도] 없음 |
+| `#timeout` | `code: 504` — 오류 말풍선 + 다시 시도 아이콘. **실패 기록으로 저장**(관리자 화면에 보임) |
+| `#fail` | `code: 502` — 오류 말풍선 + 다시 시도 아이콘. 실패 기록으로 저장 |
+| `#500` | `code: 500` — 다시 시도 없음, 저장하지 않음 |
 | `#slow` | 6초 지연 — 5초가 넘으면 "응답이 늦어지고 있습니다" 안내 |
 
-성공한 대화만 내 대화 로그에 쌓이므로, 새로고침하면 성공한 대화만 복원됩니다.
+내 대화 로그·챗 복원에는 **성공한 대화만** 나옵니다. 실패 기록은 관리자 화면(AI 실패 기록·사용자별 대화·요청 흐름)에서 봅니다 — 관리자 API 5개도 모킹됩니다.
 
 모킹은 **개발 모드에서만** 동작합니다. `import.meta.env.DEV` 로 감싸 두어 운영 빌드에서는 코드 자체가 제거됩니다. `public/mockServiceWorker.js` 는 msw 가 생성한 파일이므로 직접 수정하지 않습니다.
 
@@ -126,23 +127,29 @@ src/
 │   ├── ApiError.ts  # code · 안내 문구 · 재시도용 config
 │   ├── types.ts     # API 요청·응답 타입 (docs/03-api.md 와 1:1)
 │   └── axios.d.ts   # _retried 플래그 모듈 확장
-├── utils/           # tokenStorage.ts — 토큰 읽기·쓰기·삭제 + 변경 구독
-├── hooks/           # useAccessToken(토큰 구독) · useAuth(인증 상태 소비)
-├── store/           # authContext.ts · AuthProvider.tsx · types.ts (AuthStatus)
-├── components/      # 공용 컴포넌트 + *.module.css
-├── pages/           # 라우트 단위 화면
-├── styles/          # 전역 CSS
+├── utils/           # tokenStorage(토큰 + 변경 구독) · validators · datetime(시간 표기 규칙) · resultLabel
+├── hooks/           # useAccessToken · useAuth · useField · useSubmit · useAbortableRequest
+│                    # useChatHistory · usePagedList · useDebouncedValue · useToast · usePageMeta
+├── store/           # authContext · AuthProvider · toastContext · ToastProvider · types (AuthStatus)
+├── components/      # Button · Field · Alert · Icon · Spinner(LoadingStatus) · Toast · Timestamp
+│                    # HistoryScroller · ErrorBoundary + *.module.css
+├── pages/           # 라우트 단위 화면 — Login · Signup · NotFound, chat/ · logs/ · admin/ 폴더
+├── mocks/           # 브라우저 MSW 가짜 백엔드 (개발 모드 + VITE_ENABLE_MOCK=true 일 때만)
+├── types/           # 여러 화면이 공유하는 타입 (user.ts)
+├── styles/          # 전역 CSS와 공용 모듈
 │   ├── reset.css    # 브라우저 기본값 정리 (Josh Comeau Custom CSS Reset 기반)
-│   └── global.css   # :root 토큰 + 프로젝트 공통 기본값
+│   ├── global.css   # 디자인 토큰(:root) + 모바일·동작 줄이기 값 + 공통 기본값
+│   ├── motion.module.css  # 공용 등장 애니메이션 (composes 로 사용)
+│   └── text.module.css    # 공용 글자 모양 — 화면 제목
 ├── routes/          # 라우팅
 │   ├── paths.ts     # 경로 상수 PATHS
 │   ├── types.ts     # 경로 관련 타입
 │   ├── guards.tsx   # RequireAuth · RequireAdmin · GuestOnly
-│   └── index.tsx    # 경로 정의만 (경로 - 페이지 연결)
+│   └── index.tsx    # 경로 정의 — 챗·로그·관리자는 lazy 로 나눠 그 화면에 갈 때 받는다
 ├── test/            # server.ts(MSW) · setup.ts — 테스트는 *.test.ts 로 대상 옆에
-├── layouts/         # AppLayout(헤더 + 본문) · Header
+├── layouts/         # AppLayout(본문 바로가기 + 헤더 + 본문[오류 경계·Suspense]) · Header(메뉴·토스트 자리)
 ├── App.tsx          # 앱 틀 — 레이아웃으로 라우트 전체를 감쌈
-└── main.tsx         # 진입점 — MSW 시작, 마운트, Provider(BrowserRouter → AuthProvider)
+└── main.tsx         # 진입점 — MSW 시작, 마운트, Provider(BrowserRouter → ToastProvider → AuthProvider)
 ```
 
 **`api/` 는 `store/` 를 import 하지 않습니다.** 인터셉터가 `AuthContext` 를 직접 부르면 `AuthContext → api/auth → instance → interceptors → AuthContext` 순환 참조가 됩니다. 재발급이 최종 실패하면 `clearTokens()` 만 호출하고, 토큰 변경 구독을 통해 인증 상태가 정리됩니다 (`docs/12-decisions.md` 17절).
@@ -172,6 +179,13 @@ alias 설정은 **`tsconfig.app.json` 의 `paths`(타입 검사)와 `vite.config
 - 처음에는 좁은 범위(해당 폴더 `types.ts`)에 두고, 다른 영역에서도 쓰게 되면 `src/types/` 로 옮긴다
 - 타입 전용 import 는 `import type { ... }` 로 쓴다 (`verbatimModuleSyntax` 적용)
 
-스타일은 **CSS Modules**(`*.module.css`)를 사용하고, 색·폰트 등 공통 값은 `styles/global.css` 의 `:root` CSS 변수로 관리합니다.
-전역 CSS 는 `styles/` 의 두 파일뿐이며, `main.tsx` 에서 `reset.css` → `global.css` 순서로 로드합니다.
-디자인 토큰은 기능 구현을 끝낸 뒤 스타일링 단계에서 채웁니다 (`docs/05-ui-ux.md` 1절).
+스타일은 **CSS Modules**(`*.module.css`)를 사용하고, 색·글자 크기·간격·움직임 등은 `styles/global.css` 의 **디자인 토큰**(CSS 변수)만 씁니다.
+전역 CSS 는 `reset.css` → `global.css` 두 파일이며 `main.tsx` 에서 이 순서로 로드합니다. 여러 모듈이 같이 쓰는 모양은 `styles/*.module.css` 를 `composes` 로 가져다 씁니다.
+
+- 기준 화면·토큰 표: `docs/design/prototype.html` ([디자인 토큰]·[상태 모음])
+- 규칙: `docs/05-ui-ux.md` 1절(토큰·지원 브라우저·토스트·로딩·시간 표기), 9절(SEO·접근성)
+- **지원 브라우저** Chrome·Edge 90, Safari 14.1, Firefox 90 — `oklch()`·`color-mix()` 를 쓰지 않고 색을 hex·rgba 로 둔다
+- 사용자 화면에는 결과 코드(504 등)를 보이지 않는다. 새로고침·다시 시도·닫기는 아이콘 버튼(`Button` 의 `label`)
+- 커밋 전에 쓰지 않는 토큰·모듈 클래스, 같은 선언 반복이 없는지 확인한다 (TESTING.md 주의점 ⑦)
+
+**성능** — 폰트 CSS 는 `index.html` 에서 `preload` 로 받아 첫 화면을 막지 않고, 챗·로그·관리자 화면은 `React.lazy` 로 나눈다 (#57).
