@@ -4,6 +4,7 @@ import { HistoryScroller } from '@/components/HistoryScroller'
 import { useChatHistory } from '@/hooks/useChatHistory'
 import { ChatInput } from './ChatInput'
 import type { ChatInputHandle } from './ChatInput'
+import styles from './ChatPage.module.css'
 import { MessageBubble } from './MessageBubble'
 import type { ChatMessage } from './types'
 import { useChatMessages } from './useChatMessages'
@@ -93,6 +94,7 @@ export default function ChatPage() {
 
       <HistoryScroller
         label="대화 스크롤 영역"
+        className={styles.scroller}
         firstKey={all[0]?.id}
         // 응답 대기 자리는 같은 id 로 답·오류로 바뀐다. 종류까지 넣어야 답이 들어와
         // 말풍선이 길어질 때도 맨 아래로 따라간다

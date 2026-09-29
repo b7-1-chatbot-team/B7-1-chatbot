@@ -4,6 +4,7 @@ import { Button } from '@/components/Button'
 import { HistoryScroller } from '@/components/HistoryScroller'
 import { useChatHistory } from '@/hooks/useChatHistory'
 import { LogCard } from './LogCard'
+import styles from './LogsPage.module.css'
 
 /**
  * 내 대화 로그 화면 (docs/05-ui-ux.md 화면 4).
@@ -56,6 +57,7 @@ function LogsView({ onRefresh }: { onRefresh: () => void }) {
 
       <HistoryScroller
         label="대화 기록 스크롤 영역"
+        className={styles.scroller}
         firstKey={history.items[0]?.chat_id}
         lastKey={history.items.at(-1)?.chat_id}
         hasOlder={history.hasOlder}
