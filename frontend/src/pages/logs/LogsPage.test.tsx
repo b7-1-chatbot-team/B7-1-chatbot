@@ -80,7 +80,11 @@ describe('내 대화 로그 — 첫 화면', () => {
 
     const card = (await screen.findAllByRole('article'))[0]
     expect(card).toHaveTextContent('#7')
-    expect(card).toHaveTextContent('2026-09-28')
+    // 보이는 글자는 오늘 기준("오늘 10:05"·"9월 28일 10:05")이라 날짜마다 달라진다.
+    // 기계가 읽는 값과 마우스를 올리면 보이는 전체 시각으로 확인한다
+    const time = card.querySelector('time')
+    expect(time).toHaveAttribute('dateTime', '2026-09-28T10:05:00+09:00')
+    expect(time?.getAttribute('title')).toMatch(/^2026-09-28 \d{2}:05:00$/)
     expect(card).toHaveTextContent('질문 7')
     expect(card).toHaveTextContent('답변 7')
   })
