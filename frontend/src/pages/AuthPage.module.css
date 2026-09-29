@@ -1,8 +1,8 @@
 /* 로그인·회원가입 공용 (docs/05-ui-ux.md 화면 1·2) */
 .page {
+  composes: enter from '../styles/motion.module.css';
   max-width: var(--auth-max);
   margin: var(--space-6) auto 0;
-  animation: enter var(--duration-enter) var(--ease-enter);
 }
 
 .title {
@@ -47,13 +47,3 @@
   text-align: center;
 }
 
-@keyframes enter {
-  from {
-    opacity: 0;
-    transform: translateY(var(--rise-distance));
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}

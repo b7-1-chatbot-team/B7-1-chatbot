@@ -1,4 +1,5 @@
 .page {
+  composes: enter from '../styles/motion.module.css';
   margin-top: var(--space-22);
   text-align: center;
 }
