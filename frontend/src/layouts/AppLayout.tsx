@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import styles from './AppLayout.module.css'
 import { Header } from './Header'
 
 /**
@@ -12,7 +13,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <Header />
-      <main>{children}</main>
+      <main className={styles.main}>{children}</main>
     </>
   )
 }
