@@ -2,6 +2,7 @@ import { useId } from 'react'
 import type { InputHTMLAttributes, Ref } from 'react'
 
 import type { Field as FieldState } from '@/hooks/useField'
+import styles from './Field.module.css'
 
 interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur'> {
   label: string
@@ -29,20 +30,27 @@ export function Field({ label, field, hint, ...inputProps }: FieldProps) {
   const describedBy = [field.error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ')
 
   return (
-    <div>
-      <label htmlFor={id}>{label}</label>
+    <div className={styles.field}>
+      <label htmlFor={id} className={styles.label}>
+        {label}
+      </label>
       <input
         {...inputProps}
         id={id}
+        className={styles.input}
         value={field.value}
         onChange={field.onChange}
         onBlur={field.onBlur}
         aria-invalid={field.error ? true : undefined}
         aria-describedby={describedBy || undefined}
       />
-      {hint ? <p id={hintId}>{hint}</p> : null}
+      {hint ? (
+        <p id={hintId} className={styles.hint}>
+          {hint}
+        </p>
+      ) : null}
       {field.error ? (
-        <p id={errorId} role="alert">
+        <p id={errorId} role="alert" className={styles.error}>
           {field.error}
         </p>
       ) : null}
