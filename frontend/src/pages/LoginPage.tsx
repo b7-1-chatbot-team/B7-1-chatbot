@@ -7,6 +7,7 @@ import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
 import { useAuth } from '@/hooks/useAuth'
 import { useField } from '@/hooks/useField'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import { useSubmit } from '@/hooks/useSubmit'
 import { PATHS } from '@/routes/paths'
 import styles from './AuthPage.module.css'
@@ -30,6 +31,7 @@ interface LoginLocationState {
  * 인터셉터도 인증 API 의 401 은 재발급 대상에서 제외한다.
  */
 export default function LoginPage() {
+  usePageMeta({ title: '로그인' })
   const navigate = useNavigate()
   const location = useLocation()
   const { login } = useAuth()

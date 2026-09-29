@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { Button } from '@/components/Button'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import styles from './Admin.module.css'
 import { FailureList } from './FailureList'
 import { RequestFlow } from './RequestFlow'
@@ -26,6 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
  * [새로고침] 은 전체를 key 로 새로 그린다 — 통계와 목록을 함께 다시 불러온다.
  */
 export default function AdminPage() {
+  usePageMeta({ title: '관리자', noindex: true })
   const [version, setVersion] = useState(0)
   const [params, setParams] = useSearchParams()
 

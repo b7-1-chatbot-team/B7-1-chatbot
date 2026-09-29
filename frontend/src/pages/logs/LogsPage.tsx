@@ -5,6 +5,7 @@ import { Button } from '@/components/Button'
 import { HistoryScroller } from '@/components/HistoryScroller'
 import { LoadingStatus } from '@/components/Spinner'
 import { useChatHistory } from '@/hooks/useChatHistory'
+import { usePageMeta } from '@/hooks/usePageMeta'
 import { useToast } from '@/hooks/useToast'
 import { LogCard } from './LogCard'
 import styles from './LogsPage.module.css'
@@ -21,6 +22,7 @@ import styles from './LogsPage.module.css'
  * 초기화하지 않아도 되고, 초기화를 빠뜨리는 실수가 생기지 않는다.
  */
 export default function LogsPage() {
+  usePageMeta({ title: '내 대화 로그', noindex: true })
   const [version, setVersion] = useState(0)
   return <LogsView key={version} onRefresh={() => setVersion((v) => v + 1)} />
 }
