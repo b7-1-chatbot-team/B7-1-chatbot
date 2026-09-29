@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import styles from './AppLayout.module.css'
 import { Header } from './Header'
 
@@ -10,10 +12,14 @@ import { Header } from './Header'
  * 다시 마운트되지 않으므로 헤더 상태가 유지된다.
  */
 export function AppLayout({ children }: { children: ReactNode }) {
+  // 다른 화면으로 옮기면 오류 안내를 풀고 새 화면을 그린다
+  const { pathname } = useLocation()
   return (
     <>
       <Header />
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}>
+        <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
+      </main>
     </>
   )
 }

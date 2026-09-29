@@ -1,0 +1,17 @@
+.page {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-22);
+  text-align: center;
+}
+
+.title {
+  font-size: var(--fs-h1);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-title);
+}
+
+.description {
+  color: var(--text-secondary);
+}
