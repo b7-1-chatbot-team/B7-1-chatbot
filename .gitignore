@@ -19,3 +19,4 @@ dist/
 
 # OS — macOS 가 폴더마다 만드는 메타데이터 파일
 .DS_Store
+study/
