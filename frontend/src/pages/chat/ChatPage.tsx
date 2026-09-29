@@ -50,14 +50,20 @@ export default function ChatPage() {
 
   // 이전 기록을 더 불러오지 못해도 보던 대화는 그대로다. 흐름을 막지 않게 토스트로 알린다
   const showToast = useToast()
-  const { olderError, loadOlder } = history
+  // loadOlder 는 렌더마다 새로 만들어진다. 의존성에 넣으면 렌더마다 같은 토스트가 다시 뜨므로
+  // 최신 값만 ref 로 보고, 오류가 새로 생겼을 때만 한 번 띄운다
+  const { olderError } = history
+  const loadOlderRef = useRef(history.loadOlder)
+  useEffect(() => {
+    loadOlderRef.current = history.loadOlder
+  })
   useEffect(() => {
     if (!olderError) return
     showToast(`이전 기록을 불러오지 못했습니다. ${olderError.message}`, {
       tone: 'error',
-      action: { label: '다시 불러오기', onClick: () => void loadOlder() },
+      action: { label: '다시 불러오기', onClick: () => void loadOlderRef.current() },
     })
-  }, [olderError, loadOlder, showToast])
+  }, [olderError, showToast])
 
   // 응답이 늦으면 보조 안내를 띄운다
   useEffect(() => {
