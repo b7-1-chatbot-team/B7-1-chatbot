@@ -58,7 +58,8 @@ backend/
 │   │
 │   ├── services/                ── 비즈니스 로직
 │   │   ├── auth_service.py      🟦 가입 · 로그인 · 재발급(회전) · 로그아웃 · 관리자 시드 · 만료 토큰 정리
-│   │   ├── ai_service.py        🟩 컨텍스트 구성 · Codyssey AI 호출 · 타임아웃 504 / 실패 502
+│   │   ├── chat_service.py      🟩 챗 흐름 — 컨텍스트 구성 · AI 호출 · 성공/실패 저장 · 504 / 502
+│   │   ├── ai_service.py        🟩 Codyssey AI 호출 · 전체 30초 상한 · 실패 분류(AI_TIMEOUT / AI_CALL_FAILED)
 │   │   └── admin_service.py     🟩 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름
 │   │
 │   └── routers/                 ── HTTP 엔드포인트
@@ -74,13 +75,12 @@ backend/
 │   ├── conftest.py              🟦 임시 DB · TestClient · 헬퍼
 │   ├── test_auth.py             🟦 인증 19개
 │   ├── test_me_chats.py         🟦 내 로그 4개
-│   └── test_chat.py             🟩 챗 파이프라인 (AI 클라이언트 목)
+│   └── test_chat.py             🟩 챗 API 21개 (가짜 AI 서버로 대체)
 │
 ├── requirements.txt             🟨 런타임 의존성
 ├── requirements-dev.txt         🟦 pytest
 ├── pytest.ini                   🟦 테스트 설정
-├── .env                         (커밋 금지 — 각자 작성)
-└── main.py                      🟩 기존 AI PoC — chat.py 이관 후 삭제 예정
+└── .env                         (커밋 금지 — 각자 작성)
 ```
 
 ---
@@ -102,12 +102,12 @@ backend/
 
 | 영역 | 파일 | 상태 |
 |------|------|:----:|
-| AI 클라이언트 | `services/ai_service.py` — `httpx.AsyncClient`, `COPA_API_KEY`, 호출 전체 30초 상한 | ⏳ |
-| 챗 API | `routers/chat.py`, `schemas/chat.py` — `POST /api/chat`, 입력 검증 422 | ⏳ |
-| 컨텍스트 | 최근 성공 Q/A 5개 (`AI_CONTEXT_TURNS`) | ⏳ |
-| 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | ⏳ |
+| AI 클라이언트 | `services/ai_service.py` — `httpx.AsyncClient`, `COPA_API_KEY`, 호출 전체 30초 상한 | 🔄 #61 |
+| 챗 API | `routers/chat.py`, `schemas/chat.py`, `services/chat_service.py` — `POST /api/chat`, 입력 검증 422 | 🔄 #61 |
+| 컨텍스트 | 최근 성공 Q/A 5개 (`AI_CONTEXT_TURNS`) | 🔄 #61 |
+| 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | 🔄 #61 |
 | 로깅 | `core/logging.py` — `request_id`, 이벤트 4종을 로그 + `server_logs` 에 기록 | ⏳ |
-| PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | ⏳ |
+| PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | 🔄 #61 |
 | 관리자 API | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | ⏳ |
 | 관리자 조회 CRUD | `crud.user.list_with_stats`·`count`, `crud.chat_log.list_for_user`·`list_failures`·`stats`, `crud.server_log.list_by_request` | ⏳ |
 
@@ -168,7 +168,7 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
 | 파일 | 누가 무엇을 추가하나 | 충돌 방지 |
 |------|----------------------|-----------|
 | `app/main.py` | 🟦 CORS·lifespan·`auth`/`me` 라우터 · 🟩 `chat.router`·`admin.router` 등록 · 🟩 request_id 미들웨어 | 라우터 등록 줄만 추가, 수정 전 채널 공지 |
-| `requirements.txt` | 🟦 기본 의존성 · 🟩 PoC 삭제 시 `requests` 제거 | 버전 변경 시 공지 |
+| `requirements.txt` | 🟦 기본 의존성 (PoC 삭제와 함께 `requests` 제거됨) | 버전 변경 시 공지 |
 | `.env` 키 | 🟦 JWT·DB·CORS·ADMIN_* · 🟩 COPA_API_KEY·AI_* | 키 목록은 docs/06-deployment 이 기준 |
 
 ---
@@ -180,9 +180,9 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
                    │
                    ├─ /api/auth/*   ─▶ routers/auth.py ─▶ services/auth_service.py ─▶ crud ─▶ SQLite      🟦
                    ├─ /api/me/chats ─▶ routers/me.py   ─(get_current_user)────────▶ crud ─▶ SQLite      🟦
-                   ├─ /api/chat     ─▶ routers/chat.py ─(get_current_user)─▶ services/ai_service.py       🟩
+                   ├─ /api/chat     ─▶ routers/chat.py ─(get_current_user)─▶ services/chat_service.py     🟩
                    │                                         ├─▶ crud.chat_log (컨텍스트·저장) ─▶ SQLite
-                   │                                         └─▶ Codyssey AI API (httpx, 30초)
+                   │                                         └─▶ services/ai_service.py ─▶ Codyssey AI API (httpx, 30초)
                    └─ /api/admin/*  ─▶ routers/admin.py ─(require_admin)─▶ services/admin_service.py      🟩
 ```
 
