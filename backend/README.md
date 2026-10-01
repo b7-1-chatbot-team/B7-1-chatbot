@@ -4,6 +4,7 @@
 > 기준 문서: [docs/02-architecture.md](../docs/02-architecture.md) · [docs/09-team.md](../docs/09-team.md) · [docs/11-open-issues.md](../docs/11-open-issues.md)
 > 2026-09-23 박성현 팀 이탈 → **백엔드 전체를 성원모가 담당** (AI 파이프라인·관리자 API 인수, docs/11-open-issues C10)
 > 아래 🟦·🟩 는 담당자가 아니라 **작업 영역** 구분이다 (둘 다 성원모)
+> 진행 상태 기준: **2026-10-01 develop** (`pytest -q` 44건 통과 — 인증 19 · 내 로그 4 · 챗 21)
 
 ## 범례
 
@@ -17,7 +18,8 @@
 |:----:|------|
 | ✅ | develop 머지 완료 |
 | 🔄 | 구현 완료, PR 대기 (`feature/*` 브랜치) |
-| ⏳ | 예정 |
+| 🟡 | 일부 구현 / 진행 중 |
+| ⏳ | 예정 (파일 미작성) |
 
 ---
 
@@ -36,7 +38,7 @@ backend/
 │   │   ├── timeutil.py          🟦 UTC 저장 / +09:00 응답 변환
 │   │   ├── security.py          🟦 bcrypt · JWT 발급/검증 · refresh token 해시
 │   │   ├── dependencies.py      🟦 get_current_user(401) · require_admin(403)
-│   │   └── logging.py           🟩 구조화 로그 · request_id · server_logs 기록
+│   │   └── logging.py           🟩 구조화 로그 · request_id · server_logs 기록   ⏳ 미작성
 │   │
 │   ├── models/                  ── 테이블 정의 (SQLAlchemy)
 │   │   ├── user.py              🟦 users
@@ -54,19 +56,19 @@ backend/
 │   ├── schemas/                 ── 요청·응답 검증 (Pydantic)
 │   │   ├── auth.py              🟦 SignupRequest · LoginRequest · RefreshTokenRequest
 │   │   ├── chat.py              🟩 ChatRequest(1~1000자) · 챗 응답
-│   │   └── admin.py             🟩 관리자 응답
+│   │   └── admin.py             🟩 관리자 응답   ⏳ 미작성
 │   │
 │   ├── services/                ── 비즈니스 로직
 │   │   ├── auth_service.py      🟦 가입 · 로그인 · 재발급(회전) · 로그아웃 · 관리자 시드 · 만료 토큰 정리
 │   │   ├── chat_service.py      🟩 챗 흐름 — 컨텍스트 구성 · AI 호출 · 성공/실패 저장 · 504 / 502
 │   │   ├── ai_service.py        🟩 Codyssey AI 호출 · 전체 30초 상한 · 실패 분류(AI_TIMEOUT / AI_CALL_FAILED)
-│   │   └── admin_service.py     🟩 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름
+│   │   └── admin_service.py     🟩 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름   ⏳ 미작성
 │   │
 │   └── routers/                 ── HTTP 엔드포인트
 │       ├── auth.py              🟦 /api/auth/signup · login · refresh · logout · me
 │       ├── me.py                🟦 /api/me/chats
 │       ├── chat.py              🟩 /api/chat
-│       └── admin.py             🟩 /api/admin/*
+│       └── admin.py             🟩 /api/admin/*   ⏳ 미작성
 │
 ├── scripts/
 │   └── check_logs.sql           🟦 평가자용 DB 확인 SQL
@@ -92,22 +94,22 @@ backend/
 | 영역 | 파일 | 이슈 / 브랜치 | 상태 |
 |------|------|---------------|:----:|
 | 기본 구성 | `main.py`(CORS·예외 핸들러), `config.py`, `core/responses.py`, `requirements.txt`, 루트 `.gitignore` | #10 · PR #15 | ✅ |
-| DB | `database.py`, `core/timeutil.py`, `models/*`, `crud/*`, `scripts/check_logs.sql` | #11 · PR #17 | 🔄 |
-| 인증 | `core/security.py`, `core/dependencies.py`, `schemas/auth.py`, `services/auth_service.py`, `routers/auth.py`, `main.py`(lifespan), `tests/test_auth.py` | #16 · `feature/be-auth-jwt` | 🔄 |
-| 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #20 · `feature/be-logs` | 🔄 |
-| 배포 | Railway 서비스 설정, `CORS_ORIGINS`, Volume `/data` | `chore/deploy` | ⏳ |
+| DB | `database.py`, `core/timeutil.py`, `models/*`, `crud/*`, `scripts/check_logs.sql` | #11 · PR #17 | ✅ |
+| 인증 | `core/security.py`, `core/dependencies.py`, `schemas/auth.py`, `services/auth_service.py`, `routers/auth.py`, `main.py`(lifespan), `tests/test_auth.py` | #16 · PR #25 | ✅ |
+| 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #58 · PR #59 | ✅ |
+| 배포 | Railway 서비스 설정, `CORS_ORIGINS`, Volume `/data` — 백엔드 develop 배포 기동 확인(2026-10-01, Start Command 설정). 공개 도메인 생성·CORS 검증(D01~D04) 남음 | #63 | 🟡 |
 | 문서 | 루트 README 총괄 | `docs/*` | ⏳ |
 
 ### 🟩 AI 파이프라인 · 관리자 API (성원모)
 
 | 영역 | 파일 | 상태 |
 |------|------|:----:|
-| AI 클라이언트 | `services/ai_service.py` — `httpx.AsyncClient`, `COPA_API_KEY`, 호출 전체 30초 상한 | 🔄 #61 |
-| 챗 API | `routers/chat.py`, `schemas/chat.py`, `services/chat_service.py` — `POST /api/chat`, 입력 검증 422 | 🔄 #61 |
-| 컨텍스트 | 최근 성공 Q/A 5개 (`AI_CONTEXT_TURNS`) | 🔄 #61 |
-| 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | 🔄 #61 |
-| 로깅 | `core/logging.py` — `request_id`, 이벤트 4종을 로그 + `server_logs` 에 기록 | ⏳ |
-| PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | 🔄 #61 |
+| AI 클라이언트 | `services/ai_service.py` — `httpx.AsyncClient`, `COPA_API_KEY`, 호출 전체 30초 상한 | ✅ #61 · PR #62 |
+| 챗 API | `routers/chat.py`, `schemas/chat.py`, `services/chat_service.py` — `POST /api/chat`, 입력 검증 422 | ✅ #61 · PR #62 |
+| 컨텍스트 | 최근 성공 Q/A 5개 (`AI_CONTEXT_TURNS`) | ✅ #61 · PR #62 |
+| 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | ✅ #61 · PR #62 |
+| 로깅 | `core/logging.py` — `request_id`, 이벤트 4종을 로그 + `server_logs` 에 기록. 현재는 `chat_service.py` 의 `request_id` 발급·`chat_logs` 저장과 `ai_call_failed` 콘솔 로그만 있음 (`core/logging.py` 미작성, `server_logs` 미기록 — 08-checklist B13) | 🟡 |
+| PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | ✅ #61 · PR #62 |
 | 관리자 API | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | ⏳ |
 | 관리자 조회 CRUD | `crud.user.list_with_stats`·`count`, `crud.chat_log.list_for_user`·`list_failures`·`stats`, `crud.server_log.list_by_request` | ⏳ |
 
