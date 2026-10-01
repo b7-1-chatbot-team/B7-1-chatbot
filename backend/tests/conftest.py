@@ -14,6 +14,7 @@ _TMP = Path(tempfile.mkdtemp(prefix="chatlog-test-"))
 os.environ.update(
     {
         "DATABASE_URL": f"sqlite:///{_TMP / 'test.db'}",
+        "LOG_FILE": str(_TMP / "app.log"),  # 테스트 로그가 실제 logs/app.log 에 섞이지 않게
         "JWT_SECRET_KEY": "test-secret-key-for-pytest-only-0123456789abcdef",
         "JWT_ALGORITHM": "HS256",
         "JWT_EXPIRE_MINUTES": "15",
