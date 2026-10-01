@@ -191,7 +191,7 @@ Railway Project
 |------|-----|
 | Root Directory | `/backend` |
 | Build | Railpack 자동 감지 (`requirements.txt` 로 설치) |
-| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (현재 코드처럼 `backend/main.py` 단일 파일이면 `main:app`) |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (**비워 두면 안 됨** — Railpack 자동 감지는 Root Directory 바로 아래의 `main.py`·`app.py` 만 찾는데, 진입점은 `app/main.py` 라 직접 지정해야 한다) |
 | Volume | 마운트 경로 `/data` |
 | 도메인 | Settings → Networking → **Generate Domain** (프론트가 브라우저에서 직접 호출하므로 공개 도메인 필요) |
 | 배포 브랜치 | `main` (평가 배포 기준. 개발 확인용으로 develop 을 연결할지는 팀 결정) |
@@ -261,6 +261,7 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 | 프론트가 `localhost:8000` 을 호출함 | `VITE_API_BASE_URL` 미설정 상태로 빌드됨 → 프론트 Variables 설정 후 **재빌드** |
 | 첫 요청이 느리거나 502 | Serverless 슬리핑에서 깨어나는 중. 평가 전 슬리핑 끄기 |
 | 재배포 후 계정이 사라짐 | SQLite 가 Volume 밖에 있음 → Volume `/data` 연결 + `DATABASE_URL=sqlite:////data/app.db` |
+| 백엔드 빌드가 `railpack prepare exited with an error` 로 실패 | Start Command 미설정 — Railpack 이 실행할 파일(`backend/main.py`·`backend/app.py`)을 찾지 못함. Settings → Deploy → Custom Start Command 에 `uvicorn app.main:app --host 0.0.0.0 --port $PORT` 입력 후 **변경 적용(Deploy)** 으로 새로 배포 (실패한 배포의 `Redeploy` 는 당시 설정 그대로라 다시 실패) |
 | 서비스가 뜨지만 접속 안 됨 | Start Command 에 `--host 0.0.0.0 --port $PORT` 누락 |
 | 로그인은 되는데 이후 요청이 `code: 401` | axios 인터셉터가 `Authorization` 헤더를 붙이지 않음 / 토큰 저장 키 불일치 |
 | 하루 넘게 쓰지 않은 뒤 로그인 화면으로 이동 | 정상 (refresh token 1일 만료) |

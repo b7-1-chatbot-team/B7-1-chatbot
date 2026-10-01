@@ -141,7 +141,7 @@ flowchart TD
 
 프론트엔드 타입은 구현 파일과 섞지 않고 타입 파일로 분리한다. **여러 페이지·컴포넌트가 공유하는 타입은 `src/types/`** 에, **한 영역에서만 쓰는 타입은 그 폴더의 `types.ts`**(`routes/types.ts`, `api/types.ts`) 에 둔다. 한 컴포넌트 전용 props 는 그 컴포넌트 파일 안에 둔다.
 
-현재 저장소의 백엔드는 `backend/main.py` 단일 파일 골격이다 ([11-open-issues.md](11-open-issues.md) A22).
+백엔드는 위 `backend/app/` 구조로 구현돼 있다. 초기 골격 `backend/main.py` 는 PR #62 에서 삭제했다 ([11-open-issues.md](11-open-issues.md) A22). 관리자 API(`routers/admin.py` 등)와 `core/logging.py` 는 아직 없다.
 
 ### 컴포넌트 역할
 
@@ -393,9 +393,9 @@ sequenceDiagram
 
 | 항목 | 내용 |
 |------|------|
-| 엔드포인트 | `POST https://copa.codyssey.kr/v1/chat/completions` (OpenAI 호환 형식, 현재 `backend/main.py`) |
+| 엔드포인트 | `POST https://copa.codyssey.kr/v1/chat/completions` (OpenAI 호환 형식, `services/ai_service.py` 의 `AI_API_URL`) |
 | 호출 방식 | `httpx.AsyncClient` 로 REST 직접 호출 (`async def` 라우트에서 `await`, 클라이언트는 앱 시작 시 1개 생성해 재사용) |
-| 모델 | `gpt-5-mini` (현재 `backend/main.py` 값) |
+| 모델 | `gpt-5-mini` (`services/ai_service.py` 의 `AI_MODEL`) |
 | 키 전달 | `Authorization: Bearer <COPA_API_KEY>`. **서버에서만 사용**, 응답·프론트 번들에 절대 포함하지 않음 |
 | 컨텍스트 형식 | `messages: [{role:"user"|"assistant", content}]` — 이전 Q/A 를 user/assistant 쌍으로 나열한 뒤 현재 질문 |
 | 실패 유형 | 타임아웃 / 401·403(키 오류) / 429(호출 제한) / 5xx / 연결 실패 / 빈 응답 |

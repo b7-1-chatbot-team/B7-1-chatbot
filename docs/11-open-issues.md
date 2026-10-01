@@ -1,6 +1,6 @@
 # 11. 미확정 · 문서 불일치 목록 (팀 논의용)
 
-> 최초 작성 2026-09-14, 갱신 2026-09-15. mission.md 와 docs/01~10, features.md, handoff.md, 현재 코드(develop)를 대조한 결과다.
+> 최초 작성 2026-09-14, 갱신 2026-09-15, 2026-10-01(백엔드 구현 반영 — D7·E9·E10·E11·E12·E17·E18 해결). mission.md 와 docs/01~10, features.md, handoff.md, 현재 코드(develop)를 대조한 결과다.
 > 논의로 결정되면 해당 행의 **결정** 칸을 채우고, 관련 문서를 수정한 뒤 [0. 확정되어 문서에 반영한 것](#0-확정되어-문서에-반영한-것)로 옮긴다.
 > 결정 이유는 [12-decisions.md](12-decisions.md). mission.md 요구사항 자체를 누락·위반한 항목은 발견되지 않았다.
 
@@ -40,8 +40,8 @@
 | A17 배포 | **Railway 서비스 2개 (프론트·백엔드 별도 도메인)**, 백엔드 Volume `/data` | 02, 03, 04, 05, 06, 07, 08, 09 |
 | A18 CORS | **필수** (`CORS_ORIGINS` = 개발 서버 + Railway 프론트 도메인) | [06-deployment.md 5. CORS 설정](06-deployment.md#5-cors-설정)·[7. 외부 접속 · CORS 검증 (평가 전 필수)](06-deployment.md#7-외부-접속--cors-검증-평가-전-필수), 07 V22·D03·D04 |
 | A19 느린 첫 응답 안내 | Railway 슬리핑 사용 시 대응, 평가 전 슬리핑 끄기 | 05 화면 3, [06-deployment.md 6-4. 슬리핑(Serverless)](06-deployment.md#6-4-슬리핑serverless), [08-checklist.md 4. 평가 당일 체크리스트](08-checklist.md#4-평가-당일-체크리스트) |
-| **A20 HTTP 클라이언트** | **httpx `AsyncClient`** (현재 코드의 `requests` 는 교체) | [02-architecture.md 1. 기술 스택](02-architecture.md#1-기술-스택)·[6. Codyssey AI API 연동 메모](02-architecture.md#6-codyssey-ai-api-연동-메모), features.md B8 |
-| A22 백엔드 구조 | `backend/app/{routers,services,crud,models,schemas,core}` (문서 기준, 현재 `main.py` 단일 파일은 구현 시 이동) | [02-architecture.md 3. 디렉터리 구조](02-architecture.md#3-디렉터리-구조) |
+| **A20 HTTP 클라이언트** | **httpx `AsyncClient`** (`requests` 는 교체 완료·의존성 제거 — PR #62) | [02-architecture.md 1. 기술 스택](02-architecture.md#1-기술-스택)·[6. Codyssey AI API 연동 메모](02-architecture.md#6-codyssey-ai-api-연동-메모), features.md B8 |
+| A22 백엔드 구조 | `backend/app/{routers,services,crud,models,schemas,core}` — **구현 완료**. 초기 골격 `backend/main.py` 는 PR #62 에서 삭제 | [02-architecture.md 3. 디렉터리 구조](02-architecture.md#3-디렉터리-구조) |
 | A23 프론트 스타일 | CSS Modules | 위 참고 |
 | A24 Railway 배포 브랜치 | 백엔드·프론트 모두 `main` (문서 기준) | [06-deployment.md 6-1. 백엔드 서비스](06-deployment.md#6-1-백엔드-서비스) |
 | **AI 실패 재시도** | **서버 자동 재시도 없음.** 실패 즉시 안내 → 오류 말풍선 **[다시 시도] 버튼** → 같은 질문으로 `POST /api/chat` 새 요청 | 01 S3, [02-architecture.md 5-4. 챗 파이프라인 `POST /api/chat` (핵심)](02-architecture.md#5-4-챗-파이프라인-post-apichat-핵심), [03-api.md 2-1. 질문 전송](03-api.md#2-1-질문-전송), 05 화면 3·[5. 결과 코드별 사용자 메시지](05-ui-ux.md#5-결과-코드별-사용자-메시지), 07 B12·B12b, features.md B9·F7 |
@@ -97,7 +97,7 @@
 | D4 | README 의 문서 링크가 루트 기준 → `backend/` 에서는 깨짐 | `backend/README.md` | D3 결정 후 |
 | D5 | `.github/pull_request_template.md` | [09-team.md 2-3. PR](09-team.md#2-3-pr), 10 머리말 | **해결** — PR 템플릿 추가(v1.5), 이슈 템플릿 `.github/ISSUE_TEMPLATE/issue_template.md` 도 추가(v1.6) |
 | D6 | PoC 코드 (`backend/app/`, `deploy/`, `e2e/`, `backend/scripts/e2e_flow.sh`) | [07-verification.md 4. 참고 — 참조 구현(PoC) 실측 기록](07-verification.md#4-참고--참조-구현poc-실측-기록), [08-checklist.md 3. 참조 구현(PoC) ↔ 스펙 차이](08-checklist.md#3-참조-구현poc--스펙-차이), [09-team.md 7. 참고: 이 저장소의 PoC 코드](09-team.md#7-참고-이-저장소의-poc-코드) | 이 저장소에 없음 |
-| D7 | `backend/scripts/check_logs.sql` | 04 DB 확인, [08-checklist.md 1. mission 요구사항 대조](08-checklist.md#1-mission-요구사항-대조) | 구현 예정 |
+| D7 | `backend/scripts/check_logs.sql` | 04 DB 확인, [08-checklist.md 1. mission 요구사항 대조](08-checklist.md#1-mission-요구사항-대조) | **해결** — 추가됨 (#11·PR #17) |
 | D8 | `plan.md`, `theory.md`, 이전 경로 `chatbot/` | (이전 `handoff.md`) | **해결** — `handoff.md` 삭제됨(v1.5). E15 도 함께 해소 |
 | D9 | `backend/.env.example` | [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수)·[9. 민감정보 관리 체크](06-deployment.md#9-민감정보-관리-체크), features.md C1 | 없음 (`frontend/.env.example` 은 있음) |
 
@@ -110,14 +110,14 @@
 | E2 | 테스트 수치 불일치: 30 / 24 / 39 vs 42 / 28 / 48 | [07-verification.md 4-1. 실행 결과 요약](07-verification.md#4-1-실행-결과-요약) / `backend/README.md` · `handoff.md` |
 | E7 | README 저장소 링크 비어 있음 | `backend/README.md` |
 | E8 | README 본문이 세션·Claude·username·Nginx 기준 | `backend/README.md` (D3 과 함께 처리) |
-| E9 | `python-dotenv` 를 import 하지만 `requirements.txt` 에 없음 → **2026-09-14 Railway 백엔드가 `ModuleNotFoundError: No module named 'dotenv'` 로 기동 실패 (확인됨)** | `backend/main.py:3` / `backend/requirements.txt` |
-| E10 | `requirements.txt` 구성이 문서와 다름 (sqlalchemy·bcrypt·pyjwt·httpx·pydantic-settings 없음, requests 있음) | `backend/requirements.txt` / [06-deployment.md 2. 설치](06-deployment.md#2-설치) |
-| E11 | 현재 챗 코드에 인증·검증·타임아웃 예외 처리·로그·DB 저장·봉투 응답 없음, 경로 `/chat` (스펙 `/api/chat`), `requests` 동기 호출(A20 과 다름) — 구현 전 골격 | `backend/main.py` |
-| E12 | `.gitignore` 에 `node_modules`, `dist`, `*.db`, `.env.*` 없음 (frontend 는 자체 .gitignore 있음) | `.gitignore` / [06-deployment.md 9. 민감정보 관리 체크](06-deployment.md#9-민감정보-관리-체크) |
+| E9 | **해결** — `requirements.txt` 에 `python-dotenv` 포함, 2026-10-01 Railway 백엔드 기동 확인. (기록: `python-dotenv` 를 import 하지만 `requirements.txt` 에 없어 2026-09-14 Railway 백엔드가 `ModuleNotFoundError: No module named 'dotenv'` 로 기동 실패) | `backend/main.py:3` / `backend/requirements.txt` |
+| E10 | **해결** — `requirements.txt` 가 문서 구성(fastapi·uvicorn·sqlalchemy·pydantic·pydantic-settings·python-dotenv·bcrypt·pyjwt·httpx)과 일치, `requests` 제거 (#10·PR #15, PR #62) | `backend/requirements.txt` / [06-deployment.md 2. 설치](06-deployment.md#2-설치) |
+| E11 | **해결** — `POST /api/chat` 구현(인증·입력 검증·호출 전체 30초 상한·504/502·성공/실패 DB 저장·봉투 응답, httpx 비동기), 골격 `backend/main.py` 삭제 (#61·PR #62). 단계별 서버 로그는 B13 에서 진행 | `backend/main.py` |
+| E12 | **해결** — 루트 `.gitignore` 에 `.env.*`·`*.db`·`node_modules/`·`dist/` 추가 (#10) | `.gitignore` / [06-deployment.md 9. 민감정보 관리 체크](06-deployment.md#9-민감정보-관리-체크) |
 | E14 | `mission.md` 가 루트에 있지만 git 에 추적되지 않음 | 루트 |
 | E15 | handoff.md 전체가 세션·Claude·username·400/503 기준 — 현재 결정과 다름 | **해결** — `handoff.md` 삭제(v1.5) |
-| E17 | **백엔드에 `CORSMiddleware` 가 없음** → Railway 두 도메인 구성에서 브라우저 API 호출이 CORS 로 차단됨. **2026-09-15 로컬 재현 확인**: develop `backend/main.py` 에 preflight `OPTIONS /chat` (Origin: 프론트 도메인) → `405 Method Not Allowed`, `access-control-allow-origin` 헤더 없음. Railway 실배포 확인은 백엔드 기동(E9) 후 | `backend/main.py` / [06-deployment.md 5. CORS 설정](06-deployment.md#5-cors-설정)·[7. 외부 접속 · CORS 검증 (평가 전 필수)](06-deployment.md#7-외부-접속--cors-검증-평가-전-필수) |
-| E18 | 현재 코드 응답이 봉투 형식이 아님 (AI API 응답 JSON 을 그대로 반환) | `backend/main.py` / [03-api.md 0. 공통 규약](03-api.md#0-공통-규약) |
+| E17 | **해결(코드)** — `app/main.py` 에 `CORSMiddleware`(`CORS_ORIGINS`) 추가(#10·PR #15), preflight 테스트 V22 통과. Railway 실배포 CORS 확인(D03·D04)은 백엔드 공개 도메인 생성 후. (기록: **백엔드에 `CORSMiddleware` 가 없음** → Railway 두 도메인 구성에서 브라우저 API 호출이 CORS 로 차단됨. **2026-09-15 로컬 재현 확인**: develop `backend/main.py` 에 preflight `OPTIONS /chat` (Origin: 프론트 도메인) → `405 Method Not Allowed`, `access-control-allow-origin` 헤더 없음. Railway 실배포 확인은 백엔드 기동(E9) 후) | `backend/main.py` / [06-deployment.md 5. CORS 설정](06-deployment.md#5-cors-설정)·[7. 외부 접속 · CORS 검증 (평가 전 필수)](06-deployment.md#7-외부-접속--cors-검증-평가-전-필수) |
+| E18 | **해결** — 모든 응답이 `{code, data}` 봉투(`core/responses.py`, #10·PR #15), 챗 API 도 봉투로 응답(PR #62). V23 통과 | `backend/main.py` / [03-api.md 0. 공통 규약](03-api.md#0-공통-규약) |
 
 ---
 
@@ -126,7 +126,7 @@
 | # | 질문 | 영향 |
 |---|------|------|
 | F1 | Codyssey AI API 의 **호출 제한**(분당/일일), 에러 응답 형식, 타임아웃 권장값 | [02-architecture.md 6. Codyssey AI API 연동 메모](02-architecture.md#6-codyssey-ai-api-연동-메모), [06-deployment.md 8. 트러블슈팅](06-deployment.md#8-트러블슈팅), [07-verification.md 3. 실제 Codyssey AI API 연동 검증 (키 설정 후)](07-verification.md#3-실제-codyssey-ai-api-연동-검증-키-설정-후), [12-decisions.md 3. AI 응답 대기 30초](12-decisions.md#3-ai-응답-대기-30초) |
-| F2 | 모델 `gpt-5-mini` 로 확정인가? (현재 코드 값) | [02-architecture.md 6. Codyssey AI API 연동 메모](02-architecture.md#6-codyssey-ai-api-연동-메모), 환경변수 `AI_MODEL` 추가 여부 |
+| F2 | 모델 `gpt-5-mini` 로 확정인가? (현재 `services/ai_service.py` 의 `AI_MODEL` 상수 값) | [02-architecture.md 6. Codyssey AI API 연동 메모](02-architecture.md#6-codyssey-ai-api-연동-메모), 환경변수 `AI_MODEL` 추가 여부 |
 | F5 | 팀원 이름·역할(C1·C2)은 어느 버전으로 통일? 역할이 Git 이력과 맞아야 함 (mission 4-7절) | [09-team.md 3. 역할 분담](09-team.md#3-역할-분담)·[4. 브랜치·커밋 계획 (팀원별 10회 이상 보장)](09-team.md#4-브랜치커밋-계획-팀원별-10회-이상-보장)·[6. 개인별 작업 요약 (마감 시 실제 값으로 갱신)](09-team.md#6-개인별-작업-요약-마감-시-실제-값으로-갱신), README |
 | F6 | 커밋·브랜치 규칙(C4·C5)은 10-pull-request.md 버전으로 통일? | [09-team.md 2. 팀 운영 규칙](09-team.md#2-팀-운영-규칙) |
 | F7 | ~~develop 보호 규칙에서 docs 직접 push 를 어떻게 허용할 것인가~~ → **bypass 대상 지정으로 확정(C9)**. 남은 것은 GitHub 에 실제 설정 적용 | GitHub 설정, [09-team.md 2-1. 브랜치](09-team.md#2-1-브랜치) |

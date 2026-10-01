@@ -11,10 +11,10 @@
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| 로그인 상태에서 웹 페이지로 텍스트 질문 입력 | 🟡 | features.md F6 (Chat 화면) — **프론트 완료**(#45·#53, MSW 확인), 백엔드 `POST /api/chat` 대기 |
-| 서버가 질문 수신 후 AI API 호출해 응답 생성 | ⬜ | B7·B8 (`POST /api/chat` → Codyssey AI API) |
-| AI 응답이 웹 화면에 표시 | 🟡 | F6 (같은 화면 누적) — **프론트 완료**(MSW), 실서버 연결 대기 |
-| 평가 시점 외부 네트워크에서 접속 가능한 URL | 🟡 | C2 — Railway 서비스 2개 첫 배포 시도 (프론트 성공, 백엔드 기동 실패), [06-deployment.md 6. 배포 — Railway](06-deployment.md#6-배포--railway) |
+| 로그인 상태에서 웹 페이지로 텍스트 질문 입력 | 🟡 | features.md F6 (Chat 화면) — **프론트 완료**(#45·#53, MSW 확인), **백엔드 `POST /api/chat` 완료**(#61·PR #62). 화면 ↔ 실서버 연결 확인 대기 |
+| 서버가 질문 수신 후 AI API 호출해 응답 생성 | ✅ | B7·B8 (`POST /api/chat` → Codyssey AI API) — #61·PR #62, pytest V10, 로컬 실서버에서 실제 Codyssey AI 응답 확인 |
+| AI 응답이 웹 화면에 표시 | 🟡 | F6 (같은 화면 누적) — **프론트 완료**(MSW), 백엔드 완료(PR #62). 화면 ↔ 실서버 연결 확인 대기 |
+| 평가 시점 외부 네트워크에서 접속 가능한 URL | 🟡 | C2 — Railway 서비스 2개: 프론트 배포 성공, 백엔드 develop 배포 기동 확인(2026-10-01, Start Command 설정 — #63). 백엔드 공개 도메인 미생성·CORS 미검증, [06-deployment.md 6. 배포 — Railway](06-deployment.md#6-배포--railway) |
 
 ### mission 2-2. 프로젝트 산출물
 
@@ -25,8 +25,8 @@
 | 시스템 구조(아키텍처·컴포넌트 역할) | ✅ | [02-architecture.md](02-architecture.md) |
 | API 명세(요청/응답 예시) | ✅ | [03-api.md](03-api.md), Swagger `/docs` |
 | DB 구조(ERD·필드 설명) | ✅ | [04-database.md](04-database.md) |
-| DB 확인 방법 안내 (1개 이상) | ⬜ (설계) | ① `GET /api/me/chats`·`/api/admin/*` ② "내 대화 로그"·**관리자 화면** ③ `scripts/check_logs.sql` — 구현 전 |
-| 배포 및 실행 방법(환경변수 설정 포함) | 🟡 | [06-deployment.md](06-deployment.md) — Railway 절차 작성, 실제 배포 검증 전 |
+| DB 확인 방법 안내 (1개 이상) | 🟡 | ① `GET /api/me/chats` **구현**(#58·PR #59)·`/api/admin/*` 미구현 ② "내 대화 로그"·**관리자 화면** (프론트 완료, 실서버 연결 대기) ③ `scripts/check_logs.sql` **구현**(#11·PR #17) |
+| 배포 및 실행 방법(환경변수 설정 포함) | 🟡 | [06-deployment.md](06-deployment.md) — Railway 절차 작성, 프론트·백엔드 기동 확인(2026-10-01). 외부망·CORS 검증 전 |
 | 환경변수 키 목록(이름 수준) | 🟡 | [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) 작성, `backend/.env.example` 없음 |
 | 팀 구성원 역할 및 개인별 작업 요약 | 🟡 | [09-team.md](09-team.md) 계획 작성 → **실제 작업 후 커밋 수와 함께 갱신** (역할 버전 불일치 C1~C3) |
 
@@ -41,27 +41,27 @@
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| 회원가입 정상 동작 | ⬜ | B3 (`POST /api/auth/signup`) — V01~V04 |
-| 로그인 정상 동작 | ⬜ | B4 (JWT 발급) — V05·V06 |
+| 회원가입 정상 동작 | ✅ | B3 (`POST /api/auth/signup`) — V01~V04 통과 (#16·PR #25) |
+| 로그인 정상 동작 | ✅ | B4 (JWT 발급) — V05·V06 통과 (#16·PR #25) |
 | 인증 상태에 따라 기능 구분 | 🟡 | F4·F5·F10 (라우팅 가드, 메뉴 분기, 관리자 탭) — B01·B20. **프론트 완료**, 인증은 실서버로 확인(frontend/TESTING.md G), 관리자 API 대기 |
-| 챗봇 질문/응답은 로그인 사용자만 | ⬜ | B6 (`get_current_user`) — V09 |
-| 비밀번호 평문 저장 금지 | ⬜ | B3 (bcrypt) — V04 |
+| 챗봇 질문/응답은 로그인 사용자만 | ✅ | B6 (`get_current_user`) — V09 통과 (`/api/chat`·`/api/me/chats`) |
+| 비밀번호 평문 저장 금지 | ✅ | B3 (bcrypt) — V04 통과 |
 
 ### mission 4-3. AI 챗봇 처리
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| 서버가 질문 수신 → AI API 호출 → 응답 생성 | 🟡 | 골격만 (`backend/main.py` `POST /chat`), B7 스펙 구현 전 — V10 |
-| AI 호출은 서버에서만, 키 클라이언트 미노출 | 🟡 | `COPA_API_KEY` 서버 환경변수 사용 중, B8 — D05 |
-| 최소한의 컨텍스트 전략 | ⬜ | B10 (최근 5턴 성공 Q/A, 오래된 것부터 제거) — V11·V12 |
+| 서버가 질문 수신 → AI API 호출 → 응답 생성 | ✅ | B7 `POST /api/chat` (#61·PR #62) — V10 통과, 실제 Codyssey AI 응답 확인 |
+| AI 호출은 서버에서만, 키 클라이언트 미노출 | ✅ | B8 `services/ai_service.py` — `COPA_API_KEY` 는 서버 환경변수(`config.py`)로만 사용, 응답·로그에 미포함. 배포 번들 확인은 D05 |
+| 최소한의 컨텍스트 전략 | ✅ | B10 (최근 5턴 성공 Q/A, 오래된 것부터 제거) — V11·V12 통과, 실제 AI 로 이어 질문 반영 확인 |
 
 ### mission 4-4. 대화 로그 저장 및 조회/추적
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| 질문과 AI 응답 DB 누적 저장 | ⬜ | B2·B7 (`chat_logs`) — V10, L5 |
-| 최소 추적 필드: 사용자 식별·생성 시각·질문·응답 | ✅ (설계) | `user_id, created_at, question, answer` — docs/04 |
-| 사용자 기준 로그 조회/추적 | ⬜ | B12 (`GET /api/me/chats`) · B16·B17 (관리자) — V18·V19·V34·V35 |
+| 질문과 AI 응답 DB 누적 저장 | ✅ | B2·B7 (`chat_logs`, 성공 status=success·실패 status=error) — V10·V15·V16 통과. L5 증빙은 미실행 |
+| 최소 추적 필드: 사용자 식별·생성 시각·질문·응답 | ✅ | `user_id, created_at, question, answer` (+ `status`·`error_code`·`latency_ms`·`request_id`) — docs/04, `models/chat_log.py` (#11·PR #17) |
+| 사용자 기준 로그 조회/추적 | 🟡 | B12 `GET /api/me/chats` **완료**(#58·PR #59, V18·V19 통과) · B16·B17 (관리자) 미구현 — V34·V35 |
 
 ### mission 4-5. 운영 및 유지보수
 
@@ -69,27 +69,27 @@
 |------|:----:|------|
 | 로그: 요청 수신 | ⬜ | `request_received` (B13) |
 | 로그: AI 호출 | ⬜ | `ai_call_start` (B13) |
-| 로그: AI 응답 수신 또는 실패 | ⬜ | `ai_call_success` / `ai_call_failed reason=` (B13) |
+| 로그: AI 응답 수신 또는 실패 | 🟡 | `ai_call_success` / `ai_call_failed reason=` (B13) — `ai_call_failed request_id= reason=` 만 파일·콘솔 로그에 기록(PR #62), `server_logs` 미기록 |
 | 로그: DB 저장 성공·실패 | ⬜ | `db_save_success` / `db_save_failed` (B13) |
-| AI 실패/타임아웃 시 비정상 종료 없음 | ⬜ | B9 — V15~V17 |
-| 사용자에게 오류 알림(메시지/상태코드/안내) | 🟡 | `{code: 504/502, data:{message}}` + F7 오류 말풍선 — **프론트 완료**(문구 안내·다시 시도, 사용자 화면에는 코드 미표시 — 05-ui-ux 5절), 백엔드 대기 |
-| 입력 검증 1개 이상 | ⬜ | B11 (빈 입력·1000자, **서버 필수**, `code: 422`) + F8 (클라이언트 보조) — V13·V14 |
+| AI 실패/타임아웃 시 비정상 종료 없음 | ✅ | B9 — V15~V17 통과 (호출 전체 30초 상한, 실패 저장 후 504/502, 장애 직후 정상 질문 200) |
+| 사용자에게 오류 알림(메시지/상태코드/안내) | 🟡 | `{code: 504/502, data:{message}}` + F7 오류 말풍선 — **프론트 완료**(문구 안내·다시 시도, 사용자 화면에는 코드 미표시 — 05-ui-ux 5절), **백엔드 완료**(PR #62). 화면 ↔ 실서버 확인 대기 |
+| 입력 검증 1개 이상 | ✅ | B11 (빈 입력·1000자, **서버 필수**, `code: 422`) + F8 (클라이언트 보조) — V13·V14 통과, 회원가입 입력도 V03 |
 | (관리자) 실패 원인 추적 | 🟡 | B18·B19, F13·F14 — V36·V37. **프론트 완료**(#49, MSW), 관리자 API 대기 |
 
 ### mission 4-6. 배포 및 접근성
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| 외부 네트워크 접속 가능 | 🟡 | Railway — 프론트 배포 성공, 백엔드 기동 실패, CORS 미검증 — D01~D04. 프론트 2026-09-29 재확인: 새로고침(SPA fallback) 200, robots.txt·sitemap.xml 배포 |
-| 배포/실행 방법·환경변수 문서화 | 🟡 | docs/06 (Railway) — 실제 배포 후 검증 필요 |
+| 외부 네트워크 접속 가능 | 🟡 | Railway — 프론트 배포 성공, 백엔드 develop 배포 기동 확인(2026-10-01, Start Command 설정 — #63), 백엔드 공개 도메인 미생성·CORS 미검증 — D01~D04. 프론트 2026-09-29 재확인: 새로고침(SPA fallback) 200, robots.txt·sitemap.xml 배포 |
+| 배포/실행 방법·환경변수 문서화 | 🟡 | docs/06 (Railway) — 백엔드 Start Command·트러블슈팅 보강(#63). 외부망·CORS 검증 후 확정 |
 
 ### mission 4-7. 협업 및 형상관리
 
 | 요구 | 상태 | 수행 방법 |
 |------|:----:|-----------|
 | 브랜치 전략 (main/develop) | 🟡 | main·develop 존재. 보호 규칙 설정 여부 미확인 ([09-team.md 2-1. 브랜치](09-team.md#2-1-브랜치)) |
-| 기능 단위 작업 브랜치 흔적 | 🟡 | `feature/setup`, `feature/fe-setup` |
-| PR 기반 Merge 기록 | 🟡 | PR #2·#3·#4 머지 (Merge commit) |
+| 기능 단위 작업 브랜치 흔적 | 🟡 | `feature/setup`, `feature/fe-setup` / 백엔드: `chore/be-init`, `feature/be-db`, `feature/be-auth-jwt`, `feature/be-logs`, `feature/be-chat` |
+| PR 기반 Merge 기록 | 🟡 | PR #2·#3·#4 머지 (Merge commit) / 백엔드: PR #15·#17·#25·#59·#62 머지 |
 | 팀원별 유의미한 커밋 10회 이상 | ⬜ | 계획 12~15회 ([09-team.md 4. 브랜치·커밋 계획 (팀원별 10회 이상 보장)](09-team.md#4-브랜치커밋-계획-팀원별-10회-이상-보장)) |
 | 문서의 역할 기술이 Git 이력과 일치 | ⬜ | 마감 시 `git shortlog -sn` 으로 [09-team.md 6. 개인별 작업 요약 (마감 시 실제 값으로 갱신)](09-team.md#6-개인별-작업-요약-마감-시-실제-값으로-갱신) 갱신 |
 
@@ -100,11 +100,11 @@
 | Python & FastAPI | ✅ (결정) | [02-architecture.md 1. 기술 스택](02-architecture.md#1-기술-스택) |
 | SQLite, 평가자가 연결/조회 가능 | ✅ (결정) | Railway Volume `/data/app.db` + `check_logs.sql` |
 | 민감정보 코드/문서에 직접 작성 금지 | 🟡 | 현재 코드는 환경변수 사용, PR 리뷰 + `git grep` |
-| 모든 민감정보 환경변수 관리 | 🟡 | `COPA_API_KEY` 환경변수, B1 (`config.py`) 구현 전 |
-| `.env` 저장소 업로드 방지 | 🟡 | 루트 `.gitignore` 에 `.env` 있음 (`*.db`·`node_modules` 누락 — E12) — D08 |
+| 모든 민감정보 환경변수 관리 | ✅ | B1 `config.py`(pydantic-settings) 로 `COPA_API_KEY`·`JWT_SECRET_KEY`·`ADMIN_PASSWORD` 등 로딩 (#10·PR #15). `backend/.env.example` 은 없음 (D9) |
+| `.env` 저장소 업로드 방지 | ✅ | 루트 `.gitignore` 에 `.env`·`.env.*`·`*.db`·`node_modules/`·`dist/` (#10, E12 해결). 2026-10-01 D08 명령 출력 없음 |
 | README 에 환경변수 키 목록·설정 방법 | ⬜ | README 위치·내용 정리 필요 (D3·E8), [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) |
-| AI 호출 타임아웃 + 실패 시 오류 안내 | 🟡 | 현재 코드 `timeout=30` 만 있고 예외 처리 없음 (E11) — V15·V16 |
-| 요청·AI 호출/응답·DB 저장 로그 | ⬜ | B13 — V20·V21 |
+| AI 호출 타임아웃 + 실패 시 오류 안내 | ✅ | 호출 전체 30초 상한(`asyncio.wait_for`), 타임아웃 504·그 외 실패 502 + 안내 문구 (PR #62, E11 해결) — V15·V16 통과 |
+| 요청·AI 호출/응답·DB 저장 로그 | 🟡 | B13 — `request_id` 발급·`chat_logs` 저장과 `ai_call_failed` 로그만 구현. 나머지 이벤트·`server_logs` 기록 미구현 — V20·V21 |
 
 ---
 
@@ -116,21 +116,21 @@
 
 | 항목 | features.md | 상태 |
 |------|-------------|:----:|
-| 앱 기본 구성·공통 응답 봉투·CORS | B1 | ⬜ |
-| DB 모델 (users·chat_logs·server_logs) | B2 | ⬜ |
-| 회원가입 API | B3 | ⬜ |
-| 로그인·재발급·로그아웃 API (access·refresh token) | B4 | ⬜ |
-| 현재 사용자 API (role) | B5 | ⬜ |
-| 인증 dependency | B6 | ⬜ |
-| 챗 API | B7 | 🟡 골격 |
-| AI 클라이언트 (Codyssey) | B8 | 🟡 골격 |
-| 실패 처리 504/502 + 실패 저장 | B9 | ⬜ |
-| 컨텍스트 유지 | B10 | ⬜ |
-| 입력 검증 422 | B11 | ⬜ |
-| 내 로그 조회 API | B12 | ⬜ |
-| 서버 로그 (+ `server_logs`) | B13 | ⬜ |
-| 확인용 SQL | B14 | ⬜ |
-| 관리자 권한·시드·감사 로그 | B15 | ⬜ |
+| 앱 기본 구성·공통 응답 봉투·CORS | B1 | ✅ #10·PR #15 (V22·V23 통과) |
+| DB 모델 (users·chat_logs·server_logs) | B2 | ✅ #11·PR #17 (+ refresh_tokens) |
+| 회원가입 API | B3 | ✅ #16·PR #25 |
+| 로그인·재발급·로그아웃 API (access·refresh token) | B4 | ✅ #16·PR #25 (만료 행 정리 스케줄러 포함) |
+| 현재 사용자 API (role) | B5 | ✅ #16·PR #25 |
+| 인증 dependency | B6 | ✅ #16·PR #25 |
+| 챗 API | B7 | ✅ #61·PR #62 |
+| AI 클라이언트 (Codyssey) | B8 | ✅ #61·PR #62 |
+| 실패 처리 504/502 + 실패 저장 | B9 | ✅ #61·PR #62 |
+| 컨텍스트 유지 | B10 | ✅ #61·PR #62 |
+| 입력 검증 422 | B11 | ✅ #61·PR #62 |
+| 내 로그 조회 API | B12 | ✅ #58·PR #59 |
+| 서버 로그 (+ `server_logs`) | B13 | 🟡 `request_id`·`ai_call_failed` 만, `server_logs` 기록 미구현 |
+| 확인용 SQL | B14 | ✅ #11·PR #17 (`scripts/check_logs.sql`) |
+| 관리자 권한·시드·감사 로그 | B15 | 🟡 `require_admin`·관리자 시드 완료(#16·PR #25), 감사 로그 미구현 |
 | 관리자 사용자 목록 | B16 | ⬜ |
 | 관리자 사용자별 대화 | B17 | ⬜ |
 | 관리자 AI 실패 기록 | B18 | ⬜ |
@@ -164,12 +164,12 @@
 | API 명세 | ✅ | docs/03 |
 | DB 구조 | ✅ | docs/04 |
 | DB 확인 방법 안내 | ✅ (문서) | docs/04 |
-| 배포 및 실행 방법 | 🟡 | docs/06 (Railway, 검증 전) |
+| 배포 및 실행 방법 | 🟡 | docs/06 (Railway, 기동 확인 · 외부망·CORS 검증 전) |
 | 환경변수 키 목록 | ✅ (문서) | [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) |
 | 팀 역할 및 개인별 작업 요약 | 🟡 | docs/09 |
-| 기능 단위 작업 브랜치 흔적 | 🟡 | feature/setup, feature/fe-setup |
-| PR 기반 머지 기록 | 🟡 | PR #2~#4 |
-| 성원모 — 커밋 10회 이상 | ⬜ | |
+| 기능 단위 작업 브랜치 흔적 | 🟡 | feature/setup, feature/fe-setup, 백엔드 feature/be-* 4개·chore/be-init |
+| PR 기반 머지 기록 | 🟡 | PR #2~#4, 백엔드 PR #15·#17·#25·#59·#62 |
+| 성원모 — 커밋 10회 이상 | ✅ | 38회 (2026-10-01 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
 | 이성준 — 커밋 10회 이상 | ⬜ | |
 | 역할 설명 ↔ Git 이력 일치 확인 | ⬜ | |
 
