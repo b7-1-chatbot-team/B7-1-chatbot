@@ -101,6 +101,9 @@ async def ask(messages: list[dict[str, str]]) -> str:
     if response.status_code == 429:
         # 교육 환경의 호출 제한. 사용자에게는 502 와 같지만 로그에서는 구분한다 (02-architecture 6절)
         raise AIError(AI_CALL_FAILED, "rate_limited")
+    if response.status_code in (401, 403):
+        # API 키가 틀렸거나 권한이 없음 — 운영자가 COPA_API_KEY 를 확인해야 하는 경우라 따로 구분한다
+        raise AIError(AI_CALL_FAILED, "auth_failed")
     if response.status_code != 200:
         raise AIError(AI_CALL_FAILED, f"http_{response.status_code}")
 
