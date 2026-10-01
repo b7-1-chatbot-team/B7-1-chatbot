@@ -14,8 +14,8 @@ from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
 from app.core.responses import register_exception_handlers
 from app.database import Base, SessionLocal, engine
-from app.routers import auth, me
-from app.services import auth_service
+from app.routers import auth, chat, me
+from app.services import ai_service, auth_service
 
 logger = logging.getLogger("app")
 
@@ -60,6 +60,8 @@ async def lifespan(_: FastAPI):
     cleanup_task.cancel()
     with suppress(asyncio.CancelledError):
         await cleanup_task
+    # AI 호출용 공용 클라이언트의 열린 연결을 닫는다
+    await ai_service.close_client()
 
 
 # 앱 생성. title·version 은 Swagger(/docs) 화면에 표시된다.
@@ -78,6 +80,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],  # 토큰 헤더와 JSON 본문 헤더만 허용
 )
 
-# 라우터 등록 — 각 파일의 경로(/api/auth/*, /api/me/*)를 앱에 연결
+# 라우터 등록 — 각 파일의 경로(/api/auth/*, /api/chat, /api/me/*)를 앱에 연결
 app.include_router(auth.router)
+app.include_router(chat.router)
 app.include_router(me.router)
