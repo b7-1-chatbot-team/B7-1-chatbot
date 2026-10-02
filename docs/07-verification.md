@@ -175,11 +175,11 @@ grep ai_call_failed backend/logs/app.log
 
 | 단계 | 상태 | 비고 |
 |------|:----:|------|
-| L1 서버 단위 | 🟡 일부 | 2026-10-01 `cd backend && pytest -q` **44건 통과** (`tests/test_auth.py`·`test_me_chats.py`·`test_chat.py`). 통과: V01~V19(V02b·V05b~V05f 포함)·V22·V23·V30 + 추가 케이스(여러 기기 로그인, 기존 사용자 관리자 승격, 사용자별 컨텍스트, 키 미설정 502). AI 호출은 가짜 AI 서버(`httpx.MockTransport`)로 대체. **미구현으로 미실행**: V20·V21(서버 로그 B13), V31~V38(관리자 API B15~B19) |
+| L1 서버 단위 | 🟡 일부 | 2026-10-02 `cd backend && pytest -q` **48건 통과** (`tests/test_auth.py`·`test_me_chats.py`·`test_chat.py`). 통과: V01~V23(V02b·V05b~V05f 포함)·V30 + 추가 케이스(여러 기기 로그인, 기존 사용자 관리자 승격, 사용자별 컨텍스트, 키 미설정 502, AI 키 오류 사유 `auth_failed`). AI 호출은 가짜 AI 서버(`httpx.MockTransport`)로 대체. **미구현으로 미실행**: V31~V38(관리자 API B15~B19) |
 | L2 API 흐름 | 🟡 일부 | curl 스크립트는 미실행. 2026-10-01 로컬 실서버 Swagger(`/docs`)에서 실제 Codyssey AI 로 가입(201)→중복 가입(409)→로그인→질문(200)→이어 질문(직전 대화 반영)→공백 질문(422)→토큰 없이 요청(401) 수동 확인 (PR #62 스크린샷). 관리자 단계는 관리자 API 구현 후 |
 | L3 브라우저 | 🟡 일부 | 프론트 기준 자동 테스트 260건·수동 확인 119항목 — [frontend/TESTING.md](../frontend/TESTING.md). 인증(B01~B06·B20)은 **실서버**로, 챗·로그·관리자(B07~B24)는 백엔드 API 가 없어 **MSW 로만** 확인. 실서버 확인은 백엔드 API 완성 후 |
 | L4 배포/외부망 | 🟡 일부 | 2026-09-14 Railway 서비스 2개 첫 배포 시도: 프론트 배포 성공, 백엔드 `ModuleNotFoundError: dotenv` 로 기동 실패(이후 `requirements.txt` 정리로 해결). 2026-10-01 백엔드 develop 배포가 Start Command 미설정으로 빌드 실패 → 설정 후 기동 확인(Active, #63). 백엔드 공개 도메인 미생성, D01~D07 · CORS 는 미검증 (D08 은 2026-10-01 출력 없음 확인) |
-| L5 데이터/로그 | ⬜ 미실행 | 스펙 구현 후 |
+| L5 데이터/로그 | 🟡 일부 | 2026-10-02 로컬 실서버에서 실제 Codyssey AI 로 확인 (PR #65 스크린샷): `AI_TIMEOUT_SECONDS=1` → `code: 504`, `COPA_API_KEY=invalid` → `code: 502`. 두 경우 모두 `request_received → ai_call_start → ai_call_failed(reason=timeout / auth_failed) → db_save_success status=error` 가 콘솔·`server_logs` 에 같은 `request_id` 로 남고, `chat_logs` 에 `AI_TIMEOUT`·`AI_CALL_FAILED` 실패 기록 저장. 로컬 DB 경로는 `.env` 의 `DATABASE_URL` 기준. 배포 환경 확인은 L4 이후 |
 
 ---
 

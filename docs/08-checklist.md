@@ -67,10 +67,10 @@
 
 | 요구 | 상태 | 대응 |
 |------|:----:|------|
-| 로그: 요청 수신 | ⬜ | `request_received` (B13) |
-| 로그: AI 호출 | ⬜ | `ai_call_start` (B13) |
-| 로그: AI 응답 수신 또는 실패 | 🟡 | `ai_call_success` / `ai_call_failed reason=` (B13) — `ai_call_failed request_id= reason=` 만 파일·콘솔 로그에 기록(PR #62), `server_logs` 미기록 |
-| 로그: DB 저장 성공·실패 | ⬜ | `db_save_success` / `db_save_failed` (B13) |
+| 로그: 요청 수신 | ✅ | `request_received` (B13) — #64·PR #65, V20 통과 |
+| 로그: AI 호출 | ✅ | `ai_call_start` (B13) — #64·PR #65, V20 통과 |
+| 로그: AI 응답 수신 또는 실패 | ✅ | `ai_call_success` / `ai_call_failed reason=` (B13) — #64·PR #65, V20 통과. 실제 AI 로 타임아웃(`reason=timeout`)·잘못된 키(`reason=auth_failed`) 확인 |
+| 로그: DB 저장 성공·실패 | ✅ | `db_save_success` / `db_save_failed` (B13) — #64·PR #65, V20·V21 통과 (저장 실패 시 서버 유지) |
 | AI 실패/타임아웃 시 비정상 종료 없음 | ✅ | B9 — V15~V17 통과 (호출 전체 30초 상한, 실패 저장 후 504/502, 장애 직후 정상 질문 200) |
 | 사용자에게 오류 알림(메시지/상태코드/안내) | 🟡 | `{code: 504/502, data:{message}}` + F7 오류 말풍선 — **프론트 완료**(문구 안내·다시 시도, 사용자 화면에는 코드 미표시 — 05-ui-ux 5절), **백엔드 완료**(PR #62). 화면 ↔ 실서버 확인 대기 |
 | 입력 검증 1개 이상 | ✅ | B11 (빈 입력·1000자, **서버 필수**, `code: 422`) + F8 (클라이언트 보조) — V13·V14 통과, 회원가입 입력도 V03 |
@@ -104,7 +104,7 @@
 | `.env` 저장소 업로드 방지 | ✅ | 루트 `.gitignore` 에 `.env`·`.env.*`·`*.db`·`node_modules/`·`dist/` (#10, E12 해결). 2026-10-01 D08 명령 출력 없음 |
 | README 에 환경변수 키 목록·설정 방법 | ⬜ | README 위치·내용 정리 필요 (D3·E8), [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) |
 | AI 호출 타임아웃 + 실패 시 오류 안내 | ✅ | 호출 전체 30초 상한(`asyncio.wait_for`), 타임아웃 504·그 외 실패 502 + 안내 문구 (PR #62, E11 해결) — V15·V16 통과 |
-| 요청·AI 호출/응답·DB 저장 로그 | 🟡 | B13 — `request_id` 발급·`chat_logs` 저장과 `ai_call_failed` 로그만 구현. 나머지 이벤트·`server_logs` 기록 미구현 — V20·V21 |
+| 요청·AI 호출/응답·DB 저장 로그 | ✅ | B13 — 콘솔·`logs/app.log`·`server_logs` 에 같은 `request_id` 로 기록 (#64·PR #65), V20·V21 통과 |
 
 ---
 
@@ -128,7 +128,7 @@
 | 컨텍스트 유지 | B10 | ✅ #61·PR #62 |
 | 입력 검증 422 | B11 | ✅ #61·PR #62 |
 | 내 로그 조회 API | B12 | ✅ #58·PR #59 |
-| 서버 로그 (+ `server_logs`) | B13 | 🟡 `request_id`·`ai_call_failed` 만, `server_logs` 기록 미구현 |
+| 서버 로그 (+ `server_logs`) | B13 | ✅ #64·PR #65 (관리자 감사 로그 `admin_access`/`admin_forbidden` 은 B15 에서) |
 | 확인용 SQL | B14 | ✅ #11·PR #17 (`scripts/check_logs.sql`) |
 | 관리자 권한·시드·감사 로그 | B15 | 🟡 `require_admin`·관리자 시드 완료(#16·PR #25), 감사 로그 미구현 |
 | 관리자 사용자 목록 | B16 | ⬜ |
@@ -167,10 +167,10 @@
 | 배포 및 실행 방법 | 🟡 | docs/06 (Railway, 기동 확인 · 외부망·CORS 검증 전) |
 | 환경변수 키 목록 | ✅ (문서) | [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) |
 | 팀 역할 및 개인별 작업 요약 | 🟡 | docs/09 |
-| 기능 단위 작업 브랜치 흔적 | 🟡 | feature/setup, feature/fe-setup, 백엔드 feature/be-* 4개·chore/be-init |
-| PR 기반 머지 기록 | 🟡 | PR #2~#4, 백엔드 PR #15·#17·#25·#59·#62 |
-| 성원모 — 커밋 10회 이상 | ✅ | 38회 (2026-10-01 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
-| 이성준 — 커밋 10회 이상 | ⬜ | |
+| 기능 단위 작업 브랜치 흔적 | 🟡 | feature/setup, feature/fe-setup, 백엔드 feature/be-* 5개·chore/be-init |
+| PR 기반 머지 기록 | 🟡 | PR #2~#4, 백엔드 PR #15·#17·#25·#59·#62·#65 |
+| 성원모 — 커밋 10회 이상 | ✅ | 44회 (2026-10-02 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
+| 이성준 — 커밋 10회 이상 | ✅ | 94회 (2026-10-02 develop, 같은 기준) |
 | 역할 설명 ↔ Git 이력 일치 확인 | ⬜ | |
 
 ---

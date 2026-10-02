@@ -76,6 +76,7 @@ CORS_ORIGINS=
 ADMIN_EMAIL=
 ADMIN_PASSWORD=
 ADMIN_NICKNAME=
+LOG_FILE=logs/app.log
 ```
 
 | 키 | 기본값 | 설명 | 민감 |
@@ -93,6 +94,7 @@ ADMIN_NICKNAME=
 | `ADMIN_EMAIL` | (없음) | 서버 시작 시 생성(또는 `role=admin` 승격)할 관리자 이메일 | |
 | `ADMIN_PASSWORD` | (없음) | 관리자 비밀번호 (8자 이상) | ✅ |
 | `ADMIN_NICKNAME` | (없음) | 관리자 닉네임 | |
+| `LOG_FILE` | `logs/app.log` | 이벤트 로그 파일 경로(`backend/` 기준). 비우면 콘솔에만 기록. 로컬은 설정하지 않아도 됨. **Railway 는 `/data/logs/app.log`** — 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 둔다 ([6-1. 백엔드 서비스](#6-1-백엔드-서비스)) | |
 
 ### `frontend/.env.development` · `frontend/.env.production`
 
@@ -201,6 +203,7 @@ Railway Project
 | 키 | 값 |
 |----|-----|
 | `DATABASE_URL` | `sqlite:////data/app.db` |
+| `LOG_FILE` | `/data/logs/app.log` (로그 파일도 Volume 에 저장 — 재배포해도 유지) |
 | `CORS_ORIGINS` | `https://<frontend>.up.railway.app` |
 
 ### 6-2. 프론트 서비스
@@ -261,6 +264,7 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 | 프론트가 `localhost:8000` 을 호출함 | `VITE_API_BASE_URL` 미설정 상태로 빌드됨 → 프론트 Variables 설정 후 **재빌드** |
 | 첫 요청이 느리거나 502 | Serverless 슬리핑에서 깨어나는 중. 평가 전 슬리핑 끄기 |
 | 재배포 후 계정이 사라짐 | SQLite 가 Volume 밖에 있음 → Volume `/data` 연결 + `DATABASE_URL=sqlite:////data/app.db` |
+| 재배포 후 `logs/app.log` 가 비어 있음 | 로그 파일이 Volume 밖(컨테이너 안)에 있음 → `LOG_FILE=/data/logs/app.log`. 이전 기록은 Logs 탭(콘솔)과 `server_logs` 테이블에서 확인 |
 | 백엔드 빌드가 `railpack prepare exited with an error` 로 실패 | Start Command 미설정 — Railpack 이 실행할 파일(`backend/main.py`·`backend/app.py`)을 찾지 못함. Settings → Deploy → Custom Start Command 에 `uvicorn app.main:app --host 0.0.0.0 --port $PORT` 입력 후 **변경 적용(Deploy)** 으로 새로 배포 (실패한 배포의 `Redeploy` 는 당시 설정 그대로라 다시 실패) |
 | 서비스가 뜨지만 접속 안 됨 | Start Command 에 `--host 0.0.0.0 --port $PORT` 누락 |
 | 로그인은 되는데 이후 요청이 `code: 401` | axios 인터셉터가 `Authorization` 헤더를 붙이지 않음 / 토큰 저장 키 불일치 |
