@@ -1,4 +1,4 @@
-"""챗 API 테스트 — 07-verification V09~V17.
+"""챗 API 테스트 — 07-verification V09~V17, 서버 로그 V20·V21.
 
 실제 AI 서버는 부르지 않는다. httpx.MockTransport 로 AI 서버 역할을 하는 가짜 응답을 끼워 넣고,
 우리 서버가 AI 에게 무엇을 보냈는지(payload)도 함께 검사한다.
@@ -6,13 +6,16 @@
 
 import asyncio
 import json
+from pathlib import Path
 
 import httpx
 import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 
+from app import crud
 from app.config import settings
-from app.models import ChatLog
+from app.models import ChatLog, ServerLog
 from app.services import ai_service
 from tests.conftest import auth_header, login, signup
 
@@ -189,3 +192,72 @@ def test_v17_recovers_after_failure(client, fake_ai, user_h):
     assert _ask(client, user_h, "질문")["code"] == 504
     fake_ai.mode = "ok"
     assert _ask(client, user_h, "질문")["code"] == 200
+
+
+# ---------- 서버 로그 ----------
+def _events(db, request_id):
+    """한 요청의 server_logs 를 기록 순서대로."""
+    db.expire_all()
+    return list(db.scalars(select(ServerLog).where(ServerLog.request_id == request_id).order_by(ServerLog.id)).all())
+
+
+def _log_file() -> str:
+    return Path(settings.log_file).read_text(encoding="utf-8")
+
+
+def test_v20_success_flow_logged(client, db, fake_ai, user_h):
+    """성공 흐름 4단계가 같은 request_id 로 server_logs·로그 파일에 남고, 질문 원문·API 키는 남지 않는다"""
+    _ask(client, user_h, "로그에 남으면 안 되는 질문")
+    (chat,) = _all_logs(db)
+    rows = _events(db, chat.request_id)
+
+    assert [r.event for r in rows] == ["request_received", "ai_call_start", "ai_call_success", "db_save_success"]
+    assert {r.level for r in rows} == {"INFO"} and {r.user_id for r in rows} == {chat.user_id}
+    assert rows[0].detail == "path=/api/chat"
+    assert rows[1].detail == "context_turns=0"
+    assert rows[3].detail == f"chat_id={chat.id} status=success"
+
+    file_lines = [line for line in _log_file().splitlines() if chat.request_id in line]
+    assert len(file_lines) == 4
+    everything = _log_file() + " ".join(r.detail or "" for r in rows)
+    assert "로그에 남으면 안 되는 질문" not in everything and "test-ai-key" not in everything
+
+
+def test_failure_flow_logged(client, db, fake_ai, user_h, monkeypatch):
+    """AI 타임아웃 → ai_call_failed(ERROR, 사유) 다음에 실패 기록 저장(db_save_success status=error)"""
+    monkeypatch.setattr(settings, "ai_timeout_seconds", 0.1)
+    fake_ai.mode = "timeout"
+    _ask(client, user_h, "질문")
+    (chat,) = _all_logs(db)
+    rows = _events(db, chat.request_id)
+
+    assert [r.event for r in rows] == ["request_received", "ai_call_start", "ai_call_failed", "db_save_success"]
+    assert rows[2].level == "ERROR" and rows[2].detail.startswith("reason=timeout latency_ms=")
+    assert rows[3].detail == f"chat_id={chat.id} status=error"
+
+
+def test_auth_failed_reason(client, db, fake_ai, user_h):
+    """AI 서버가 401 → 사유 auth_failed (API 키 확인 필요)"""
+    fake_ai.mode = "http_401"
+    _ask(client, user_h, "질문")
+    (chat,) = _all_logs(db)
+    assert _events(db, chat.request_id)[2].detail.startswith("reason=auth_failed")
+
+
+def test_v21_db_save_failed(client, db, fake_ai, user_h, monkeypatch):
+    """대화 저장이 DB 오류로 실패 → db_save_failed(ERROR) 기록, code 500, 서버는 계속 동작"""
+
+    def broken_create(*args, **kwargs):
+        raise OperationalError("INSERT INTO chat_logs", {}, Exception("disk I/O error"))
+
+    with monkeypatch.context() as m:
+        m.setattr(crud.chat_log, "create", broken_create)
+        assert _ask(client, user_h, "질문")["code"] == 500
+
+    db.expire_all()
+    last = db.scalars(select(ServerLog).order_by(ServerLog.id.desc())).first()
+    assert (last.event, last.level, last.detail) == ("db_save_failed", "ERROR", "reason=OperationalError")
+    assert f"db_save_failed request_id={last.request_id}" in _log_file()
+    assert "disk I/O error" not in _log_file()  # 예외 메시지(SQL·질문이 섞일 수 있음)는 남기지 않음
+
+    assert _ask(client, user_h, "다시 질문")["code"] == 200  # 장애 뒤에도 정상 처리

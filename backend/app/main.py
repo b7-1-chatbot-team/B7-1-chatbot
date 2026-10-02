@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
+from app.core.logging import setup_logging
 from app.core.responses import register_exception_handlers
 from app.database import Base, SessionLocal, engine
 from app.routers import auth, chat, me
@@ -45,6 +46,8 @@ async def _refresh_token_cleanup_loop() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """서버 시작 시 yield 앞부분, 종료 시 yield 뒷부분이 한 번씩 실행된다."""
+    # 콘솔·파일(logs/app.log) 로그 출력 설정 — 아래 시작 작업의 로그부터 적용된다
+    setup_logging()
     # 서명 키 없이 뜨면 빈 키로 토큰이 발급되는 보안 사고가 나므로 기동 자체를 막는다
     if not settings.jwt_secret_key:
         raise RuntimeError("JWT_SECRET_KEY 가 설정되지 않았습니다. backend/.env 또는 Railway Variables 를 확인하세요.")

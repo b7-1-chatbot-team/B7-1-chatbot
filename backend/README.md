@@ -38,7 +38,7 @@ backend/
 │   │   ├── timeutil.py          🟦 UTC 저장 / +09:00 응답 변환
 │   │   ├── security.py          🟦 bcrypt · JWT 발급/검증 · refresh token 해시
 │   │   ├── dependencies.py      🟦 get_current_user(401) · require_admin(403)
-│   │   └── logging.py           🟩 구조화 로그 · request_id · server_logs 기록   ⏳ 미작성
+│   │   └── logging.py           🟩 이벤트 로그 — 콘솔 · 파일(logs/app.log) · server_logs 동시 기록
 │   │
 │   ├── models/                  ── 테이블 정의 (SQLAlchemy)
 │   │   ├── user.py              🟦 users
@@ -77,7 +77,7 @@ backend/
 │   ├── conftest.py              🟦 임시 DB · TestClient · 헬퍼
 │   ├── test_auth.py             🟦 인증 19개
 │   ├── test_me_chats.py         🟦 내 로그 4개
-│   └── test_chat.py             🟩 챗 API 21개 (가짜 AI 서버로 대체)
+│   └── test_chat.py             🟩 챗 API 21개 + 서버 로그 4개 (가짜 AI 서버로 대체)
 │
 ├── requirements.txt             🟨 런타임 의존성
 ├── requirements-dev.txt         🟦 pytest
@@ -108,7 +108,7 @@ backend/
 | 챗 API | `routers/chat.py`, `schemas/chat.py`, `services/chat_service.py` — `POST /api/chat`, 입력 검증 422 | ✅ #61 · PR #62 |
 | 컨텍스트 | 최근 성공 Q/A 5개 (`AI_CONTEXT_TURNS`) | ✅ #61 · PR #62 |
 | 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | ✅ #61 · PR #62 |
-| 로깅 | `core/logging.py` — `request_id`, 이벤트 4종을 로그 + `server_logs` 에 기록. 현재는 `chat_service.py` 의 `request_id` 발급·`chat_logs` 저장과 `ai_call_failed` 콘솔 로그만 있음 (`core/logging.py` 미작성, `server_logs` 미기록 — 08-checklist B13) | 🟡 |
+| 로깅 | `core/logging.py` — 챗 요청의 단계별 이벤트(요청 수신 · AI 호출 시작 · AI 성공/실패 · DB 저장 성공/실패)를 콘솔 · `logs/app.log` · `server_logs` 에 같은 `request_id` 로 기록 | 🔄 #64 |
 | PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | ✅ #61 · PR #62 |
 | 관리자 API | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | ⏳ |
 | 관리자 조회 CRUD | `crud.user.list_with_stats`·`count`, `crud.chat_log.list_for_user`·`list_failures`·`stats`, `crud.server_log.list_by_request` | ⏳ |
@@ -169,7 +169,7 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
 
 | 파일 | 누가 무엇을 추가하나 | 충돌 방지 |
 |------|----------------------|-----------|
-| `app/main.py` | 🟦 CORS·lifespan·`auth`/`me` 라우터 · 🟩 `chat.router`·`admin.router` 등록 · 🟩 request_id 미들웨어 | 라우터 등록 줄만 추가, 수정 전 채널 공지 |
+| `app/main.py` | 🟦 CORS·lifespan·`auth`/`me` 라우터 · 🟩 `chat.router`·`admin.router` 등록 | 라우터 등록 줄만 추가, 수정 전 채널 공지 |
 | `requirements.txt` | 🟦 기본 의존성 (PoC 삭제와 함께 `requests` 제거됨) | 버전 변경 시 공지 |
 | `.env` 키 | 🟦 JWT·DB·CORS·ADMIN_* · 🟩 COPA_API_KEY·AI_* | 키 목록은 docs/06-deployment 이 기준 |
 

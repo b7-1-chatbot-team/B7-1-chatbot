@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # 로컬: backend/data/app.db (슬래시 3개 = 상대경로) / Railway: sqlite:////data/app.db (슬래시 4개 = 절대경로)
     database_url: str = "sqlite:///./data/app.db"
 
+    # ---------- 로그 ----------
+    # 이벤트 로그 파일 경로 (backend/ 기준 상대경로). 비우면 콘솔에만 남긴다. 테스트는 임시 폴더로 바꾼다
+    log_file: str = "logs/app.log"
+
     # ---------- CORS ----------
     # 허용할 프론트 Origin 을 쉼표로 구분한 문자열. 예) http://localhost:<숫자>,https://<프론트>.up.railway.app
     cors_origins: str = ""
