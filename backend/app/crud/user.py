@@ -1,7 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import User
+from app.models import ChatLog, User
 
 
 def get(db: Session, user_id: int) -> User | None:
@@ -26,3 +26,39 @@ def create(
     else:
         db.flush()  # commit 없이 INSERT 만 보내 id 를 받아 둔다 (호출한 쪽이 나중에 commit)
     return user
+
+
+# ---------- 관리자 조회 (03-api 4-2) ----------
+def _email_filter(q: str | None):
+    """이메일 부분 검색 조건. 가입 시 이메일을 소문자로 저장하므로 검색어도 소문자로 맞춘다.
+
+    autoescape=True: 검색어의 % _ 를 SQL 와일드카드가 아닌 글자 그대로 찾는다.
+    """
+    q = (q or "").strip().lower()
+    return User.email.contains(q, autoescape=True) if q else True
+
+
+def count(db: Session, q: str | None = None) -> int:
+    """관리자 사용자 목록 total — 검색 조건에 맞는 사용자 수."""
+    return db.scalar(select(func.count()).select_from(User).where(_email_filter(q))) or 0
+
+
+def list_with_stats(db: Session, q: str | None, limit: int, offset: int) -> list[tuple[User, int, object]]:
+    """사용자와 (전체 대화 수, 마지막 대화 시각)을 최근 활동 순으로 반환한다.
+
+    - 대화 수는 성공 + 실패 전체 (사용자별 대화 기록의 total 과 같은 기준)
+    - 대화가 없는 사용자도 보이도록 outer join, 이때 마지막 대화 시각은 NULL
+    - 정렬: 마지막 대화 최신순 → 대화가 없는 사용자는 뒤에서 최근 가입 순
+      (SQLite 는 내림차순에서 NULL 을 맨 뒤에 둔다)
+    """
+    last_chat_at = func.max(ChatLog.created_at)
+    rows = db.execute(
+        select(User, func.count(ChatLog.id), last_chat_at)
+        .outerjoin(ChatLog, ChatLog.user_id == User.id)
+        .where(_email_filter(q))
+        .group_by(User.id)
+        .order_by(last_chat_at.desc(), User.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    return [tuple(row) for row in rows]

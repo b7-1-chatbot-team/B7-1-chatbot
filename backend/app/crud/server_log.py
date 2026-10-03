@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import ServerLog
@@ -21,3 +22,8 @@ def create(
     else:
         db.flush()
     return row
+
+
+def list_by_request(db: Session, request_id: str) -> list[ServerLog]:
+    """관리자 요청 흐름 — 한 요청의 이벤트를 기록된 순서(시간순)대로."""
+    return list(db.scalars(select(ServerLog).where(ServerLog.request_id == request_id).order_by(ServerLog.id)).all())
