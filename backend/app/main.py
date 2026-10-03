@@ -15,7 +15,7 @@ from app.config import settings
 from app.core.logging import setup_logging
 from app.core.responses import register_exception_handlers
 from app.database import Base, SessionLocal, engine
-from app.routers import auth, chat, me
+from app.routers import admin, auth, chat, me
 from app.services import ai_service, auth_service
 
 logger = logging.getLogger("app")
@@ -83,7 +83,8 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],  # 토큰 헤더와 JSON 본문 헤더만 허용
 )
 
-# 라우터 등록 — 각 파일의 경로(/api/auth/*, /api/chat, /api/me/*)를 앱에 연결
+# 라우터 등록 — 각 파일의 경로(/api/auth/*, /api/chat, /api/me/*, /api/admin/*)를 앱에 연결
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(me.router)
+app.include_router(admin.router)
