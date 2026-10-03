@@ -6,22 +6,16 @@ request_received → ai_call_start → ai_call_success / ai_call_failed → db_s
 """
 
 import time
-import uuid
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app import crud
 from app.config import settings
-from app.core.logging import log_event
+from app.core.logging import log_event, new_request_id
 from app.core.responses import AppError
 from app.models import ChatLog, User
 from app.services import ai_service
-
-
-def new_request_id() -> str:
-    """요청 추적 ID (12자리 16진수). chat_logs·server_logs 에 같이 저장해 한 요청의 흐름을 이어 본다."""
-    return uuid.uuid4().hex[:12]
 
 
 def _elapsed_ms(started: float) -> int:

@@ -3,11 +3,12 @@
 라우터는 Depends(get_current_user) 로 받은 user.id 만 사용하고, 클라이언트가 보낸 user_id 는 쓰지 않는다.
 """
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app import crud
+from app.core.logging import log_event, new_request_id
 from app.core.responses import AppError
 from app.core.security import decode_access_token
 from app.database import get_db
@@ -41,8 +42,16 @@ def get_current_user(
 
 
 # 관리자 API 에 사용: Depends(require_admin) → 먼저 get_current_user 로 로그인(401)을, 그다음 role(403)을 검사
-def require_admin(user: User = Depends(get_current_user)) -> User:
-    """토큰에 role 을 넣지 않고 매 요청 DB 의 role 로 확인한다 → 권한 회수가 즉시 반영된다."""
+def require_admin(request: Request, user: User = Depends(get_current_user)) -> User:
+    """토큰에 role 을 넣지 않고 매 요청 DB 의 role 로 확인한다 → 권한 회수가 즉시 반영된다.
+
+    관리자 API 는 모든 사용자의 대화를 볼 수 있으므로, 호출할 때마다 감사 로그를 남긴다 (03-api 6절):
+    누가 어느 주소를 봤는지(admin_access), 일반 사용자가 들어오려 했는지(admin_forbidden).
+    """
+    request_id = new_request_id()
+    path = request.url.path
     if user.role != "admin":
+        log_event(request_id, "admin_forbidden", "WARN", user.id, path=path)
         raise AppError(403)
+    log_event(request_id, "admin_access", user_id=user.id, admin_id=user.id, path=path)
     return user
