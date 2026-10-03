@@ -37,7 +37,7 @@ backend/
 │   │   ├── responses.py         🟦 공통 응답 {code, data} · AppError · 예외 → 봉투 변환
 │   │   ├── timeutil.py          🟦 UTC 저장 / +09:00 응답 변환
 │   │   ├── security.py          🟦 bcrypt · JWT 발급/검증 · refresh token 해시
-│   │   ├── dependencies.py      🟦 get_current_user(401) · require_admin(403)
+│   │   ├── dependencies.py      🟦 get_current_user(401) · require_admin(403, 🟩 감사 로그 admin_access / admin_forbidden)
 │   │   └── logging.py           🟩 이벤트 로그 — 콘솔 · 파일(logs/app.log) · server_logs 동시 기록
 │   │
 │   ├── models/                  ── 테이블 정의 (SQLAlchemy)
@@ -47,28 +47,26 @@ backend/
 │   │   └── refresh_token.py     🟦 refresh_tokens
 │   │
 │   ├── crud/                    ── DB 질의 전담 (라우터는 DB 직접 접근 금지)
-│   │   ├── user.py              🟦 get · get_by_email · create   (+ 🟩 list_with_stats · count)
+│   │   ├── user.py              🟦 get · get_by_email · create   + 🟩 관리자: count · list_with_stats
 │   │   ├── chat_log.py          🟦 create · recent_success_for_context · 내 로그 count/list
-│   │   │                           (+ 🟩 list_for_user · list_failures · stats)
+│   │   │                           + 🟩 관리자: stats · count/list_for_user · count/list_failures
 │   │   ├── refresh_token.py     🟦 create · get_valid · delete · delete_expired
-│   │   └── server_log.py        🟦 create   (+ 🟩 list_by_request)
+│   │   └── server_log.py        🟦 create   + 🟩 관리자: list_by_request
 │   │
 │   ├── schemas/                 ── 요청·응답 검증 (Pydantic)
 │   │   ├── auth.py              🟦 SignupRequest · LoginRequest · RefreshTokenRequest
-│   │   ├── chat.py              🟩 ChatRequest(1~1000자) · 챗 응답
-│   │   └── admin.py             🟩 관리자 응답   ⏳ 미작성
+│   │   └── chat.py              🟩 ChatRequest(1~1000자)
 │   │
 │   ├── services/                ── 비즈니스 로직
 │   │   ├── auth_service.py      🟦 가입 · 로그인 · 재발급(회전) · 로그아웃 · 관리자 시드 · 만료 토큰 정리
 │   │   ├── chat_service.py      🟩 챗 흐름 — 컨텍스트 구성 · AI 호출 · 성공/실패 저장 · 504 / 502
-│   │   ├── ai_service.py        🟩 Codyssey AI 호출 · 전체 30초 상한 · 실패 분류(AI_TIMEOUT / AI_CALL_FAILED)
-│   │   └── admin_service.py     🟩 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름   ⏳ 미작성
+│   │   └── ai_service.py        🟩 Codyssey AI 호출 · 전체 30초 상한 · 실패 분류(AI_TIMEOUT / AI_CALL_FAILED)
 │   │
 │   └── routers/                 ── HTTP 엔드포인트
 │       ├── auth.py              🟦 /api/auth/signup · login · refresh · logout · me
 │       ├── me.py                🟦 /api/me/chats
 │       ├── chat.py              🟩 /api/chat
-│       └── admin.py             🟩 /api/admin/*   ⏳ 미작성
+│       └── admin.py             🟩 /api/admin/* — 통계 · 사용자 목록 · 사용자별 대화 · 실패 기록 · 요청 흐름 (조회 전용)
 │
 ├── scripts/
 │   └── check_logs.sql           🟦 평가자용 DB 확인 SQL
@@ -77,7 +75,8 @@ backend/
 │   ├── conftest.py              🟦 임시 DB · TestClient · 헬퍼
 │   ├── test_auth.py             🟦 인증 19개
 │   ├── test_me_chats.py         🟦 내 로그 4개
-│   └── test_chat.py             🟩 챗 API 21개 + 서버 로그 4개 (가짜 AI 서버로 대체)
+│   ├── test_chat.py             🟩 챗 API 21개 + 서버 로그 4개 (가짜 AI 서버로 대체)
+│   └── test_admin.py            🟩 관리자 API·감사 로그 11개
 │
 ├── requirements.txt             🟨 런타임 의존성
 ├── requirements-dev.txt         🟦 pytest
@@ -110,8 +109,9 @@ backend/
 | 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | ✅ #61 · PR #62 |
 | 로깅 | `core/logging.py` — 챗 요청의 단계별 이벤트(요청 수신 · AI 호출 시작 · AI 성공/실패 · DB 저장 성공/실패)를 콘솔 · `logs/app.log` · `server_logs` 에 같은 `request_id` 로 기록 | ✅ #64 · PR #65 |
 | PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | ✅ #61 · PR #62 |
-| 관리자 API | `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs` | ⏳ |
-| 관리자 조회 CRUD | `crud.user.list_with_stats`·`count`, `crud.chat_log.list_for_user`·`list_failures`·`stats`, `crud.server_log.list_by_request` | ⏳ |
+| 관리자 API | `routers/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs`. 조회만 하므로 서비스·스키마 파일 없이 라우터 → CRUD 로 바로 연결 (내 대화 로그 API 와 같은 구조) | 🔄 #66 |
+| 관리자 조회 CRUD | `crud.user.count`·`list_with_stats`, `crud.chat_log.stats`·`count/list_for_user`·`count/list_failures`, `crud.server_log.list_by_request` | 🔄 #66 |
+| 감사 로그 | `require_admin` 에서 관리자 호출은 `admin_access`, 일반 사용자 시도는 `admin_forbidden`(WARN) 을 콘솔 · 파일 · `server_logs` 에 기록 | 🔄 #66 |
 
 > 관리자 API 는 `require_admin` 의존성(403)과 관리자 계정 시드(`ensure_admin`)를 사용한다 — 이 두 가지는 인증 영역(🟦)에서 이미 구현됨.
 
@@ -125,7 +125,7 @@ flowchart LR
         CH[routers/chat.py]
         AI[services/ai_service.py]
         LG[core/logging.py]
-        AD[routers/admin.py<br/>services/admin_service.py]
+        AD[routers/admin.py]
     end
     subgraph AUTHTRACK["🟦 인증 · DB"]
         DEP[core/dependencies.py<br/>get_current_user]
@@ -185,7 +185,7 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
                    ├─ /api/chat     ─▶ routers/chat.py ─(get_current_user)─▶ services/chat_service.py     🟩
                    │                                         ├─▶ crud.chat_log (컨텍스트·저장) ─▶ SQLite
                    │                                         └─▶ services/ai_service.py ─▶ Codyssey AI API (httpx, 30초)
-                   └─ /api/admin/*  ─▶ routers/admin.py ─(require_admin)─▶ services/admin_service.py      🟩
+                   └─ /api/admin/*  ─▶ routers/admin.py ─(require_admin + 감사 로그)─▶ crud ─▶ SQLite        🟩
 ```
 
 ---
