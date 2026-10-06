@@ -25,7 +25,7 @@
 | 시스템 구조(아키텍처·컴포넌트 역할) | ✅ | [02-architecture.md](02-architecture.md) |
 | API 명세(요청/응답 예시) | ✅ | [03-api.md](03-api.md), Swagger `/docs` |
 | DB 구조(ERD·필드 설명) | ✅ | [04-database.md](04-database.md) |
-| DB 확인 방법 안내 (1개 이상) | 🟡 | ① `GET /api/me/chats` **구현**(#58·PR #59)·`/api/admin/*` 미구현 ② "내 대화 로그"·**관리자 화면** (프론트 완료, 실서버 연결 대기) ③ `scripts/check_logs.sql` **구현**(#11·PR #17) |
+| DB 확인 방법 안내 (1개 이상) | ✅ | ① `GET /api/me/chats`(#58·PR #59) · `/api/admin/*` 5종(#66·PR #67) **구현** ② "내 대화 로그"·**관리자 화면** (프론트 완료, 실서버 연결 확인 대기) ③ `scripts/check_logs.sql` **구현**(#11·PR #17). 사용 방법은 backend/README 9-4 |
 | 배포 및 실행 방법(환경변수 설정 포함) | 🟡 | [06-deployment.md](06-deployment.md) — Railway 절차 작성, 프론트·백엔드 기동 확인(2026-10-01). 외부망·CORS 검증 전 |
 | 환경변수 키 목록(이름 수준) | 🟡 | [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) 작성, `backend/.env.example` 없음 |
 | 팀 구성원 역할 및 개인별 작업 요약 | 🟡 | [09-team.md](09-team.md) 계획 작성 → **실제 작업 후 커밋 수와 함께 갱신** (역할 버전 불일치 C1~C3) |
@@ -43,7 +43,7 @@
 |------|:----:|------|
 | 회원가입 정상 동작 | ✅ | B3 (`POST /api/auth/signup`) — V01~V04 통과 (#16·PR #25) |
 | 로그인 정상 동작 | ✅ | B4 (JWT 발급) — V05·V06 통과 (#16·PR #25) |
-| 인증 상태에 따라 기능 구분 | 🟡 | F4·F5·F10 (라우팅 가드, 메뉴 분기, 관리자 탭) — B01·B20. **프론트 완료**, 인증은 실서버로 확인(frontend/TESTING.md G), 관리자 API 대기 |
+| 인증 상태에 따라 기능 구분 | ✅ | F4·F5·F10 (라우팅 가드, 메뉴 분기, 관리자 탭) — B01·B20. **프론트 완료**, 인증은 실서버로 확인(frontend/TESTING.md G). 관리자 API 는 비로그인 401 · 일반 사용자 403 (#66·PR #67, V31·V32 통과) |
 | 챗봇 질문/응답은 로그인 사용자만 | ✅ | B6 (`get_current_user`) — V09 통과 (`/api/chat`·`/api/me/chats`) |
 | 비밀번호 평문 저장 금지 | ✅ | B3 (bcrypt) — V04 통과 |
 
@@ -61,7 +61,7 @@
 |------|:----:|------|
 | 질문과 AI 응답 DB 누적 저장 | ✅ | B2·B7 (`chat_logs`, 성공 status=success·실패 status=error) — V10·V15·V16 통과. L5 증빙은 미실행 |
 | 최소 추적 필드: 사용자 식별·생성 시각·질문·응답 | ✅ | `user_id, created_at, question, answer` (+ `status`·`error_code`·`latency_ms`·`request_id`) — docs/04, `models/chat_log.py` (#11·PR #17) |
-| 사용자 기준 로그 조회/추적 | 🟡 | B12 `GET /api/me/chats` **완료**(#58·PR #59, V18·V19 통과) · B16·B17 (관리자) 미구현 — V34·V35 |
+| 사용자 기준 로그 조회/추적 | ✅ | B12 `GET /api/me/chats`(#58·PR #59, V18·V19 통과) · B16·B17 관리자 사용자 목록·사용자별 대화(#66·PR #67, V34·V35 통과) |
 
 ### mission 4-5. 운영 및 유지보수
 
@@ -74,7 +74,7 @@
 | AI 실패/타임아웃 시 비정상 종료 없음 | ✅ | B9 — V15~V17 통과 (호출 전체 30초 상한, 실패 저장 후 504/502, 장애 직후 정상 질문 200) |
 | 사용자에게 오류 알림(메시지/상태코드/안내) | 🟡 | `{code: 504/502, data:{message}}` + F7 오류 말풍선 — **프론트 완료**(문구 안내·다시 시도, 사용자 화면에는 코드 미표시 — 05-ui-ux 5절), **백엔드 완료**(PR #62). 화면 ↔ 실서버 확인 대기 |
 | 입력 검증 1개 이상 | ✅ | B11 (빈 입력·1000자, **서버 필수**, `code: 422`) + F8 (클라이언트 보조) — V13·V14 통과, 회원가입 입력도 V03 |
-| (관리자) 실패 원인 추적 | 🟡 | B18·B19, F13·F14 — V36·V37. **프론트 완료**(#49, MSW), 관리자 API 대기 |
+| (관리자) 실패 원인 추적 | 🟡 | **백엔드 완료** — B18 AI 실패 기록 · B19 요청 흐름(#66·PR #67, V36·V37 통과, Swagger 로 로컬 실서버 확인). F13·F14 **프론트 완료**(#49, MSW). 프론트 화면 ↔ 실서버 연결은 아직 확인 안 함 |
 
 ### mission 4-6. 배포 및 접근성
 
@@ -88,9 +88,9 @@
 | 요구 | 상태 | 수행 방법 |
 |------|:----:|-----------|
 | 브랜치 전략 (main/develop) | 🟡 | main·develop 존재. 보호 규칙 설정 여부 미확인 ([09-team.md 2-1. 브랜치](09-team.md#2-1-브랜치)) |
-| 기능 단위 작업 브랜치 흔적 | 🟡 | `feature/setup`, `feature/fe-setup` / 백엔드: `chore/be-init`, `feature/be-db`, `feature/be-auth-jwt`, `feature/be-logs`, `feature/be-chat` |
-| PR 기반 Merge 기록 | 🟡 | PR #2·#3·#4 머지 (Merge commit) / 백엔드: PR #15·#17·#25·#59·#62 머지 |
-| 팀원별 유의미한 커밋 10회 이상 | ⬜ | 계획 12~15회 ([09-team.md 4. 브랜치·커밋 계획 (팀원별 10회 이상 보장)](09-team.md#4-브랜치커밋-계획-팀원별-10회-이상-보장)) |
+| 기능 단위 작업 브랜치 흔적 | ✅ | `feature/setup`, `feature/fe-setup`, 프론트 `feature/fe-*`·`refactor/fe-*`·`fix/fe-*` / 백엔드: `chore/be-init`, `feature/be-db`, `feature/be-auth-jwt`, `feature/be-logs`, `feature/be-chat`, `feature/be-server-logs`, `feature/be-admin` |
+| PR 기반 Merge 기록 | ✅ | PR #2·#3·#4 머지 (Merge commit) / 백엔드: PR #15·#17·#25·#59·#62·#65·#67 머지 / 프론트: PR 22건(#4~#60) |
+| 팀원별 유의미한 커밋 10회 이상 | ✅ | 성원모 51회 · 이성준 94회 (2026-10-06 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
 | 문서의 역할 기술이 Git 이력과 일치 | ⬜ | 마감 시 `git shortlog -sn` 으로 [09-team.md 6. 개인별 작업 요약 (마감 시 실제 값으로 갱신)](09-team.md#6-개인별-작업-요약-마감-시-실제-값으로-갱신) 갱신 |
 
 ### mission 5·6. 개발 환경 / 제약 사항
@@ -130,11 +130,11 @@
 | 내 로그 조회 API | B12 | ✅ #58·PR #59 |
 | 서버 로그 (+ `server_logs`) | B13 | ✅ #64·PR #65 (관리자 감사 로그 `admin_access`/`admin_forbidden` 은 B15 에서) |
 | 확인용 SQL | B14 | ✅ #11·PR #17 (`scripts/check_logs.sql`) |
-| 관리자 권한·시드·감사 로그 | B15 | 🟡 `require_admin`·관리자 시드 완료(#16·PR #25), 감사 로그 미구현 |
-| 관리자 사용자 목록 | B16 | ⬜ |
-| 관리자 사용자별 대화 | B17 | ⬜ |
-| 관리자 AI 실패 기록 | B18 | ⬜ |
-| 관리자 통계·요청 흐름 | B19 | ⬜ |
+| 관리자 권한·시드·감사 로그 | B15 | ✅ `require_admin`·관리자 시드(#16·PR #25) + 감사 로그 `admin_access`/`admin_forbidden`(#66·PR #67, V38 통과) |
+| 관리자 사용자 목록 | B16 | ✅ #66·PR #67 |
+| 관리자 사용자별 대화 | B17 | ✅ #66·PR #67 |
+| 관리자 AI 실패 기록 | B18 | ✅ #66·PR #67 |
+| 관리자 통계·요청 흐름 | B19 | ✅ #66·PR #67 |
 
 ### Frontend
 
@@ -150,10 +150,10 @@
 | 클라이언트 입력 검증 | F8 | ✅ |
 | 내 대화 로그 화면 | F9 | 🟡 프론트 완료(MSW) — 실서버 확인 대기 |
 | 관리자 가드·메뉴 | F10 | ✅ 실서버 확인 (비관리자 404) |
-| 관리자 통계 | F11 | 🟡 프론트 완료(MSW) — 관리자 API 대기 |
-| 관리자 사용자 목록·대화 | F12 | 🟡 프론트 완료(MSW) — 관리자 API 대기 |
-| 관리자 AI 실패 기록 | F13 | 🟡 프론트 완료(MSW) — 관리자 API 대기 |
-| 관리자 요청 흐름 | F14 | 🟡 프론트 완료(MSW) — 관리자 API 대기 |
+| 관리자 통계 | F11 | 🟡 프론트 완료(MSW) · 백엔드 API 완료(PR #67) — 실서버 연결 확인 대기 |
+| 관리자 사용자 목록·대화 | F12 | 🟡 프론트 완료(MSW) · 백엔드 API 완료(PR #67) — 실서버 연결 확인 대기 |
+| 관리자 AI 실패 기록 | F13 | 🟡 프론트 완료(MSW) · 백엔드 API 완료(PR #67) — 실서버 연결 확인 대기 |
+| 관리자 요청 흐름 | F14 | 🟡 프론트 완료(MSW) · 백엔드 API 완료(PR #67) — 실서버 연결 확인 대기 |
 
 ### 공통 — 문서 & 협업
 
@@ -167,10 +167,10 @@
 | 배포 및 실행 방법 | 🟡 | docs/06 (Railway, 기동 확인 · 외부망·CORS 검증 전) |
 | 환경변수 키 목록 | ✅ (문서) | [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수) |
 | 팀 역할 및 개인별 작업 요약 | 🟡 | docs/09 |
-| 기능 단위 작업 브랜치 흔적 | 🟡 | feature/setup, feature/fe-setup, 백엔드 feature/be-* 5개·chore/be-init |
-| PR 기반 머지 기록 | 🟡 | PR #2~#4, 백엔드 PR #15·#17·#25·#59·#62·#65 |
-| 성원모 — 커밋 10회 이상 | ✅ | 44회 (2026-10-02 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
-| 이성준 — 커밋 10회 이상 | ✅ | 94회 (2026-10-02 develop, 같은 기준) |
+| 기능 단위 작업 브랜치 흔적 | ✅ | feature/setup, feature/fe-setup, 프론트 feature/fe-* 등, 백엔드 feature/be-* 6개·chore/be-init |
+| PR 기반 머지 기록 | ✅ | PR #2~#4, 백엔드 PR #15·#17·#25·#59·#62·#65·#67, 프론트 PR 22건(#4~#60) |
+| 성원모 — 커밋 10회 이상 | ✅ | 51회 (2026-10-06 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
+| 이성준 — 커밋 10회 이상 | ✅ | 94회 (2026-10-06 develop, 같은 기준) |
 | 역할 설명 ↔ Git 이력 일치 확인 | ⬜ | |
 
 ---
