@@ -4,7 +4,8 @@
 > 기준 문서: [docs/02-architecture.md](../docs/02-architecture.md) · [docs/09-team.md](../docs/09-team.md) · [docs/11-open-issues.md](../docs/11-open-issues.md)
 > 2026-09-23 박성현 팀 이탈 → **백엔드 전체를 성원모가 담당** (AI 파이프라인·관리자 API 인수, docs/11-open-issues C10)
 > 아래 🟦·🟩 는 담당자가 아니라 **작업 영역** 구분이다 (둘 다 성원모)
-> 진행 상태 기준: **2026-10-02 develop** (`pytest -q` 48건 통과 — 인증 19 · 내 로그 4 · 챗 21 · 서버 로그 4)
+> 진행 상태 기준: **2026-10-06 develop** (`pytest -q` 59건 통과 — 인증 19 · 내 로그 4 · 챗 21 · 서버 로그 4 · 관리자 11)
+> 백엔드 API 는 명세의 전 항목(인증 · 챗 · 내 대화 로그 · 관리자 5종 · 서버 로그)이 develop 에 머지됐다. 남은 일은 배포 마무리와 문서([8. 남은 작업](#8-남은-작업))
 
 ## 범례
 
@@ -38,7 +39,7 @@ backend/
 │   │   ├── timeutil.py          🟦 UTC 저장 / +09:00 응답 변환
 │   │   ├── security.py          🟦 bcrypt · JWT 발급/검증 · refresh token 해시
 │   │   ├── dependencies.py      🟦 get_current_user(401) · require_admin(403, 🟩 감사 로그 admin_access / admin_forbidden)
-│   │   └── logging.py           🟩 이벤트 로그 — 콘솔 · 파일(logs/app.log) · server_logs 동시 기록
+│   │   └── logging.py           🟩 이벤트 로그 — 콘솔 · 파일(logs/app.log) · server_logs 동시 기록 · request_id 발급
 │   │
 │   ├── models/                  ── 테이블 정의 (SQLAlchemy)
 │   │   ├── user.py              🟦 users
@@ -81,6 +82,8 @@ backend/
 ├── requirements.txt             🟨 런타임 의존성
 ├── requirements-dev.txt         🟦 pytest
 ├── pytest.ini                   🟦 테스트 설정
+├── logs/app.log                 (실행 중 생성되는 이벤트 로그, 커밋 제외)
+├── app.db 또는 data/app.db      (로컬 SQLite, DATABASE_URL 이 정하는 위치, 커밋 제외)
 └── .env                         (커밋 금지 — 각자 작성)
 ```
 
@@ -96,7 +99,7 @@ backend/
 | DB | `database.py`, `core/timeutil.py`, `models/*`, `crud/*`, `scripts/check_logs.sql` | #11 · PR #17 | ✅ |
 | 인증 | `core/security.py`, `core/dependencies.py`, `schemas/auth.py`, `services/auth_service.py`, `routers/auth.py`, `main.py`(lifespan), `tests/test_auth.py` | #16 · PR #25 | ✅ |
 | 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #58 · PR #59 | ✅ |
-| 배포 | Railway 서비스 설정, `CORS_ORIGINS`, Volume `/data` — 백엔드 develop 배포 기동 확인(2026-10-01, Start Command 설정). 공개 도메인 생성·CORS 검증(D01~D04) 남음 | #63 | 🟡 |
+| 배포 | Railway 서비스 설정, Volume `/data`, Variables(`DATABASE_URL=sqlite:////data/app.db` · `LOG_FILE=/data/logs/app.log` 등) — 백엔드 develop 배포 기동 확인(2026-10-01, Start Command 설정). 공개 도메인 생성 · `CORS_ORIGINS` 실제 프론트 주소 등록 · 외부망 확인 남음 | #63 | 🟡 |
 | 문서 | 루트 README 총괄 | `docs/*` | ⏳ |
 
 ### 🟩 AI 파이프라인 · 관리자 API (성원모)
@@ -109,9 +112,9 @@ backend/
 | 실패 처리 | 타임아웃 504 · 호출 실패 502, 실패도 `chat_logs` 저장, 자동 재시도 없음 | ✅ #61 · PR #62 |
 | 로깅 | `core/logging.py` — 챗 요청의 단계별 이벤트(요청 수신 · AI 호출 시작 · AI 성공/실패 · DB 저장 성공/실패)를 콘솔 · `logs/app.log` · `server_logs` 에 같은 `request_id` 로 기록 | ✅ #64 · PR #65 |
 | PoC 정리 | `backend/main.py` → `routers/chat.py` 이관 후 삭제, `requests` 제거 | ✅ #61 · PR #62 |
-| 관리자 API | `routers/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs`. 조회만 하므로 서비스·스키마 파일 없이 라우터 → CRUD 로 바로 연결 (내 대화 로그 API 와 같은 구조) | 🔄 #66 |
-| 관리자 조회 CRUD | `crud.user.count`·`list_with_stats`, `crud.chat_log.stats`·`count/list_for_user`·`count/list_failures`, `crud.server_log.list_by_request` | 🔄 #66 |
-| 감사 로그 | `require_admin` 에서 관리자 호출은 `admin_access`, 일반 사용자 시도는 `admin_forbidden`(WARN) 을 콘솔 · 파일 · `server_logs` 에 기록 | 🔄 #66 |
+| 관리자 API | `routers/admin.py` — `GET /api/admin/stats` · `/users` · `/users/{id}/chats` · `/failures` · `/requests/{request_id}/logs`. 조회만 하므로 서비스·스키마 파일 없이 라우터 → CRUD 로 바로 연결 (내 대화 로그 API 와 같은 구조) | ✅ #66 · PR #67 |
+| 관리자 조회 CRUD | `crud.user.count`·`list_with_stats`, `crud.chat_log.stats`·`count/list_for_user`·`count/list_failures`, `crud.server_log.list_by_request` | ✅ #66 · PR #67 |
+| 감사 로그 | `require_admin` 에서 관리자 호출은 `admin_access`, 일반 사용자 시도는 `admin_forbidden`(WARN) 을 콘솔 · 파일 · `server_logs` 에 기록 | ✅ #66 · PR #67 |
 
 > 관리자 API 는 `require_admin` 의존성(403)과 관리자 계정 시드(`ensure_admin`)를 사용한다 — 이 두 가지는 인증 영역(🟦)에서 이미 구현됨.
 
@@ -123,7 +126,7 @@ backend/
 flowchart LR
     subgraph AITRACK["🟩 AI 파이프라인 · 관리자 API"]
         CH[routers/chat.py]
-        AI[services/ai_service.py]
+        AI[services/chat_service.py<br/>services/ai_service.py]
         LG[core/logging.py]
         AD[routers/admin.py]
     end
@@ -157,7 +160,8 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
 | 입력 검증 메시지 | 스키마 validator 에서 `raise ValueError("질문은 1~1000자로 입력해 주세요.")` → 자동 422 | `core/responses.py` |
 | 컨텍스트 조회 | `crud.chat_log.recent_success_for_context(db, user.id, settings.ai_context_turns)` — **오래된 순**으로 반환 | `crud/chat_log.py` |
 | 대화 저장 | `crud.chat_log.create(db, user_id=…, question=…, answer=…, status="success"/"error", error_code=…, latency_ms=…, request_id=…)` | `crud/chat_log.py` |
-| 서버 로그 저장 | `crud.server_log.create(db, request_id=…, level="INFO", event="ai_call_start", user_id=…, detail="…")` | `crud/server_log.py` |
+| 요청 추적 ID | `request_id = new_request_id()` — 12자리, chat_logs·server_logs 를 잇는 열쇠 | `core/logging.py` |
+| 서버 로그 저장 | `log_event(request_id, "ai_call_start", user_id=user.id, context_turns=2)` → 콘솔 · 파일 · `server_logs` 에 한 번에 기록 (DB 저장은 내부에서 `crud.server_log.create`) | `core/logging.py` |
 | 설정값 | `settings.copa_api_key` · `ai_timeout_seconds` · `ai_context_turns` · `max_message_length` | `config.py` |
 | 응답 시각 형식 | `to_kst_iso(log.created_at)` | `core/timeutil.py` |
 | 관리자 권한 | `admin: User = Depends(require_admin)` → 비로그인 401 · 일반 사용자 403 | `core/dependencies.py` |
@@ -171,7 +175,7 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
 |------|----------------------|-----------|
 | `app/main.py` | 🟦 CORS·lifespan·`auth`/`me` 라우터 · 🟩 `chat.router`·`admin.router` 등록 | 라우터 등록 줄만 추가, 수정 전 채널 공지 |
 | `requirements.txt` | 🟦 기본 의존성 (PoC 삭제와 함께 `requests` 제거됨) | 버전 변경 시 공지 |
-| `.env` 키 | 🟦 JWT·DB·CORS·ADMIN_* · 🟩 COPA_API_KEY·AI_* | 키 목록은 docs/06-deployment 이 기준 |
+| `.env` 키 | 🟦 JWT·DB·CORS·ADMIN_* · 🟩 COPA_API_KEY·AI_*·LOG_FILE | 키 목록은 docs/06-deployment 이 기준 |
 
 ---
 
@@ -186,17 +190,131 @@ AI·관리자 영역(🟩)이 인증·DB 영역(🟦)에서 가져다 쓰는 것
                    │                                         ├─▶ crud.chat_log (컨텍스트·저장) ─▶ SQLite
                    │                                         └─▶ services/ai_service.py ─▶ Codyssey AI API (httpx, 30초)
                    └─ /api/admin/*  ─▶ routers/admin.py ─(require_admin + 감사 로그)─▶ crud ─▶ SQLite        🟩
+
+각 단계의 이벤트 ─▶ core/logging.log_event ─▶ 콘솔 · logs/app.log · server_logs (같은 request_id)
+```
+
+**챗 요청 한 건의 이벤트 순서** — 관리자 API `GET /api/admin/requests/{request_id}/logs` 가 이 기록을 그대로 돌려준다 (프론트 관리자 화면 "요청 흐름"과의 실서버 연결 확인은 아직)
+
+```
+request_received → ai_call_start → ai_call_success / ai_call_failed(reason=…) → db_save_success / db_save_failed
 ```
 
 ---
 
-## 6. 실행
+## 6. API 목록
+
+모든 응답은 HTTP 200 + `{code, data}` 이고, 결과는 `code` 로 구분한다. 실패하면 `data.message` 에 안내 문구가 들어간다.
+
+| Method · 경로 | 로그인 | 설명 | 주요 실패 code |
+|---|:-:|---|---|
+| `POST /api/auth/signup` | | 회원가입 (성공 201) | 409 이메일 중복 · 422 입력 오류 |
+| `POST /api/auth/login` | | access token(15분) · refresh token(1일) 발급 | 401 |
+| `POST /api/auth/refresh` | | refresh token 으로 재발급 (기존 refresh token 은 폐기) | 401 |
+| `POST /api/auth/logout` | | refresh token 폐기 | — |
+| `GET /api/auth/me` | ✅ | 내 정보 · 권한(role) | 401 |
+| `POST /api/chat` | ✅ | 질문 → AI 답변 (최근 성공 대화 5개를 함께 보냄) | 422 · 504 AI 지연 · 502 AI 실패 · 500 저장 실패 |
+| `GET /api/me/chats` | ✅ | 내 대화 로그 (성공만, 최신순) | 401 |
+| `GET /api/admin/stats` | 관리자 | 사용자 수 · 대화 수 · 실패 종류별 건수 · 성공 평균 응답시간 | 401 · 403 |
+| `GET /api/admin/users?q=` | 관리자 | 사용자 목록 · 이메일 검색 (최근 활동 순) | 401 · 403 |
+| `GET /api/admin/users/{id}/chats` | 관리자 | 사용자별 대화 (성공·실패 모두) | 404 없는 사용자 |
+| `GET /api/admin/failures` | 관리자 | AI 실패 기록 | 401 · 403 |
+| `GET /api/admin/requests/{request_id}/logs` | 관리자 | 한 요청의 처리 과정(서버 로그) | 404 기록 없음 |
+
+목록 API 는 `limit`(기본 20, 최대 100) · `offset` 을 받고 `{total, items}` 로 응답한다. 요청·응답 예시는 [docs/03-api.md](../docs/03-api.md).
+
+---
+
+## 7. 주요 설계 결정 (왜 이렇게 만들었나)
+
+| 결정 | 이유 |
+|------|------|
+| AI 호출은 `httpx.AsyncClient` 비동기, 클라이언트 1개 재사용 | AI 응답을 최대 30초 기다리는 동안 다른 사용자 요청을 막지 않기 위해. 요청마다 새 연결(TLS 협상)을 맺지 않아 빠름 |
+| 30초 상한을 `asyncio.wait_for` 로 한 번 더 감쌈 | httpx 의 timeout 은 연결·읽기 같은 **단계별** 상한이라, 조금씩 끊어 오는 응답은 전체 30초를 넘을 수 있음 |
+| 서버 자동 재시도 없음 | 타임아웃 뒤 재시도하면 사용자가 60초 이상 기다림. 재시도는 화면의 [다시 시도] 버튼으로 사용자가 결정 |
+| AI 실패도 `chat_logs` 에 `status=error` 로 저장 | 관리자 화면의 "AI 실패 기록"과 원인 추적이 이 저장분으로 만들어짐 |
+| 입력 검증(1~1000자)을 AI 호출 **전**에 수행 | 잘못된 요청으로 AI 비용·대기 시간을 쓰지 않기 위해 |
+| 이벤트 로그를 콘솔 · 파일 · DB 세 곳에 기록 | 콘솔은 Railway Logs 화면, 파일은 로컬 `grep`, DB 는 관리자 화면 — 보는 곳마다 같은 기록을 쓰기 위해 |
+| `server_logs` 는 요청 세션과 **별도 DB 세션**으로 저장 | 대화 저장이 실패해 요청 세션이 망가져도 `db_save_failed` 는 남기기 위해. 로그 저장이 실패해도 요청은 계속 진행 |
+| 로그에 질문 원문 · 비밀번호 · API 키 · 토큰 · DB 예외 메시지를 남기지 않음 | 개인정보·비밀값 유출 방지. 사유는 `timeout`, `auth_failed` 같은 코드와 예외 종류 이름만 |
+| 관리자 감사 로그를 `require_admin` 안에서 기록 | 관리자 API 는 모든 사용자의 대화를 볼 수 있으므로 누가 언제 봤는지 남김. 권한 검사와 같은 자리라 경로마다 빠뜨릴 수 없음 |
+| 관리자 API 는 서비스·스키마 파일 없이 라우터 → CRUD | 조회만 하므로 중간 계층이 할 일이 없음 (내 대화 로그 API 와 같은 구조). 응답은 필요한 필드만 골라 만들어 비밀번호 해시가 섞이지 않음 |
+| 통계의 평균 응답시간은 기록이 없으면 `null` | `0` 으로 두면 "0ms, 아주 빠름"으로 잘못 읽힘. 프론트는 `null` 을 "–" 로 표시하도록 만들어져 있음 (MSW 로만 확인) |
+| Railway 에서 `LOG_FILE=/data/logs/app.log` | 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 저장 |
+
+---
+
+## 8. 남은 작업
+
+| 작업 | 내용 |
+|------|------|
+| 배포 마무리 | 백엔드 공개 도메인 생성 → 프론트 Variables `VITE_API_BASE_URL` · 백엔드 `CORS_ORIGINS` 에 실제 주소 등록 → 외부망에서 가입 · 질문 · 내 대화 로그 · 관리자 화면 전체 흐름 확인 |
+| 프론트 실서버 연결 | **아직 안 함.** 백엔드는 pytest 와 Swagger 로만 확인했다. 챗 · 내 대화 로그 · 관리자 화면을 MSW 없이 백엔드에 연결해 확인 (프론트 담당과 함께) |
+| `backend/.env.example` | 값이 비어 있는 키 목록 파일 추가 (실제 값은 커밋 금지) |
+| 루트 README | 프로젝트 개요 · 실행 방법 · 환경변수 목록 · 팀 역할 정리 |
+
+---
+
+## 9. 실행 · 확인 방법
+
+### 9-1. 설치와 실행
 
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-# backend/.env 작성 — 키 목록: docs/06-deployment.md (JWT_SECRET_KEY 필수)
-uvicorn app.main:app --reload        # http://localhost:8000/docs
-python -m pytest -q
+# backend/.env 작성 — 키 목록: docs/06-deployment.md
+#   필수: JWT_SECRET_KEY · COPA_API_KEY
+#   관리자 계정: ADMIN_EMAIL · ADMIN_PASSWORD(8자 이상) · ADMIN_NICKNAME → 서버 시작 시 자동 생성
+uvicorn app.main:app --reload        # http://localhost:8000/docs (Swagger)
+python -m pytest -q                  # 자동 테스트 59건
+```
+
+> `.env` 에 같은 키가 여러 줄 있으면 **아래쪽 값**이 적용된다. 헷갈리지 않게 키마다 한 줄만 둔다.
+
+### 9-2. Swagger 로 확인
+
+1. `POST /api/auth/login` 으로 로그인 → 응답의 `access_token` 을 오른쪽 위 **Authorize** 에 붙여 넣기 (`Bearer ` 없이). 토큰은 15분 뒤 만료되므로 그때 다시 로그인
+2. 일반 사용자: `POST /api/chat` → `GET /api/me/chats`
+3. 관리자(`ADMIN_EMAIL` 로 로그인): `admin` 묶음 5개. `GET /api/admin/failures` 의 `request_id` 를 `GET /api/admin/requests/{request_id}/logs` 에 넣으면 그 요청의 처리 과정이 나온다
+4. 일반 사용자 토큰으로 관리자 API 를 부르면 `code: 403`
+
+### 9-3. AI 실패 상황 만들어 보기
+
+서버를 아래처럼 실행하면 그 실행에만 값이 바뀐다 (`.env` 는 그대로).
+
+| 상황 | 실행 | 기대 결과 |
+|------|------|-----------|
+| AI 타임아웃 | `AI_TIMEOUT_SECONDS=1 uvicorn app.main:app --reload` | `code: 504`, 로그 `ai_call_failed reason=timeout` → `db_save_success status=error` |
+| 잘못된 API 키 | `COPA_API_KEY=invalid uvicorn app.main:app --reload` | `code: 502`, 로그 `ai_call_failed reason=auth_failed` → `db_save_success status=error` |
+
+### 9-4. 로그와 DB 확인
+
+| 보는 곳 | 방법 |
+|---------|------|
+| 콘솔 | 서버를 실행한 터미널 (Railway 는 대시보드 **Logs** 탭) |
+| 로그 파일 | `tail -n 20 logs/app.log` · `grep <request_id> logs/app.log` (Railway 는 `/data/logs/app.log`) |
+| DB | `.env` 의 `DATABASE_URL` 이 가리키는 파일. 예) `sqlite:///./app.db` 이면 `backend/app.db` |
+
+```bash
+sqlite3 app.db "SELECT event, level, detail FROM server_logs WHERE request_id='<request_id>' ORDER BY id;"
+sqlite3 app.db "SELECT id, status, error_code, request_id FROM chat_logs ORDER BY id DESC LIMIT 5;"
+sqlite3 app.db < scripts/check_logs.sql      # 사용자별 대화 수 · 최근 대화 등 한 번에
+```
+
+### 9-5. 로컬 테스트 계정 비밀번호를 잊었을 때
+
+비밀번호는 원래 값으로 되돌릴 수 없는 bcrypt 해시로 저장돼 관리자도 볼 수 없고, 비밀번호 찾기 기능은 없다.
+새로 가입하거나, 로컬 DB 에서만 아래처럼 새 비밀번호로 덮어쓴다 (관리자 계정도 같음 — 서버 시작 시 시드는 이미 있는 계정의 비밀번호를 바꾸지 않는다).
+
+```bash
+python -c "
+from app.database import SessionLocal
+from app.core.security import hash_password
+from app import crud
+with SessionLocal() as db:
+    u = crud.user.get_by_email(db, 'test@example.com')
+    u.hashed_password = hash_password('newpassword1234')
+    db.commit()
+"
 ```
