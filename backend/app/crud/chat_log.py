@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import ChatLog
+from app.models import ChatLog, User
 
 
 def create(
@@ -69,3 +69,57 @@ def list_success_for_user(db: Session, user_id: int, limit: int, offset: int) ->
             .offset(offset)
         ).all()
     )
+
+
+# ---------- 관리자 조회 (03-api 4-1 · 4-3 · 4-4) ----------
+def stats(db: Session) -> dict:
+    """요약 통계 — 대화 수(전체·성공·실패), 실패 종류별 건수, 성공 기록의 평균 응답시간.
+
+    평균은 성공 기록이 없으면 None 으로 둔다 (0 으로 바꾸면 '0ms, 아주 빠름'으로 읽힘).
+    """
+    by_status = dict(db.execute(select(ChatLog.status, func.count()).group_by(ChatLog.status)).all())
+    by_error = dict(
+        db.execute(
+            select(ChatLog.error_code, func.count()).where(ChatLog.status == "error").group_by(ChatLog.error_code)
+        ).all()
+    )
+    avg = db.scalar(select(func.avg(ChatLog.latency_ms)).where(ChatLog.status == "success"))
+    success, failed = by_status.get("success", 0), by_status.get("error", 0)
+    return {
+        "chats": {"total": success + failed, "success": success, "failed": failed},
+        # 화면이 두 항목을 항상 그리므로 0 건이어도 키를 둔다
+        "failures": {"AI_TIMEOUT": by_error.get("AI_TIMEOUT", 0), "AI_CALL_FAILED": by_error.get("AI_CALL_FAILED", 0)},
+        "avg_latency_ms": round(avg) if avg is not None else None,
+    }
+
+
+def count_for_user(db: Session, user_id: int) -> int:
+    """관리자 사용자별 대화 total — 성공·실패 전체."""
+    return db.scalar(select(func.count()).select_from(ChatLog).where(ChatLog.user_id == user_id)) or 0
+
+
+def list_for_user(db: Session, user_id: int, limit: int, offset: int) -> list[ChatLog]:
+    """관리자 사용자별 대화 items — 성공·실패 모두 최신순."""
+    return list(
+        db.scalars(
+            select(ChatLog).where(ChatLog.user_id == user_id).order_by(ChatLog.id.desc()).limit(limit).offset(offset)
+        ).all()
+    )
+
+
+def count_failures(db: Session) -> int:
+    """관리자 AI 실패 기록 total."""
+    return db.scalar(select(func.count()).select_from(ChatLog).where(ChatLog.status == "error")) or 0
+
+
+def list_failures(db: Session, limit: int, offset: int) -> list[tuple[ChatLog, str]]:
+    """관리자 AI 실패 기록 items — (실패 기록, 사용자 이메일) 최신순. 이메일을 함께 보여주려고 users 를 join."""
+    rows = db.execute(
+        select(ChatLog, User.email)
+        .join(User, User.id == ChatLog.user_id)
+        .where(ChatLog.status == "error")
+        .order_by(ChatLog.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    return [tuple(row) for row in rows]

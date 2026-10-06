@@ -8,6 +8,7 @@
 """
 
 import logging
+import uuid
 from pathlib import Path
 
 from app import crud
@@ -18,6 +19,11 @@ logger = logging.getLogger("app")
 
 # server_logs.level 에 저장하는 이름 → 파이썬 로그 레벨
 _LEVELS = {"INFO": logging.INFO, "WARN": logging.WARNING, "ERROR": logging.ERROR}
+
+
+def new_request_id() -> str:
+    """요청 추적 ID (12자리 16진수). chat_logs·server_logs 에 같이 저장해 한 요청의 흐름을 이어 본다."""
+    return uuid.uuid4().hex[:12]
 
 
 def setup_logging() -> None:
