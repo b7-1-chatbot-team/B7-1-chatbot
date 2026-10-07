@@ -213,9 +213,12 @@ Railway Project
 | Root Directory | `/frontend` |
 | Build | Railpack 자동 감지 (Node 버전은 `.nvmrc`·`engines`, `npm run build` → `dist`). `build` 는 `tsc -b` 로 **타입 검사를 먼저** 수행하므로 타입 오류가 있으면 배포 빌드가 실패한다 |
 | 도메인 | **Generate Domain** |
+| 정적 서버 | `frontend/Caddyfile` — Railpack 기본 Caddy 설정에 **보안 응답 헤더**(CSP·HSTS·X-Frame-Options·nosniff·Referrer-Policy)를 더한 것. 빌드 로그에 `Using custom Caddyfile` 이 보이면 적용된 것 ([13-security-review.md](13-security-review.md) S07) |
 | Variables | `VITE_API_BASE_URL=https://<backend>.up.railway.app`, `VITE_ADMIN_PATH=<무작위 주소>`, `VITE_SITE_URL=https://<frontend>.up.railway.app` (Generate Domain 으로 받은 주소) |
 
 체크 포인트
+- `VITE_API_BASE_URL` 은 **빌드(axios 주소)와 실행 중(Caddy 가 CSP `connect-src` 에 넣음) 모두** 쓴다. 틀리면 API 요청이 브라우저 CSP 에 막힌다(콘솔 `Refused to connect`). 백엔드 주소를 바꾸면 이 값을 바꾸고 다시 배포한다
+- 보안 헤더: `curl -sI https://<frontend>.up.railway.app/` 에 `content-security-policy`·`strict-transport-security`·`x-frame-options`·`x-content-type-options`·`referrer-policy` 가 있는지
 - 검색용 파일: `https://<frontend>.up.railway.app/robots.txt`·`/sitemap.xml` 이 열리는지, 두 파일에 관리자 주소가 없는지 확인
 - SPA 라우팅: `/chat`, 관리자 주소에서 **새로고침했을 때 404 가 나지 않는지** 확인. 404 가 나면 정적 서빙에 `index.html` fallback 설정을 추가한다 (첫 배포 빌드 로그로 서빙 방식 확인).
 
