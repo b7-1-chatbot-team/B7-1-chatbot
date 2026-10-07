@@ -147,7 +147,7 @@ src/
 │   ├── guards.tsx   # RequireAuth · RequireAdmin · GuestOnly
 │   └── index.tsx    # 경로 정의 — 챗·로그·관리자는 lazy 로 나눠 그 화면에 갈 때 받는다
 ├── test/            # server.ts(MSW) · setup.ts — 테스트는 *.test.ts 로 대상 옆에
-├── layouts/         # AppLayout(본문 바로가기 + 헤더 + 본문[오류 경계·Suspense]) · Header(메뉴·토스트 자리)
+├── layouts/         # AppLayout(본문 바로가기 + 헤더 + 본문[오류 경계·Suspense]) · Header(메뉴·계정 영역·토스트 자리 — 헤더 아래 가운데)
 ├── App.tsx          # 앱 틀 — 레이아웃으로 라우트 전체를 감쌈
 └── main.tsx         # 진입점 — MSW 시작, 마운트, Provider(BrowserRouter → ToastProvider → AuthProvider)
 ```

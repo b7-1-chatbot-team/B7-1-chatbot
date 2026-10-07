@@ -72,6 +72,8 @@
   gap: var(--space-3);
   margin-left: auto;
   min-width: 0;
+  /* 확인 중 비어 있어도 [로그아웃]·[로그인] 높이만큼 자리를 잡는다 — 헤더 높이 고정 */
+  min-height: var(--control-height-sm);
 }
 
 .nickname {

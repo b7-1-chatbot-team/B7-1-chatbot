@@ -55,6 +55,7 @@ describe('헤더 — 인증 상태별 메뉴', () => {
     expect(link('로그인')).toBeInTheDocument()
     expect(link('회원가입')).toBeNull()
     expect(link('챗')).toBeNull()
+    expect(link('내 대화 로그')).toBeNull()
     expect(screen.queryByRole('button', { name: '로그아웃' })).toBeNull()
   })
 
@@ -99,13 +100,15 @@ describe('헤더 — 인증 상태별 메뉴', () => {
     expect(link('관리자')).toHaveAttribute('href', ADMIN_URL)
   })
 
-  it('확인 중에는 메뉴를 비워 비로그인 메뉴가 깜빡이지 않는다', async () => {
+  it('확인 중(저장된 토큰 있음)에도 메뉴는 먼저 그리고, 로그인 버튼은 그리지 않는다', async () => {
     saveTokens('access-1', 'refresh-1')
     mockMe(USER, 50)
     renderAt('/chat')
 
+    // 헤더 높이가 바뀌지 않도록 메뉴 틀은 먼저 그린다
+    expect(link('챗')).toBeInTheDocument()
+    expect(link('내 대화 로그')).toBeInTheDocument()
     expect(link('로그인')).toBeNull()
-    expect(link('챗')).toBeNull()
 
     expect(await screen.findByRole('button', { name: '로그아웃' })).toBeInTheDocument()
   })

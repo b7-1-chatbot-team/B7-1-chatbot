@@ -31,3 +31,11 @@
   color: var(--text-secondary);
   font-size: var(--fs-small);
 }
+
+/* 화면 전체 로딩 — 헤더 높이와 관계없이 화면 정가운데. 헤더(z-index 위)는 가리지 않는다 */
+.centered {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+  pointer-events: none;
+}
