@@ -6,6 +6,8 @@
 
 import asyncio
 import json
+import threading
+import time
 from pathlib import Path
 
 import httpx
@@ -17,7 +19,7 @@ from app import crud
 from app.config import settings
 from app.models import ChatLog, ServerLog
 from app.services import ai_service
-from tests.conftest import auth_header, login, signup
+from tests.conftest import PASSWORD, auth_header, login, signup
 
 
 class FakeAI:
@@ -261,3 +263,38 @@ def test_v21_db_save_failed(client, db, fake_ai, user_h, monkeypatch):
     assert "disk I/O error" not in _log_file()  # 예외 메시지(SQL·질문이 섞일 수 있음)는 남기지 않음
 
     assert _ask(client, user_h, "다시 질문")["code"] == 200  # 장애 뒤에도 정상 처리
+
+
+# ---------- 동시 요청 ----------
+def test_concurrent_chats_do_not_block_server(client, fake_ai, user_h):
+    """AI 응답을 기다리는 챗 20건이 동시에 있어도 다른 사용자 로그인이 바로 되고, 챗도 모두 성공한다.
+
+    예전에는 동시 15건부터 DB 연결 풀이 바닥나 서버 로그 저장이 이벤트 루프를 막아 서버 전체가 멈췄다.
+    멈추면 이벤트 루프가 돌지 않아 시간 제한도 동작하지 않으므로, 별도 스레드에서 돌리고 바깥에서 기다린다.
+    """
+    fake_ai.mode = "slow"  # AI 가 1초 뒤 응답 (상한은 기본 30초라 시간 초과 아님)
+    signup(client, email="other@example.com")
+    result = {}
+
+    async def scenario():
+        transport = httpx.ASGITransport(app=client.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
+            chats = [
+                asyncio.create_task(c.post("/api/chat", json={"message": f"질문 {i}"}, headers=user_h))
+                for i in range(20)
+            ]
+            await asyncio.sleep(0.3)  # 챗 요청들이 AI 응답을 기다리는 중
+            started = time.monotonic()
+            other = await c.post("/api/auth/login", json={"email": "other@example.com", "password": PASSWORD})
+            result["login_seconds"] = time.monotonic() - started
+            result["login_code"] = other.json()["code"]
+            result["chat_codes"] = [r.json()["code"] for r in await asyncio.gather(*chats)]
+
+    worker = threading.Thread(target=lambda: asyncio.run(scenario()), daemon=True)
+    worker.start()
+    worker.join(timeout=20)
+
+    assert not worker.is_alive(), "20초 안에 끝나지 않음 — 동시 요청으로 서버가 멈췄다"
+    assert result["login_code"] == 200
+    assert result["login_seconds"] < 3
+    assert result["chat_codes"] == [200] * 20

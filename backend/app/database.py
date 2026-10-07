@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
@@ -31,7 +32,15 @@ def build_engine(url: str):
         _ensure_sqlite_dir(url)
         # FastAPI 는 요청을 여러 스레드에서 처리하므로 같은 연결 공유를 허용
         connect_args["check_same_thread"] = False
-    eng = create_engine(url, connect_args=connect_args)
+    engine_options = {}
+    if url.startswith("sqlite") and make_url(url).database not in (None, "", ":memory:"):
+        # 파일 DB 는 연결을 모아 두는 풀 없이 필요할 때마다 열고 닫는다 (NullPool).
+        # 기본 풀은 연결을 최대 15개까지만 만든다. 챗 요청은 AI 응답을 기다리는 동안 연결을 잡고 있어서
+        # 동시 요청 15건이면 풀이 바닥나고, 이어서 서버 로그 저장이 연결을 기다리며 이벤트 루프를 막아
+        # 서버 전체가 멈췄다. SQLite 는 파일을 여는 것이라 연결 비용이 작아 풀 없이도 충분하다.
+        # (메모리 DB 는 연결마다 다른 DB 가 되므로 제외. PostgreSQL 등으로 바꾸면 풀을 다시 쓴다)
+        engine_options["poolclass"] = NullPool
+    eng = create_engine(url, connect_args=connect_args, **engine_options)
 
     if url.startswith("sqlite"):
         # SQLite 는 FK 제약이 기본 비활성 → 연결마다 활성화 (04-database)
@@ -63,4 +72,4 @@ def get_db() -> Iterator[Session]:
     try:
         yield db  # 라우터 함수가 실행되는 동안 이 세션을 사용
     finally:
-        db.close()  # 오류가 나도 연결을 풀에 돌려준다
+        db.close()  # 오류가 나도 연결을 닫는다(풀을 쓰는 DB 면 풀에 돌려준다)
