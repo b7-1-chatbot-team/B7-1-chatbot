@@ -24,6 +24,12 @@
   }
 }
 
+/* iOS Safari 가 가로로 돌렸을 때 글자를 임의로 키우지 않게 — 글자 크기는 토큰이 정한다 */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   /* 4. 읽기 편한 행간 */
   line-height: 1.5;

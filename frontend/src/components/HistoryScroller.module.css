@@ -12,6 +12,29 @@
   overflow-y: auto;
   /* 모바일에서 끝까지 당겨도 페이지 전체가 튕기지 않게 */
   overscroll-behavior: contain;
+  /* 브라우저 스크롤 앵커링을 끈다. 이전 기록이 위에 붙을 때 보정은 HistoryScroller 가 한 번만 한다.
+     켜 두면 Chrome·Edge·Firefox 는 브라우저도 같은 만큼 내려 두 번 보정된다 (Safari 는 앵커링 없음) */
+  overflow-anchor: none;
+}
+
+/* 이전 기록을 불러오는 중 — 목록 맨 위 가운데에 떠 있어 내용을 밀지 않는다 */
+.loadingOlder {
+  position: absolute;
+  top: var(--space-2);
+  right: 0;
+  left: 0;
+  width: max-content;
+  margin: 0 auto;
+  background: var(--bg-surface-raised);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--toast-shadow);
+  pointer-events: none;
+}
+
+/* 떠 있는 표시는 작게 — 영역 로딩의 큰 안쪽 여백을 줄인다 */
+.loadingOlder > p {
+  padding: var(--space-1-5) var(--space-3-5);
 }
 
 /* 위로 올려 읽는 중에 새 메시지가 오면 아래 가운데에 뜬다 */
