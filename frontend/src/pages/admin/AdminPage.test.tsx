@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { instance } from '@/api/instance'
 import { ToastRegion } from '@/components/Toast'
@@ -245,24 +245,80 @@ describe('관리자 — 사용자 목록', () => {
     expect(await screen.findByText('0건 · 대화 없음')).toBeInTheDocument()
   })
 
-  it('[더 보기] 는 받은 개수만큼 offset 을 올리고 다 받으면 사라진다', async () => {
-    const offsets: string[] = []
+  it('[더 보기] 는 받은 개수만큼 offset 을 올리고 다 받으면 사라진다 (PC 는 10명씩)', async () => {
+    const pages: string[] = []
     server.use(
       http.get(`${BASE}/api/admin/users`, ({ request }) => {
-        const offset = Number(new URL(request.url).searchParams.get('offset'))
-        offsets.push(String(offset))
-        const all = Array.from({ length: 25 }, (_, i) => user(100 - i))
-        return ok({ total: 25, items: all.slice(offset, offset + 20) })
+        const params = new URL(request.url).searchParams
+        const offset = Number(params.get('offset'))
+        const limit = Number(params.get('limit'))
+        pages.push(`${limit}:${offset}`)
+        const all = Array.from({ length: 15 }, (_, i) => user(100 - i))
+        return ok({ total: 15, items: all.slice(offset, offset + limit) })
       }),
     )
     renderAdmin()
     await screen.findByRole('list', { name: '사용자' })
-    expect(userButtons()).toHaveLength(20)
+    expect(userButtons()).toHaveLength(10)
 
     await userEvent.click(screen.getByRole('button', { name: '더 보기' }))
-    await waitFor(() => expect(userButtons()).toHaveLength(25))
-    expect(offsets).toEqual(['0', '20'])
+    await waitFor(() => expect(userButtons()).toHaveLength(15))
+    expect(pages).toEqual(['10:0', '10:10'])
     expect(screen.queryByRole('button', { name: '더 보기' })).not.toBeInTheDocument()
+  })
+})
+
+describe('관리자 — 태블릿·모바일 사용자 목록', () => {
+  // 목록과 대화가 위아래로 쌓이는 폭(≤900px)으로 만든다
+  beforeEach(() => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query === '(max-width: 900px)',
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    )
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('한 번에 5명씩 불러온다', async () => {
+    renderAdmin()
+    await screen.findByRole('list', { name: '사용자' })
+    expect(userRequests[0]).toContain('limit=5')
+  })
+
+  it('[목록 접기] 로 목록을 숨기고 [목록 펼치기] 로 그대로 다시 보여준다', async () => {
+    renderAdmin()
+    await screen.findByRole('list', { name: '사용자' })
+
+    const toggle = screen.getByRole('button', { name: '목록 접기' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(toggle)
+
+    expect(screen.getByRole('button', { name: '목록 펼치기' })).toHaveAttribute('aria-expanded', 'false')
+    // 접어도 받은 목록은 지우지 않는다 — 다시 요청하지 않는다
+    await userEvent.click(screen.getByRole('button', { name: '목록 펼치기' }))
+    expect(userButtons()).toHaveLength(3)
+    expect(userRequests).toHaveLength(1)
+  })
+
+  it('사용자를 고르면 목록을 접고 대화 제목으로 초점을 옮긴다', async () => {
+    renderAdmin()
+    await screen.findByRole('list', { name: '사용자' })
+
+    await userEvent.click(screen.getByRole('button', { name: /kim@example.com/ }))
+
+    expect(screen.getByRole('button', { name: '목록 펼치기' })).toHaveAttribute('aria-expanded', 'false')
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('id', 'admin-user-chats-title'))
+  })
+
+  it('사용자를 고른 주소로 들어오면 목록이 접힌 채로 시작한다', async () => {
+    renderAdmin('?user=3')
+    expect(await screen.findByRole('button', { name: '목록 펼치기' })).toBeInTheDocument()
   })
 })
 

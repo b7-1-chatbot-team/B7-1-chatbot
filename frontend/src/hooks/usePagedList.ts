@@ -15,16 +15,18 @@ export const PAGE_SIZE = 20
  * - offset 은 거르기 전 원본 개수. 거른 개수를 쓰면 같은 구간을 다시 받는다
  * - 보는 도중 새 기록이 생기면 목록이 밀려 겹치므로 getKey 로 중복을 거른다
  * - [더 보기] 는 useSubmit 으로 잠가 두 번 눌러도 한 번만 요청하고, 실패해도 받은 목록은 둔다
+ * - pageSize 는 처음 값만 쓴다. 도중에 바뀌면 offset 계산이 어긋나지 않게 key 로 새로 시작한다
  */
 export function usePagedList<Page extends PageResult<unknown>>(
   fetchPage: (page: { limit: number; offset: number }, signal?: AbortSignal) => Promise<Page>,
   getKey: (item: Page['items'][number]) => string | number,
+  pageSize: number = PAGE_SIZE,
 ) {
   type Item = Page['items'][number]
-  const first = useAbortableRequest((signal) => fetchPage({ limit: PAGE_SIZE, offset: 0 }, signal))
+  const first = useAbortableRequest((signal) => fetchPage({ limit: pageSize, offset: 0 }, signal))
   const [more, setMore] = useState<Item[]>([])
   const [latestTotal, setLatestTotal] = useState<number | null>(null)
-  const moreRequest = useSubmit((offset: number) => fetchPage({ limit: PAGE_SIZE, offset }))
+  const moreRequest = useSubmit((offset: number) => fetchPage({ limit: pageSize, offset }))
 
   const received = (first.data?.items.length ?? 0) + more.length
   const total = latestTotal ?? first.data?.total ?? 0

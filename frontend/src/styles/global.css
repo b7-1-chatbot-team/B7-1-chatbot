@@ -152,6 +152,11 @@
   --chat-max: 820px;
   --auth-max: 404px;
   --admin-list-width: 360px;
+  /* 관리자 사용자 목록·대화 이력 높이 상한 — 넘치면 그 안에서 스크롤 */
+  --admin-list-max: 60vh;
+  --admin-records-max: 70vh;
+  /* 위로 옮겨 올 때 sticky 헤더 높이만큼 띄운다 (모바일 2줄 헤더 포함) */
+  --admin-scroll-offset: 120px;
   --control-height: 40px;
   --control-height-sm: 32px;
   --bubble-max: 78%;

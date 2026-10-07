@@ -82,19 +82,37 @@
 /* 사용자 탭: 목록 + 선택한 사용자의 대화 */
 .grid {
   display: grid;
-  grid-template-columns: var(--admin-list-width) 1fr;
+  /* minmax(0, 1fr): 칸이 안의 내용(긴 이메일·요청 번호·답변) 때문에 화면보다 넓어지지 않게.
+     그냥 1fr 은 내용의 최소 폭보다 줄지 않아, 모바일에서 페이지가 넓어지고 헤더 오른쪽에 빈 띠가 생긴다 */
+  grid-template-columns: var(--admin-list-width) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
 
 .panel {
+  min-width: 0;
   padding: var(--space-4);
   background: var(--bg-surface);
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-card);
 }
 
+/* 패널 제목 + 오른쪽 버튼(사용자 목록 접기) */
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* 사용자 목록 접기 — 태블릿·모바일에서만 */
+.listToggle {
+  display: none;
+}
+
 .panelTitle {
+  /* 고른 뒤 이 제목으로 옮겨 올 때 sticky 헤더에 가려지지 않게 */
+  scroll-margin-top: var(--admin-scroll-offset);
   margin-bottom: var(--space-3);
   font-size: var(--fs-h3);
   font-weight: var(--weight-semibold);
@@ -135,6 +153,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  /* 많이 불러와도 페이지 전체가 길어지지 않게 목록 안에서만 스크롤 */
+  max-height: var(--admin-list-max);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .user {
@@ -202,6 +224,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  /* 대화가 많아도 페이지 전체가 길어지지 않게 이력 안에서만 스크롤 */
+  max-height: var(--admin-records-max);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .record {
@@ -332,7 +358,20 @@
   }
 
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .listToggle {
+    display: inline-flex;
+  }
+
+  /* 접으면 제목 줄만 남긴다. 받아 둔 목록은 지우지 않고 숨긴다 */
+  .collapsed .listBody {
+    display: none;
+  }
+
+  .collapsed .panelTitle {
+    margin-bottom: 0;
   }
 }
 

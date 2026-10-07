@@ -24,7 +24,8 @@ export function UserChats({ userId, onOpenRequest }: UserChatsProps) {
 
   return (
     <section aria-labelledby="admin-user-chats-title" className={styles.panel}>
-      <h2 id="admin-user-chats-title" className={styles.panelTitle}>
+      {/* 태블릿·모바일에서 사용자를 고르면 초점이 여기로 온다 (AdminPage) */}
+      <h2 id="admin-user-chats-title" tabIndex={-1} className={styles.panelTitle}>
         {user ? `${user.email} 의 대화 (${list.total})` : '사용자의 대화'}
       </h2>
       {list.loadError ? (
