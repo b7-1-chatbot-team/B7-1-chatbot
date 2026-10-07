@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ import { FailureList } from './FailureList'
 import { RequestFlow } from './RequestFlow'
 import { StatsCards } from './StatsCards'
 import { UserChats } from './UserChats'
+import { isStackedLayout } from './layout'
 import { UserList } from './UserList'
 
 type Tab = 'users' | 'failures'
@@ -36,6 +37,27 @@ export default function AdminPage() {
   const userParam = Number(params.get('user'))
   const selectedUser = Number.isInteger(userParam) && userParam > 0 ? userParam : null
   const requestId = params.get('request')
+
+  // 태블릿·모바일에서 사용자 목록을 접었는가. 사용자를 고른 채로 들어오면(새로고침·공유 주소) 접힌 채로 시작
+  const [listCollapsed, setListCollapsed] = useState(() => selectedUser !== null && isStackedLayout())
+  // 고른 뒤 대화로 옮겨 갈지 — 새 대화 패널이 그려진 다음에 옮긴다
+  const moveToChats = useRef(false)
+  useEffect(() => {
+    if (!moveToChats.current || selectedUser === null) return
+    moveToChats.current = false
+    const title = document.getElementById('admin-user-chats-title')
+    title?.scrollIntoView({ block: 'start' })
+    title?.focus({ preventScroll: true })
+  }, [selectedUser])
+
+  const selectUser = (id: number) => {
+    update({ user: String(id), request: null })
+    // 목록 아래에 대화가 붙는 화면에서는 목록을 접고 대화로 옮겨 간다 — 긴 목록을 지나 내려가지 않게
+    if (isStackedLayout()) {
+      setListCollapsed(true)
+      moveToChats.current = true
+    }
+  }
 
   /** 바꿀 값만 넘긴다. null 은 지운다 */
   const update = (changes: Record<string, string | null>) => {
@@ -107,7 +129,9 @@ export default function AdminPage() {
           <div role="tabpanel" id="admin-panel-users" aria-labelledby="admin-tab-users" className={styles.grid}>
             <UserList
               selectedId={selectedUser}
-              onSelect={(id) => update({ user: String(id), request: null })}
+              onSelect={selectUser}
+              collapsed={listCollapsed}
+              onToggleCollapsed={() => setListCollapsed((value) => !value)}
             />
             {selectedUser ? (
               <UserChats key={selectedUser} userId={selectedUser} onOpenRequest={openRequest} />
