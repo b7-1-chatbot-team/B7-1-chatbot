@@ -36,7 +36,8 @@ interface HistoryScrollerProps {
  * - 처음 뜨면 맨 아래(최신)로 간다
  * - 맨 위에 닿으면 이전 기록을 불러온다. 더 없으면 아무것도 표시하지 않는다
  * - **이전 기록이 위에 붙어도 보던 위치를 유지한다.** 위에 내용이 늘어난 만큼 스크롤을
- *   내려 준다. 보정하지 않으면 붙는 순간 화면이 밀려 읽던 말풍선을 잃는다
+ *   내려 준다. 보정하지 않으면 붙는 순간 화면이 밀려 읽던 말풍선을 잃는다.
+ *   브라우저 스크롤 앵커링은 끈다(CSS) — 켜 두면 브라우저와 이 코드가 두 번 내려 화면이 튄다
  * - 새 기록이 아래에 붙으면 맨 아래로 간다. **단 위로 올려 읽는 중이면 따라가지 않고**
  *   [새 메시지] 버튼을 띄운다. 읽던 곳에서 화면이 튀지 않게 한다
  * - 기록이 적어 스크롤이 생기지 않으면 맨 위에 닿을 방법이 없으므로, 영역이 찰 때까지
@@ -120,9 +121,14 @@ export function HistoryScroller({
         // 키보드로도 스크롤할 수 있게 초점을 받는다
         tabIndex={0}
       >
-        {isLoadingOlder ? <LoadingStatus>이전 기록을 불러오는 중…</LoadingStatus> : null}
         {children}
       </div>
+      {/* 목록 위에 떠 있게 둔다. 내용 사이에 끼면 나타나고 사라질 때마다 보던 위치가 밀린다 */}
+      {isLoadingOlder ? (
+        <div className={styles.loadingOlder}>
+          <LoadingStatus>이전 기록을 불러오는 중…</LoadingStatus>
+        </div>
+      ) : null}
       {hasUnseen ? (
         <Button size="sm" icon="arrowDown" className={styles.newMessage} onClick={scrollToLatest}>
           새 메시지

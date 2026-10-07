@@ -125,8 +125,13 @@
   color: var(--text-secondary);
 }
 
-/* 모바일: 라벨 위·내용 아래로 세운다 (--qa-label-width 가 100%) */
+/* 모바일: 한 칸으로 바꿔 라벨 위·내용 아래로 세운다.
+   라벨 칸 폭만 100% 로 바꾸면 두 번째 칸 폭이 0 이 되어 내용이 한 글자씩 세로로 늘어진다 */
 @media (max-width: 560px) {
+  .qa {
+    grid-template-columns: 1fr;
+  }
+
   .qa dt:nth-of-type(2) {
     border-top: 0;
   }

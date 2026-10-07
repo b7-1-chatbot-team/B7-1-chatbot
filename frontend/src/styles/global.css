@@ -211,7 +211,6 @@
     --control-height: 44px;
     --control-height-sm: 36px;
     --bubble-max: 90%;
-    --qa-label-width: 100%;
     /* 작은 화면은 이동 거리가 짧아 더 빨리 */
     --duration-enter: 220ms;
     --rise-distance: 4px;
