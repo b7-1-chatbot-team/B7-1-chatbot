@@ -181,7 +181,8 @@
   /* 떠 있는 요소에만 쓰는 유일한 그림자 */
   --toast-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   --toast-width: 420px;
-  --toast-offset: var(--space-3);
+  /* 헤더 아래에서 띄우는 거리 */
+  --toast-offset: var(--space-4);
   --toast-accent-width: 3px;
 
   /* ==== 9. 겹침 순서 ==== */

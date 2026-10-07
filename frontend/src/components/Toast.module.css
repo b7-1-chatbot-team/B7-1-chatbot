@@ -1,15 +1,16 @@
-/* 헤더(sticky)에 붙어 스크롤해도 따라온다 (docs/05-ui-ux.md 1절).
-   PC 는 헤더 아래 오른쪽 — 가장 흔한 자리이고, 아래 가운데는 챗 입력칸·[전송] 과 겹친다.
-   모바일은 헤더 아래 가운데 꽉 찬 폭 — 아래쪽은 키보드와 겹친다 */
+/* 헤더 아래 가운데, 헤더와 조금 띄운다 (docs/05-ui-ux.md 1절).
+   헤더(sticky) 기준이라 스크롤해도 따라오고, 모바일에서 헤더가 2줄이어도 그 아래에 뜬다.
+   아래쪽은 태블릿·모바일에서 챗 입력칸·키보드와 겹쳐 쓰지 않는다 */
 .region {
   position: absolute;
   top: calc(100% + var(--toast-offset));
-  /* 화면 끝이 아니라 본문 열(최대 1180px)의 오른쪽 끝에 맞춘다 — 넓은 화면에서 동떨어져 보이지 않게 */
-  right: max(var(--page-pad), calc((100% - var(--page-max)) / 2 + var(--page-pad)));
+  left: 0;
+  right: 0;
   z-index: var(--z-toast);
   display: grid;
   gap: var(--space-2);
   width: min(var(--toast-width), calc(100% - 2 * var(--page-pad)));
+  margin: 0 auto;
   /* 빈 자리는 클릭을 막지 않는다 */
   pointer-events: none;
 }
@@ -46,13 +47,5 @@
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@media (max-width: 560px) {
-  .region {
-    right: 0;
-    left: 0;
-    margin: 0 auto;
   }
 }

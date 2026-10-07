@@ -8,10 +8,11 @@ export function Spinner({ inherit = false }: { inherit?: boolean }) {
 /**
  * 영역 로딩 — 스피너 + 문구 (예: "불러오는 중…").
  * 로딩 표시는 이 모양 하나로 통일한다 (docs/design/prototype.html 상태 모음 3번).
+ * centered: 화면 전체를 기다릴 때 — 화면 정가운데에 둔다. 화면마다 본문 위치가 달라 생기는 어긋남을 없앤다
  */
-export function LoadingStatus({ children }: { children: string }) {
+export function LoadingStatus({ children, centered = false }: { children: string; centered?: boolean }) {
   return (
-    <p role="status" className={styles.status}>
+    <p role="status" className={`${styles.status} ${centered ? styles.centered : ''}`}>
       <Spinner />
       {children}
     </p>
