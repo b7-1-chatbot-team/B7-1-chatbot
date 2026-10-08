@@ -77,6 +77,15 @@ describe('normalize — 서버가 처리한 실패', () => {
     expect(error.code).toBe(RESULT_CODE.internalError)
     expect(error.message).toBe('요청을 처리하지 못했습니다.')
   })
+
+  it('429 는 서버 문구와 관계없이 정해진 안내 문구를 쓴다', async () => {
+    server.use(http.post(`${BASE}/api/auth/login`, () => HttpResponse.json({ code: 429, data: { message: 'Too Many Requests' } })))
+
+    const error = (await instance.post('/api/auth/login', {}).catch((e: unknown) => e)) as ApiError
+
+    expect(error.code).toBe(RESULT_CODE.tooManyRequests)
+    expect(error.message).toBe('요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.')
+  })
 })
 
 describe('normalize — 서버에 닿지 못한 실패', () => {

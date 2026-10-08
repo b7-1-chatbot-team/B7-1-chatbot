@@ -41,6 +41,12 @@ export class ApiError extends Error {
 /** 서버에 닿지 못했을 때 쓰는 문구. 화면마다 다르게 적지 않는다 */
 export const UNREACHABLE_MESSAGE = '서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.'
 
+/**
+ * 요청 횟수 제한(429) 문구. 서버 문구와 관계없이 이 문구로 통일한다 —
+ * 챗·로그인 등 어느 화면에서 막혀도 같은 안내를 보인다
+ */
+export const TOO_MANY_REQUESTS_MESSAGE = '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+
 /** 서버가 응답했지만 안내 문구가 없을 때 쓰는 기본 문구 */
 export const FALLBACK_MESSAGE = '요청을 처리하지 못했습니다.'
 

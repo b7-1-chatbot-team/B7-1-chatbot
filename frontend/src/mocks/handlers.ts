@@ -169,6 +169,8 @@ async function forcedScenario(email: string) {
   if (email.startsWith('slow@')) await delay(2000)
   if (email.startsWith('error500@')) return fail(500, '서버 내부 오류가 발생했습니다.')
   if (email.startsWith('error422@')) return fail(422, '입력값을 다시 확인해 주세요.')
+  // 요청 횟수 제한 — 화면은 서버 문구 대신 정해진 안내를 보인다 (S02)
+  if (email.startsWith('error429@')) return fail(429, 'Too Many Requests')
   if (email.startsWith('offline@')) return HttpResponse.error()
   return null
 }
@@ -335,6 +337,8 @@ export const handlers = [
     else await delay(500) // AI 가 답하는 시간 흉내 — 응답 대기 표시를 볼 수 있게
     // 500 은 서버 자체 오류라 기록이 남지 않는다
     if (question.includes('#500')) return fail(500, '서버 내부 오류가 발생했습니다.')
+    // 요청 횟수 제한 (S01). 막힌 요청은 AI 를 부르지 않아 기록도 남지 않는다
+    if (question.includes('#429')) return fail(429, 'Too Many Requests')
 
     const chatId = db.chats.length + 1
     const base = {

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosResponse } from 'axios'
 
-import { ApiError, FALLBACK_MESSAGE, UNREACHABLE_MESSAGE } from '../ApiError'
+import { ApiError, FALLBACK_MESSAGE, TOO_MANY_REQUESTS_MESSAGE, UNREACHABLE_MESSAGE } from '../ApiError'
 import { RESULT_CODE } from '../types'
 import type { ApiEnvelope, ApiFailureData } from '../types'
 
@@ -38,7 +38,10 @@ export function normalizeResponse(response: AxiosResponse): AxiosResponse {
     return response
   }
 
-  const message = (body.data as ApiFailureData | undefined)?.message ?? FALLBACK_MESSAGE
+  const message =
+    body.code === RESULT_CODE.tooManyRequests
+      ? TOO_MANY_REQUESTS_MESSAGE
+      : ((body.data as ApiFailureData | undefined)?.message ?? FALLBACK_MESSAGE)
   // config 를 함께 싣는다. 재발급 인터셉터가 401 을 받았을 때 원래 요청을 다시 보내려면 필요하다
   throw new ApiError(body.code, message, response.config)
 }

@@ -41,6 +41,8 @@ export const RESULT_CODE = {
   notFound: 404,
   conflict: 409,
   validationError: 422,
+  /** 요청 횟수 제한 초과 — 챗(AI 호출)·로그인 시도 (docs/13-security-review.md S01·S02) */
+  tooManyRequests: 429,
   internalError: 500,
   aiCallFailed: 502,
   aiTimeout: 504,
