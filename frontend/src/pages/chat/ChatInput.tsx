@@ -91,8 +91,6 @@ export function ChatInput({ onSend, disabled, ref }: ChatInputProps) {
         </Button>
       </div>
       <div className={styles.composerFoot}>
-        {/* 이 입력이 호출하는 API. 평가자가 화면에서 바로 확인한다 (docs/05-ui-ux.md 화면 3) */}
-        <code className={styles.api}>POST /api/chat</code>
         {/* 한도에 닿으면 data-limit — 주황색 */}
         <span id="chat-input-count" className={styles.counter} data-limit={atLimit || undefined}>
           {value.length} / {MAX_MESSAGE_LENGTH}

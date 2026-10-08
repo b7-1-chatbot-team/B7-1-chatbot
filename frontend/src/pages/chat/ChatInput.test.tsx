@@ -104,10 +104,10 @@ describe('ChatInput — 전송 조건', () => {
   })
 })
 
-describe('ChatInput — API 표기', () => {
-  it('입력칸 아래에 호출하는 API 를 보여준다', () => {
+describe('ChatInput — 내부 표기 없음', () => {
+  it('일반 사용자 화면에 API 경로를 보여주지 않는다', () => {
     setup()
-    expect(screen.getByText('POST /api/chat')).toBeInTheDocument()
+    expect(screen.queryByText(/\/api\//)).toBeNull()
   })
 })
 

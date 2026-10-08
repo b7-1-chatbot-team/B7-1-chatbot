@@ -55,7 +55,7 @@ function LogsView({ onRefresh }: { onRefresh: () => void }) {
         <div>
           <h1 className={styles.title}>내 대화 로그</h1>
           <p className={styles.description}>
-            로그인한 사용자 본인의 기록만 보입니다. <code className={styles.api}>GET /api/me/chats</code>
+            로그인한 사용자 본인의 기록만 보입니다.
           </p>
         </div>
         <div className={styles.summary}>

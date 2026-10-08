@@ -27,9 +27,7 @@
 
 .context {
   color: var(--text-secondary);
-  font-family: var(--font-mono);
   font-size: var(--fs-label);
-  cursor: help;
 }
 
 .notice {
@@ -206,7 +204,8 @@
 
 .composerFoot {
   display: flex;
-  justify-content: space-between;
+  /* 글자 수 카운터만 남아 오른쪽 끝에 둔다 */
+  justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-1-5);
   color: var(--text-secondary);
@@ -214,9 +213,6 @@
   font-size: var(--fs-label);
 }
 
-.api {
-  font: inherit;
-}
 
 .counter[data-limit] {
   color: var(--text-error);

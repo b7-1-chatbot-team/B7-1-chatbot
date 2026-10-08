@@ -96,7 +96,6 @@ export default function LoginPage() {
         </Link>
       </form>
 
-      <p className={styles.apiNote}>POST /api/auth/login · JWT 발급</p>
     </section>
   )
 }
