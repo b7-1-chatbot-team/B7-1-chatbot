@@ -1,6 +1,9 @@
 import { RESULT_CODE } from '@/api/types'
 
-/** 같은 질문으로 다시 보낼 가치가 있는 실패인가 — AI 타임아웃·호출 실패만 (docs/03-api.md 2-1절) */
+/**
+ * 같은 질문으로 다시 보낼 가치가 있는 실패인가 — AI 타임아웃·호출 실패만 (docs/03-api.md 2-1절).
+ * 429(요청 횟수 제한)는 넣지 않는다. 제한이 풀리기 전에 다시 보내면 또 429 가 난다
+ */
 export function isRetryable(code: number): boolean {
   return code === RESULT_CODE.aiTimeout || code === RESULT_CODE.aiCallFailed
 }

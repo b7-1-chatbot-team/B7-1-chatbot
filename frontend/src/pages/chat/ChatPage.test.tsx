@@ -222,6 +222,20 @@ describe('챗 — 오류와 다시 시도', () => {
     expect(within(bubble).queryByRole('button', { name: '다시 시도' })).toBeNull()
   })
 
+  it('429 는 정해진 안내 문구를 보여주고 [다시 시도] 가 없다 (제한이 풀리기 전엔 다시 막힌다)', async () => {
+    mockHistory([])
+    mockChat(() => ({ code: 429, data: { message: 'rate limit exceeded' } }))
+    renderChat()
+    await screen.findByText('안녕하세요. 무엇이든 물어보세요.')
+
+    await ask('질문')
+
+    const bubble = await screen.findByRole('alert')
+    expect(bubble).toHaveTextContent('요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.')
+    expect(bubble).not.toHaveTextContent('rate limit exceeded')
+    expect(within(bubble).queryByRole('button', { name: '다시 시도' })).toBeNull()
+  })
+
   it('서버에 닿지 못하면 연결 실패를 안내한다', async () => {
     mockHistory([])
     server.use(http.post(`${BASE}/api/chat`, () => HttpResponse.error()))
