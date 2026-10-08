@@ -130,7 +130,7 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 
 | 팀원 | 역할 | 담당 범위 (features.md #) | 주요 산출물 |
 |------|------|---------------------------|-------------|
-| **성원모** (팀장) | 백엔드 전체 — 인증 · DB · 인프라 · AI 파이프라인 · 관리자 API | B1~B16, C1~C5, A1~A12, 관리자 API(features.md B15~B19) | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/me.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.env.example`, `.gitignore`, `scripts/check_logs.sql`, `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구, `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py`, 관리자 조회 CRUD, Railway 배포, README |
+| **성원모** (팀장) | 백엔드 전체 — 인증 · DB · 인프라 · AI 파이프라인 · 관리자 API | B1~B16, C1~C5, A1~A12, 관리자 API(features.md B15~B19) | `core/security.py`, `core/dependencies.py`, `routers/auth.py`, `routers/me.py`, `models/`, `crud/`, `database.py`, `config.py`, `main.py`(CORS), `.gitignore`, `scripts/check_logs.sql`, `routers/chat.py`, `services/ai_service.py`, `schemas/chat.py`, `core/logging.py`, 에러 코드·안내 문구, `routers/admin.py`, `services/admin_service.py`, `schemas/admin.py`, 관리자 조회 CRUD, Railway 배포, README |
 | **이성준** | 프론트엔드 (React + TypeScript) | **F1~F14 전체** ([features.md](features.md) 기준, **관리자 화면 F10~F14 포함**) | `tsconfig.app.json`(strict)·`vite.config.ts`(alias·test), `src/api/`(인스턴스·인터셉터·엔드포인트·응답 타입), `src/utils/tokenStorage.ts`, `src/hooks/`, `src/store/`(AuthProvider·AuthStatus), `src/routes/`(경로 상수·가드), `src/pages/{Login,Signup,Chat,Logs,Admin}`, `src/components/`, `src/styles/`(reset·global), `src/test/`(vitest·MSW), CSS Modules·디자인 토큰 |
 
 **의존 관계 / 순서**
@@ -187,24 +187,19 @@ composition 상태를 확인해 조합 중 Enter 는 무시하도록 변경.
 | 3 | Railway 배포(서비스 2개·Volume), CORS 정리, 관리자 화면, 실제 Codyssey AI API 연동 | 외부망에서 배포 URL 로 전 흐름 재현 |
 | 4 | 문서 마감, 역할 요약·커밋 수 반영, 평가 리허설 | docs/08 체크리스트 전부 체크 |
 
-## 6. 개인별 작업 요약 (마감 시 실제 값으로 갱신)
+## 6. 개인별 작업 요약
+
+2026-10-08 develop 기준. 커밋 수는 머지 커밋 제외(`git shortlog -sn --no-merges`), PR 은 본인이 올려 머지된 것. 마감 직전에 숫자만 다시 확인한다.
 
 | 팀원 | 역할 | 주요 작업 | 커밋 수 | PR |
-|------|------|-----------|:------:|:--:|
-| 성원모 | 백엔드 전체 (인증·DB·인프라·AI 파이프라인·관리자 API) | 백엔드 기본 구성 · DB 모델/CRUD · JWT 인증(재발급 회전·관리자 시드) · 내 대화 로그 API · 챗 API(Codyssey AI 호출·컨텍스트·실패 처리) · 서버 로그 · 관리자 API 5종과 감사 로그 · Railway 배포 설정 · 설계 문서 | 51 (2026-10-06) | #15 · #17 · #25 · #59 · #62 · #65 · #67 |
-| 이성준 | 프론트엔드 | _(실제 작업 기입)_ | _ | _ |
+|------|------|-----------|:------:|----|
+| 성원모 (팀장) | 백엔드 전체 (인증·DB·인프라·AI 파이프라인·관리자 API) | 백엔드 기본 구성 · DB 모델/CRUD · JWT 인증(재발급 회전·관리자 시드) · 내 대화 로그 API · 챗 API(Codyssey AI 호출·컨텍스트·실패 처리) · 서버 로그 · 관리자 API 5종과 감사 로그 · 동시 챗 요청 시 서버 멈춤 수정 · Railway 배포 설정 · 설계 문서 | 53 | 9건 — #15 · #17 · #25 · #33 · #59 · #62 · #65 · #67 · #74 |
+| 이성준 | 프론트엔드 전체 (F1~F14) | React·TypeScript(strict)·Vite 구성 · 가입/로그인/챗/내 대화 로그/관리자 화면 · 인증 상태·자동 재발급·탭 간 로그아웃 · 공통 응답 봉투·오류 안내(429 포함) · 디자인 시스템·반응형·접근성·SEO · 첫 화면 성능(Lighthouse 모바일 99) · 정적 서버 보안 헤더(CSP 등) · 배포 통합 테스트·보안 점검·침투 테스트 · 루트 README·문서 정리 | 104 | 28건 — #4 · #6 · #12 · #14 · #21 · #24 · #27 · #29 · #31 · #35 · #36 · #37 · #39 · #41 · #43 · #45 · #47 · #49 · #51 · #53 · #55 · #60 · #69 · #71 · #75 · #78 · #79 · #81 |
 
-> 박성현은 2026-09-23 팀에서 이탈했다. 이탈 전에 남긴 커밋이 있다면 Git 이력에 그대로 두고, 마감 시 README 역할표에 "중도 이탈"로 함께 적어 역할 설명과 Git 이력이 어긋나지 않게 한다.
+> 박성현은 2026-09-23 팀에서 이탈했다. 담당이던 AI 파이프라인·관리자 API 는 성원모가 인수했고, 루트 README 팀 표에 "중도 이탈"로 적었다.
 
 ```bash
 git shortlog -sn --no-merges          # 커밋 수 (머지 커밋 제외)
 git log --merges --oneline            # PR 머지 기록
 gh pr list --state merged --json number,title,author --limit 100
 ```
-
-## 7. 참고: 이 저장소의 PoC 코드
-
-`backend/`, `frontend/` 에 있는 현재 코드는 스펙 확정 **이전에 만든 참조 구현(PoC)** 이다.
-세션 쿠키 인증 · Anthropic Claude · Nginx 배포 기준이라 위 스펙과 다르다. 차이 목록은 [08-checklist.md 3. 참조 구현(PoC) ↔ 스펙 차이](08-checklist.md#3-참조-구현poc--스펙-차이)을 참고한다.
-
-팀은 각자 브랜치에서 스펙대로 직접 구현·커밋해야 한다. **PoC 코드를 한 번에 통째로 올리면 R2~R5 를 충족하지 못한다.**

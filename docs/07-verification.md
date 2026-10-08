@@ -1,9 +1,6 @@
 # 07. 검증 계획 및 결과
 
-> ⚠️ **읽기 전 주의**
-> [1. 검증 계획 (스펙 기준)](#1-검증-계획-스펙-기준)~[3. 실제 Codyssey AI API 연동 검증 (키 설정 후)](#3-실제-codyssey-ai-api-연동-검증-키-설정-후)은 **팀 스펙(JWT · Codyssey AI API · `{code, data}` 응답 · 관리자 · Railway) 기준 검증 계획**이다. 실행한 범위는 [2. 진행 상태](#2-진행-상태)에 적는다 (2026-10-01 기준 L1 일부 실행).
-> [4. 참고 — 참조 구현(PoC) 실측 기록](#4-참고--참조-구현poc-실측-기록)은 **스펙 확정 이전 참조 구현(PoC, 세션 쿠키 · Claude · Nginx)** 에서 **실제로 측정된 결과**다. 스펙과 구현이 다르므로 그대로 제출 근거로 쓸 수 없다.
-> 두 절을 섞지 않는다. 스펙대로 구현이 끝나면 [1. 검증 계획 (스펙 기준)](#1-검증-계획-스펙-기준)~[3. 실제 Codyssey AI API 연동 검증 (키 설정 후)](#3-실제-codyssey-ai-api-연동-검증-키-설정-후)을 실행하고 그 결과로 [4. 참고 — 참조 구현(PoC) 실측 기록](#4-참고--참조-구현poc-실측-기록)을 대체한다.
+> [1. 검증 계획 (스펙 기준)](#1-검증-계획-스펙-기준)~[3. 실제 Codyssey AI API 연동 검증 (키 설정 후)](#3-실제-codyssey-ai-api-연동-검증-키-설정-후)은 팀 스펙(JWT · Codyssey AI API · `{code, data}` 응답 · 관리자 · Railway) 기준 검증 계획이다. 실행 결과는 [2. 진행 상태](#2-진행-상태)에 적는다.
 >
 > **판정 기준**: 서버 응답은 항상 HTTP 200 이므로, 아래 "기대" 의 `code` 는 **body 의 `code`** 를 뜻한다 ([03-api.md 0. 공통 규약](03-api.md#0-공통-규약)).
 
@@ -175,11 +172,11 @@ grep ai_call_failed backend/logs/app.log
 
 | 단계 | 상태 | 비고 |
 |------|:----:|------|
-| L1 서버 단위 | 🟡 일부 | 2026-10-06 `cd backend && pytest -q` **59건 통과** (`tests/test_auth.py`·`test_me_chats.py`·`test_chat.py`·`test_admin.py`). 통과: V01~V23(V02b·V05b~V05f 포함)·V30~V38 + 추가 케이스(여러 기기 로그인, 기존 사용자 관리자 승격, 사용자별 컨텍스트, 키 미설정 502, AI 키 오류 사유 `auth_failed`, 성공 기록 없을 때 평균 응답시간 null, 이메일 검색의 `%` 글자 그대로, 사용자 목록 최근 활동 순). AI 호출은 가짜 AI 서버(`httpx.MockTransport`)로 대체 |
-| L2 API 흐름 | 🟡 일부 | curl 스크립트는 미실행. 2026-10-01 로컬 실서버 Swagger(`/docs`)에서 실제 Codyssey AI 로 가입(201)→중복 가입(409)→로그인→질문(200)→이어 질문(직전 대화 반영)→공백 질문(422)→토큰 없이 요청(401) 수동 확인 (PR #62 스크린샷). 2026-10-06 관리자 계정으로 요약 통계 → 사용자 목록·검색 → 사용자별 대화 → 없는 사용자 404 → 일반 사용자 403 → 감사 로그(`admin_access`·`admin_forbidden`) 수동 확인 (PR #67 스크린샷) |
-| L3 브라우저 | 🟡 일부 | 프론트 기준 자동 테스트 260건·수동 확인 119항목 — [frontend/TESTING.md](../frontend/TESTING.md). 인증(B01~B06·B20)은 **실서버**로, 챗·로그·관리자(B07~B24)는 백엔드 API 가 없어 **MSW 로만** 확인. 실서버 확인은 백엔드 API 완성 후 |
-| L4 배포/외부망 | 🟡 일부 | 2026-09-14 Railway 서비스 2개 첫 배포 시도: 프론트 배포 성공, 백엔드 `ModuleNotFoundError: dotenv` 로 기동 실패(이후 `requirements.txt` 정리로 해결). 2026-10-01 백엔드 develop 배포가 Start Command 미설정으로 빌드 실패 → 설정 후 기동 확인(Active, #63). 백엔드 공개 도메인 미생성, D01~D07 · CORS 는 미검증 (D08 은 2026-10-01 출력 없음 확인) |
-| L5 데이터/로그 | 🟡 일부 | 2026-10-02 로컬 실서버에서 실제 Codyssey AI 로 확인 (PR #65 스크린샷): `AI_TIMEOUT_SECONDS=1` → `code: 504`, `COPA_API_KEY=invalid` → `code: 502`. 두 경우 모두 `request_received → ai_call_start → ai_call_failed(reason=timeout / auth_failed) → db_save_success status=error` 가 콘솔·`server_logs` 에 같은 `request_id` 로 남고, `chat_logs` 에 `AI_TIMEOUT`·`AI_CALL_FAILED` 실패 기록 저장. 로컬 DB 경로는 `.env` 의 `DATABASE_URL` 기준. 배포 환경 확인은 L4 이후 |
+| L1 서버 단위 | ✅ | 2026-10-08 `cd backend && pytest -q` **60건 통과** (`test_auth.py`·`test_me_chats.py`·`test_chat.py`·`test_admin.py`). V01~V23(V02b·V05b~V05f 포함)·V30~V38 + 추가 케이스(여러 기기 로그인, 관리자 승격, 사용자별 컨텍스트, 키 미설정 502, `auth_failed`, 평균 응답시간 null, 이메일 검색 `%` 글자 그대로, 최근 활동 순, **동시 챗 요청 시 서버 멈춤 방지 #74**). AI 호출은 가짜 AI 서버(`httpx.MockTransport`) |
+| L2 API 흐름 | ✅ | [1-2. L2 — API 흐름 스크립트](#1-2-l2--api-흐름-스크립트)의 curl 단계(가입·로그인·질문·422·401·403·관리자)는 2026-10-08 로컬 백엔드 침투·통합 테스트에서 개별 실행해 확인([13-security-review.md](13-security-review.md) 7절). 2026-10-01 로컬 실서버 Swagger(`/docs`)에서 실제 Codyssey AI 로 가입(201)→중복 가입(409)→로그인→질문(200)→이어 질문(직전 대화 반영)→공백 질문(422)→토큰 없이 요청(401) 수동 확인 (PR #62 스크린샷). 2026-10-06 관리자 계정으로 요약 통계 → 사용자 목록·검색 → 사용자별 대화 → 없는 사용자 404 → 일반 사용자 403 → 감사 로그(`admin_access`·`admin_forbidden`) 수동 확인 (PR #67 스크린샷) |
+| L3 브라우저 | ✅ | 프론트 자동 테스트 **268건** · 수동 확인 168항목 — [frontend/TESTING.md](../frontend/TESTING.md). 인증은 로컬 실서버(G), 내 대화 로그 API 는 로컬 실서버(G-2), **챗·로그·관리자 전체는 배포 서버(R, 2026-10-06~07)** 로 확인. Chrome·Safari·Firefox·Edge, 아이폰 13 mini·안드로이드 실기기 |
+| L4 배포/외부망 | ✅ | 2026-10-06~07 Railway 프론트·백엔드 공개 도메인(HTTPS)에서 A~F 단계 확인 — HTTPS·CORS 허용/차단·401/403·번들 비밀값 없음·휴대폰 LTE 접속·재배포 후 데이터 유지(TESTING R 133~155). 2026-10-08 보안 헤더·침투 테스트 배포 6건([13-security-review.md](13-security-review.md) 7절) |
+| L5 데이터/로그 | ✅ | 로컬(2026-10-02, PR #65): `AI_TIMEOUT_SECONDS=1` → 504, `COPA_API_KEY=invalid` → 502, `request_received → ai_call_start → ai_call_failed → db_save_success status=error` 가 같은 `request_id` 로 기록. **배포(2026-10-07)**: Railway Deploy Logs 에 같은 순서로 남고 질문·토큰 미기록 확인(TESTING R 151), 관리자 화면 요청 흐름에서도 확인 |
 
 ---
 
@@ -192,115 +189,3 @@ grep ai_call_failed backend/logs/app.log
 5. rate limit: 짧은 시간에 반복 호출 → `429` → `code: 502`, 로그 `reason=rate_limited`
 6. 위 3~5 직후 정상 질문이 `code: 200` 인지 확인 (서비스 유지)
 7. 관리자 화면 AI 실패 기록·요청 흐름에 3~5 가 보이는지 확인
-
----
-
-## 4. 참고 — 참조 구현(PoC) 실측 기록
-
-> **이 절의 수치는 스펙 확정 이전 구현에서 측정된 실제 값이다.**
-> 구성: 2026-09-14, macOS, Python 3.14.7, Node 24.11, **세션 쿠키 인증 · Anthropic Claude(mock 공급자) · 로컬 Nginx**.
-> 스펙(JWT · Codyssey AI API · `{code, data}` · Railway)과 다르므로 **스펙 기준 증빙으로 사용하지 않는다.** 어떤 케이스가 스펙 전환 후에도 그대로 유효한지는 [4-4. 스펙 전환 후 재검증 필요 여부](#4-4-스펙-전환-후-재검증-필요-여부) 참고.
-
-### 4-1. 실행 결과 요약
-
-| 단계 | 명령 | 결과 |
-|------|------|:----:|
-| pytest (TestClient, 임시 DB) | `cd backend && .venv/bin/python -m pytest -q` | **30 passed** |
-| API 흐름 (bash+curl, 프론트 경유) | `bash backend/scripts/e2e_flow.sh` | **PASS=24 FAIL=0** (개발·운영재현 2환경) |
-| 브라우저 UI (Playwright) | `pytest e2e -v` — Chromium·Firefox·WebKit | **39 passed** (2환경) |
-| 운영 구성 (로컬 Nginx + 자체서명 HTTPS) | curl 수동 | **13/13** |
-| 데이터/로그 | `check_logs.sql`, `grep request_id` | 확인됨 |
-
-```
-$ cd backend && .venv/bin/python -m pytest -q
-..............................                                           [100%]
-30 passed, 1 warning in 18.29s
-
-$ BASE=http://127.0.0.1:5173 DEMO_PASSWORD=… bash backend/scripts/e2e_flow.sh
-== RESULT: PASS=24 FAIL=0
-
-$ BASE=http://127.0.0.1:5173 DEMO_PASSWORD=… e2e/.venv/bin/python -m pytest e2e -v
-======================== 39 passed in 105.23s (0:01:45) ========================
-```
-
-### 4-2. 로그 증빙 (PoC)
-
-```
-$ grep 5d14c34e071f backend/logs/app.log
-2026-09-14 11:44:11 INFO  request_received method=POST path=/api/chat request_id=5d14c34e071f
-2026-09-14 11:44:11 INFO  chat_request user_id=5 length=13 request_id=5d14c34e071f
-2026-09-14 11:44:11 INFO  ai_call_start user_id=5 provider=mock context_turns=1 request_id=5d14c34e071f
-2026-09-14 11:44:11 INFO  ai_call_success user_id=5 latency_ms=402 request_id=5d14c34e071f
-2026-09-14 11:44:11 INFO  db_save_success user_id=5 chat_id=2 status=success request_id=5d14c34e071f
-2026-09-14 11:44:11 INFO  request_completed status=200 duration_ms=412 request_id=5d14c34e071f
-```
-
-```
-$ grep 351990af2cf2 backend/logs/app.log
-2026-09-14 11:44:12 INFO  ai_call_start user_id=5 provider=simulate context_turns=2 request_id=351990af2cf2
-2026-09-14 11:44:27 WARNING ai_call_failed user_id=5 error=AI_TIMEOUT detail=exceeded_15.0s latency_ms=15000 request_id=351990af2cf2
-2026-09-14 11:44:27 INFO  db_save_success user_id=5 chat_id=4 status=error request_id=351990af2cf2
-2026-09-14 11:44:27 INFO  request_completed status=503 duration_ms=15007 request_id=351990af2cf2
-```
-
-### 4-3. DB 누적 저장 (PoC, `check_logs.sql` 발췌)
-
-```
-user_id  username        total  success  error  avg_latency_ms
-5        e2e_1789353850  4      2        2      401
-
-id  username        created_at                  status   error_code  question
-4   e2e_1789353850  2026-09-14 02:44:27.328661  error    AI_TIMEOUT  긴 글 요약해줘
-3   e2e_1789353850  2026-09-14 02:44:12.296857  error    AI_ERROR    오류 테스트
-2   e2e_1789353850  2026-09-14 02:44:11.896042  success              내가 방금 뭘 물어봤지?
-1   e2e_1789353850  2026-09-14 02:44:11.472700  success              배포 방법 알려줘
-
-username        hash_prefix  hash_len
-tester          $2b$12$      60
-```
-
-### 4-4. 스펙 전환 후 재검증 필요 여부
-
-| PoC 검증 항목 | 스펙 전환 후 |
-|---------------|--------------|
-| 로그인/세션 쿠키·HttpOnly·SameSite·CSRF Origin 검사 | ❌ **폐기** — JWT 헤더 방식이라 해당 없음 |
-| 로그아웃 후 이전 쿠키 재사용 차단 | 🔁 **수정** — 로그아웃 후 refresh token 재발급 차단으로 대체 (V05d) |
-| 아이디(username) 형식 검증 | 🔁 **수정** — 이메일 형식 + 닉네임 길이로 변경 |
-| 입력 검증 400 `INVALID_INPUT` | 🔁 **수정** — `code: 422` |
-| AI 타임아웃/오류 503 `AI_TIMEOUT`/`AI_ERROR` | 🔁 **수정** — `code: 504` / `code: 502` |
-| 평면 에러 JSON `{error, message}` | 🔁 **수정** — `{code, data:{message}}`, HTTP 200 |
-| 로그 응답 `{items, count, avg_latency_ms}` | 🔁 **수정** — `data: {total, items}` + `offset` |
-| 관리자 조회 API/화면 (PoC `/api/admin/*`) | 🔁 **수정** — 실패 기록·요청 흐름 추가, email 기준 (V30~V38, B20~B24) |
-| AI 실패도 `chat_logs` 에 status=error 저장 | ✅ **유효** — 스펙에 채택 |
-| Nginx SPA fallback / 프록시 / Secure 쿠키 | 🔁 **대체** — Railway 두 서비스 CORS·SPA fallback 확인(D03·D07)으로 |
-| 컨텍스트 최근 N턴 유지·상한 | ✅ **유효** — 동일 로직, 재실행만 필요 |
-| 빈 입력/최대 길이 경계값 | ✅ **유효** — 코드만 바뀜 |
-| 사용자 격리(타인 로그 미노출) | ✅ **유효** |
-| AI 실패 후 서버 유지 | ✅ **유효** |
-| 비밀번호 bcrypt 해시 저장 | ✅ **유효** |
-| 로그 이벤트 4종 존재·비밀번호 미기록 | ✅ **유효** |
-| 한글 IME Enter, 반응형, 자동 스크롤 등 UI | ✅ **유효** — 화면 재구현 후 재실행 |
-
-### 4-5. PoC 화면 캡처
-
-`docs/screenshots/` — **PoC UI 기준**이라 이메일/닉네임 화면과 다르다. 스펙대로 구현 후 새로 캡처해 교체한다.
-
-| 파일 | 화면 |
-|------|------|
-| `01-signup-done.png` | 가입 완료 후 로그인 화면 |
-| `02-chat-context.png` | 컨텍스트 유지 대화 |
-| `03-chat-errors.png` | AI 오류 말풍선 |
-| `04-logs.png` | 내 대화 로그 |
-| `05-logs-empty.png` | 빈 로그 |
-| `06-mobile-chat.png` / `07-mobile-logs.png` | 모바일 폭 |
-| `08-admin.png` / `09-admin-mobile.png` | 관리자 화면 (데스크톱 / 모바일) |
-
-### 4-6. PoC 검증 중 발견·수정한 문제 (스펙 구현 시 재발 주의)
-
-| # | 문제 | 원인 | 조치 |
-|---|------|------|------|
-| 1 | 챗 진입 직후 보낸 메시지가 사라짐 | 늦게 도착한 "이전 대화 복원" 응답이 현재 메시지를 덮어씀 | 복원 결과를 현재 메시지 **앞에 병합** |
-| 2 | 새로고침 시 대화가 2배로 중복 | React StrictMode 의 effect 이중 실행 | effect cleanup 의 `ignore` 플래그로 이전 실행 응답 폐기 |
-| 3 | 백엔드 중단 시 "요청을 처리하지 못했습니다" — 원인 불명확 | JSON 본문 없는 게이트웨이 오류를 일반 오류로 처리 | 봉투 없는 응답 → "서버에 연결할 수 없습니다" |
-| 4 | 한글 IME 조합 중 Enter 로 마지막 글자 중복 전송 | `isComposing` 미처리 | 조합 중 Enter 무시 |
-| 5 | 모바일 헤더 요소 순서 뒤바뀜 | flex `order` 미지정 | 탭/사용자 order 지정 |

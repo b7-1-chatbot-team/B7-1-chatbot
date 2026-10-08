@@ -163,7 +163,7 @@ WHERE request_id = :request_id ORDER BY id;
 
 ## 설계 기준 DDL
 
-SQLAlchemy 모델이 생성해야 할 스키마다. 구현 후 `sqlite3 data/app.db ".schema"` 결과가 아래와 일치해야 한다.
+SQLAlchemy 모델이 만드는 스키마다. `sqlite3 data/app.db ".schema"` 로 확인할 수 있고, 2026-10-08 로컬 DB 의 네 테이블 컬럼이 아래와 일치함을 확인했다.
 
 ```sql
 CREATE TABLE users (

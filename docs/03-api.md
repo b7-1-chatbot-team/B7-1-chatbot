@@ -1,7 +1,7 @@
 # 03. API 명세
 
 > 관련 문서: [02-architecture.md](02-architecture.md) · [04-database.md](04-database.md)
-> API 계약의 기준 문서다. 합의가 필요한 값은 [7. 확정 전 합의가 필요한 항목](#7-확정-전-합의가-필요한-항목), 문서 간 불일치는 [11-open-issues.md](11-open-issues.md) 에서 관리한다.
+> API 계약의 기준 문서다. 합의된 값은 [7. 합의된 값](#7-합의된-값), 문서 간 불일치는 [11-open-issues.md](11-open-issues.md) 에서 관리한다.
 
 ## 0. 공통 규약
 
@@ -81,8 +81,10 @@ type ApiResponse = {
 | 401 | `UNAUTHORIZED` | 그 외 API 에서 access token 없음·만료·위조, 재발급 API 에서 refresh token 무효 | 로그인이 필요합니다. |
 | 403 | `FORBIDDEN` | 관리자 API 를 일반 사용자가 호출 | 관리자만 접근할 수 있습니다. |
 | 404 | `NOT_FOUND` | 없는 경로, 관리자 조회 대상(사용자·request_id) 없음 | 요청한 정보를 찾을 수 없습니다. |
+| 405 | `METHOD_NOT_ALLOWED` | 정해진 메서드가 아님 (예: `/api/chat` 을 GET 으로) | 허용되지 않은 요청 방식입니다. |
 | 409 | `EMAIL_ALREADY_EXISTS` | 회원가입 이메일 중복 (닉네임은 중복 허용, 검사하지 않음) | 이미 가입된 이메일입니다. |
 | 422 | `VALIDATION_ERROR` | 입력값 검증 실패 (빈 입력, 길이 초과, 이메일 형식 등) | 질문은 1~1000자로 입력해 주세요. |
+| 429 | `TOO_MANY_REQUESTS` | **(백엔드 구현 예정 — 13-security-review S01·S02)** 챗 요청·로그인 시도 횟수 제한 초과 | 프론트는 서버 문구와 관계없이 "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." 로 표시(#78) |
 | 500 | `INTERNAL_ERROR` | 서버 내부 오류 | 서버 내부 오류가 발생했습니다. |
 | 502 | `AI_CALL_FAILED` | AI API 호출 실패 (4xx/5xx/연결 오류/빈 응답) | AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요. |
 | 504 | `AI_TIMEOUT` | AI API 타임아웃 | 현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요. |
@@ -562,11 +564,11 @@ WARN  admin_forbidden    request_id=def457 user_id=12 path=/api/admin/stats
 
 ---
 
-## 7. 확정 전 합의가 필요한 항목
+## 7. 합의된 값
 
-확정되면 이 표와 관련 문서를 함께 갱신한다. 전체 목록은 [11-open-issues.md](11-open-issues.md).
+팀이 합의해 확정한 값이다. 바꾸면 이 표와 관련 문서를 함께 갱신한다. 결정 과정은 [11-open-issues.md](11-open-issues.md).
 
-| 항목 | 초안 값 | 상태 |
+| 항목 | 값 | 상태 |
 |------|---------|------|
 | access token 만료 시간 | **15분** (`JWT_EXPIRE_MINUTES=15`) | 확정 |
 | 로그아웃 API · refresh token | **access + refresh token, `POST /api/auth/refresh`·`/logout` 제공** | 확정 (A7) |

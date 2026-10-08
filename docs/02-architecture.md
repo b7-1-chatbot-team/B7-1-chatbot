@@ -96,8 +96,7 @@ flowchart TD
 │   │   ├── crud/                # user.py, chat_log.py, server_log.py, refresh_token.py
 │   │   └── core/                # security.py, dependencies.py, logging.py, responses.py
 │   ├── scripts/check_logs.sql
-│   ├── requirements.txt
-│   └── .env.example
+│   └── requirements.txt
 ├── frontend/
 │   ├── .nvmrc
 │   ├── tsconfig.app.json        # strict: true, 경로 alias paths(@/* → ./src/*)

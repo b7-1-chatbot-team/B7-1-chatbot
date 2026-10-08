@@ -335,7 +335,7 @@ JWT 는 서버가 세션을 보관하지 않으므로, 클라이언트가 토큰
 ## 14. 프론트엔드 TypeScript (strict)
 
 ### 결정
-프론트를 **TypeScript 로 작성**한다 (`strict: true`). 기존 JavaScript(JSX) 골격은 화면 구현 전에 전환한다.
+프론트를 **TypeScript 로 작성**한다 (`strict: true`). 기존 JavaScript(JSX) 골격은 화면 구현 전에 전환했다(완료).
 `npm run typecheck`(`tsc --noEmit`)를 두고, `npm run build` 는 타입 검사를 먼저 수행한다.
 
 ### 근거

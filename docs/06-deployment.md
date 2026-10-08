@@ -32,7 +32,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env        # 값 입력 (3절)
+# backend/.env 를 만들고 3절 키를 입력 (예시 파일은 두지 않음)
 uvicorn app.main:app --reload
 # → http://localhost:8000  ·  Swagger: http://localhost:8000/docs
 ```
@@ -58,9 +58,9 @@ npm run build:dev           # 타입 검사 + development 모드 빌드 (개발�
 
 ## 3. 환경변수
 
-### `backend/.env` (`.env.example` 을 복사해서 사용)
+### `backend/.env` (아래 키 목록으로 직접 작성)
 
-**`.env` 는 절대 커밋하지 않는다.** 저장소에는 값이 비어 있는 `.env.example` 만 둔다.
+**`.env` 는 절대 커밋하지 않는다.** 백엔드는 예시 파일을 두지 않고 **이 절의 키 목록이 기준**이다 (팀 결정).
 
 ```
 COPA_API_KEY=
