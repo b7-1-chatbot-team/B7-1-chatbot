@@ -36,11 +36,4 @@
   font-weight: var(--weight-medium);
 }
 
-.apiNote {
-  margin-top: var(--space-4);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  text-align: center;
-}
 

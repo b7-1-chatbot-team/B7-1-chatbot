@@ -92,12 +92,12 @@ describe('챗 — 이전 대화 복원', () => {
     expect(await screen.findByText('안녕하세요. 무엇이든 물어보세요.')).toBeInTheDocument()
   })
 
-  it('이전 대화가 없으면 "새 대화 · context: 최근 5턴"', async () => {
+  it('이전 대화가 없으면 "새 대화 · 최근 대화 5개를 기억해요"', async () => {
     mockHistory([])
     renderChat()
 
     await screen.findByText('안녕하세요. 무엇이든 물어보세요.')
-    expect(screen.getByLabelText('대화 정보')).toHaveTextContent('새 대화 · context: 최근 5턴')
+    expect(screen.getByLabelText('대화 정보')).toHaveTextContent('새 대화 · 최근 대화 5개를 기억해요')
   })
 
   it('이전 대화가 있으면 이어지는 대화라 "새 대화" 없이 context 만', async () => {
@@ -105,7 +105,7 @@ describe('챗 — 이전 대화 복원', () => {
     renderChat()
 
     await waitFor(() => expect(bubbles()).toHaveLength(2))
-    expect(screen.getByLabelText('대화 정보')).toHaveTextContent(/^context: 최근 5턴$/)
+    expect(screen.getByLabelText('대화 정보')).toHaveTextContent(/^최근 대화 5개를 기억해요$/)
   })
 
   it('첫 질문을 보내면 "새 대화" 가 빠진다', async () => {
@@ -115,7 +115,7 @@ describe('챗 — 이전 대화 복원', () => {
     await screen.findByText('안녕하세요. 무엇이든 물어보세요.')
 
     await ask('안녕')
-    expect(screen.getByLabelText('대화 정보')).toHaveTextContent(/^context: 최근 5턴$/)
+    expect(screen.getByLabelText('대화 정보')).toHaveTextContent(/^최근 대화 5개를 기억해요$/)
   })
 
   it('불러오지 못하면 안내하고 다시 불러올 수 있다', async () => {

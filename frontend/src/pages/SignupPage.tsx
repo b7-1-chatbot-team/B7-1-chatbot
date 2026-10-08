@@ -100,7 +100,6 @@ export default function SignupPage() {
         </Link>
       </form>
 
-      <p className={styles.apiNote}>POST /api/auth/signup · 비밀번호는 bcrypt 로 해싱되어 저장됩니다</p>
     </section>
   )
 }

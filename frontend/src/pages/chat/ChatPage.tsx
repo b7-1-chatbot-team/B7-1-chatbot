@@ -99,9 +99,8 @@ export default function ChatPage() {
         {/* 이전 대화가 있으면 이어서 하는 대화라 "새 대화" 는 붙이지 않는다 */}
         <p aria-label="대화 정보" className={styles.top}>
           {isEmpty ? '새 대화 · ' : ''}
-          <span className={styles.context} title={`AI 는 최근 성공한 대화 ${CONTEXT_TURNS}개를 기억하고 답합니다`}>
-            context: 최근 {CONTEXT_TURNS}턴
-          </span>
+          {/* AI 가 답할 때 함께 보내는 최근 성공 대화 수 (서버 AI_CONTEXT_TURNS) — 사용자 말로 안내 */}
+          <span className={styles.context}>최근 대화 {CONTEXT_TURNS}개를 기억해요</span>
         </p>
 
         {history.loadError ? (
