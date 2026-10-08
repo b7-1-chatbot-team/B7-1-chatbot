@@ -54,7 +54,7 @@ npm run dev                                    # http://localhost:5173
 
 | 키 | 설명 |
 |----|------|
-| `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`) |
+| `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`). **배포에서는 정적 서버(Caddyfile)도 실행 중에 읽어** CSP `connect-src` 에 넣는다 — 값이 틀리면 API 요청이 브라우저에서 막힌다 |
 | `VITE_ENABLE_MOCK` | `true` 면 백엔드 없이 MSW 로 API 를 모킹 (개발 모드 전용) |
 | `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 값을 쓰고 **코드·문서에 적지 않는다**. 비우면 관리자 화면 미등록 |
 | `VITE_SITE_URL` | **운영 전용.** 배포된 프론트 주소(`https://` 부터, 끝에 `/` 없이). `sitemap.xml`·robots.txt 의 Sitemap 줄·canonical 에 쓴다. 개발에서는 비운다. 값을 바꾸면 **새로 빌드**해야 반영된다 |
@@ -63,6 +63,22 @@ npm run dev                                    # http://localhost:5173
 
 모드별로 읽는 파일이 다릅니다 — `npm run dev`·`build:dev` 는 `.env.development`, `npm run build` 는 `.env.production`.
 실제 `.env.*` 파일은 커밋하지 않고, 저장소에는 `*.example` 만 둡니다.
+
+## 배포 정적 서버 · 보안 헤더 (`Caddyfile`)
+
+Railway 는 Railpack 으로 빌드한 `dist` 를 Caddy 로 내보냅니다. 이 폴더의 `Caddyfile` 이 있으면 Railpack 기본 설정 대신 쓰입니다. 기본 설정의 포트·SPA fallback(새로고침 404 방지)·압축은 그대로 두고 **보안 응답 헤더**를 더했습니다 (docs/13-security-review.md S07).
+
+| 헤더 | 값 | 하는 일 |
+|------|----|---------|
+| `X-Frame-Options` | `DENY` | 다른 사이트의 iframe 안에 표시하지 않음 (클릭재킹 방지) |
+| `Content-Security-Policy` | `script-src 'self'` · `connect-src 'self' $VITE_API_BASE_URL` · `frame-ancestors 'none'` 등 | 우리 번들·우리 CSS·구글 폰트·우리 백엔드 외의 출처를 막음. **인라인 스크립트 실행 안 됨** |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | 1년간 HTTPS 로만 접속 |
+| `X-Content-Type-Options` | `nosniff` | Content-Type 대로만 처리, 형식 추측 안 함 |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | 다른 사이트로는 도메인만 전달 |
+
+**주의:** `index.html` 에 `onload="…"` 같은 인라인 스크립트를 넣지 않습니다(CSP 가 막음). 폰트 CSS 적용은 `src/applyPreloadedFonts.ts` 가 합니다. 외부 출처(새 CDN·분석 도구 등)를 추가하면 `Caddyfile` 의 CSP 에도 추가해야 합니다.
+
+로컬 확인: `npm run build` 후 Caddy 로 `dist` 를 띄우고 `curl -I` 로 헤더를 봅니다 (`root` 를 로컬 `dist` 경로로, `PORT`·`VITE_API_BASE_URL` 환경변수 지정).
 
 ## 백엔드 없이 화면 확인하기 (API 모킹)
 
