@@ -35,9 +35,17 @@ export function Header() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link to={status === 'authenticated' ? PATHS.chat : PATHS.login} className={styles.brand}>
-          {/* 글자 마크는 장식이다. 링크 이름은 "Chatlog" */}
+          {/* 말풍선 마크는 장식이다. 링크 이름은 "Chatlog" (favicon 과 같은 글리프) */}
           <span className={styles.mark} aria-hidden="true">
-            C
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <path
+                fill="currentColor"
+                d="M4.5 4.5h11a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9.9l-3.1 2.3a.6.6 0 0 1-.96-.48V13.5H4.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2Z"
+              />
+              <circle cx="7" cy="9" r="1.1" fill="var(--bg-bubble-user)" />
+              <circle cx="10" cy="9" r="1.1" fill="var(--bg-bubble-user)" />
+              <circle cx="13" cy="9" r="1.1" fill="var(--bg-bubble-user)" />
+            </svg>
           </span>
           Chatlog
         </Link>
