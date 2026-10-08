@@ -5,9 +5,13 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@/store/AuthProvider'
 import { ToastProvider } from '@/store/ToastProvider'
 import App from './App'
+import { applyPreloadedFonts } from './applyPreloadedFonts'
 // reset 이 먼저, 그 위에 프로젝트 전역 스타일을 얹는다
 import './styles/reset.css'
 import './styles/global.css'
+
+// 미리 받아 둔 폰트 CSS 적용 — 인라인 onload 대신 (CSP)
+applyPreloadedFonts()
 
 // strict 모드에서는 getElementById 가 null 을 반환할 수 있으므로 명시적으로 확인한다
 const rootElement = document.getElementById('root')
