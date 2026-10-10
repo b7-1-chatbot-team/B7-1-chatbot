@@ -88,13 +88,13 @@ flowchart TD
 │   ├── app/
 │   │   ├── main.py              # FastAPI 앱, CORS, 라우터 등록, 예외 핸들러(공통 봉투), 관리자 시드
 │   │   ├── config.py            # 환경변수 로딩 (pydantic-settings)
-│   │   ├── database.py          # 엔진·세션·Base·get_db
+│   │   ├── database.py          # 엔진·세션·Base·get_db (SQLite 파일 DB 는 NullPool)
 │   │   ├── models/              # SQLAlchemy 모델 (user.py, chat_log.py, server_log.py)
 │   │   ├── schemas/             # Pydantic 스키마 (auth.py, chat.py, admin.py, common.py)
 │   │   ├── routers/             # auth.py, chat.py, me.py, admin.py
 │   │   ├── services/            # auth_service.py, ai_service.py, admin_service.py
 │   │   ├── crud/                # user.py, chat_log.py, server_log.py, refresh_token.py
-│   │   └── core/                # security.py, dependencies.py, logging.py, responses.py
+│   │   └── core/                # security.py, dependencies.py, logging.py, responses.py, rate_limit.py
 │   ├── scripts/check_logs.sql
 │   └── requirements.txt
 ├── frontend/
@@ -140,7 +140,7 @@ flowchart TD
 
 프론트엔드 타입은 구현 파일과 섞지 않고 타입 파일로 분리한다. **여러 페이지·컴포넌트가 공유하는 타입은 `src/types/`** 에, **한 영역에서만 쓰는 타입은 그 폴더의 `types.ts`**(`routes/types.ts`, `api/types.ts`) 에 둔다. 한 컴포넌트 전용 props 는 그 컴포넌트 파일 안에 둔다.
 
-백엔드는 위 `backend/app/` 구조로 구현돼 있다. 초기 골격 `backend/main.py` 는 PR #62 에서 삭제했다 ([11-open-issues.md](11-open-issues.md) A22). 관리자 API(`routers/admin.py` 등)와 `core/logging.py` 는 아직 없다.
+백엔드는 위 `backend/app/` 구조로 구현돼 있다. 초기 골격 `backend/main.py` 는 PR #62 에서 삭제했다 ([11-open-issues.md](11-open-issues.md) A22). 관리자 API(`routers/admin.py`, PR #67)와 `core/logging.py`(PR #65)까지 모두 구현됐다.
 
 ### 컴포넌트 역할
 
@@ -160,12 +160,13 @@ flowchart TD
 | `app/main.py` | 앱 생성, CORS 미들웨어, 라우터 등록, 예외 핸들러(`RequestValidationError`·`HTTPException`·`Exception` → `{code, data:{message}}`, HTTP 200), 시작 시 관리자 시드, lifespan 에서 **만료 refresh token 정리 스케줄러(하루 1회)** 실행 |
 | `app/core/responses.py` | `ok(data, code=200)` / `fail(code, message)` — 공통 봉투 생성 |
 | `app/config.py` | `.env` → `Settings`. 비밀값은 코드에 기본값을 두지 않음 |
-| `app/database.py` | 엔진/세션 팩토리, `PRAGMA foreign_keys=ON`, `get_db` 의존성 |
+| `app/database.py` | 엔진/세션 팩토리, `PRAGMA foreign_keys=ON`, `get_db` 의존성. SQLite 파일 DB 는 연결 풀 없이(NullPool) — 동시 챗 요청에서 풀이 바닥나 서버가 멈추던 문제 대응(PR #74) |
 | `app/models/` | `User`(role), `ChatLog`(status·error_code·latency_ms·request_id), `ServerLog` |
 | `app/schemas/` | 요청 스키마 + 응답 `data` 스키마 |
 | `app/core/security.py` | bcrypt 해시·검증, JWT 인코드·디코드 |
 | `app/core/dependencies.py` | `get_current_user` (Bearer → 사용자, 실패 401) · `require_admin` (DB role 확인, 실패 403) |
 | `app/core/logging.py` | 구조화 로그 포맷, `request_id`, 이벤트를 파일/콘솔 + `server_logs` 에 기록 |
+| `app/core/rate_limit.py` | 요청 횟수 제한(429) — 챗 사용자별 · 로그인 실패 이메일/IP 별 · 가입 IP 별 메모리 카운터, 실제 IP 는 X-Forwarded-For 마지막 값(PR #87) |
 | `app/services/auth_service.py` | 가입/로그인 로직, 이메일 중복 검사, access·refresh token 발급·재발급·폐기 |
 | `app/services/ai_service.py` | 컨텍스트 구성, httpx Codyssey AI API 호출, 타임아웃·예외 → 504/502 |
 | `app/services/admin_service.py` | 통계, 사용자 목록, 사용자별 대화, 실패 기록, 요청 흐름 |

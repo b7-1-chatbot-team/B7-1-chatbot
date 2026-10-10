@@ -90,7 +90,7 @@
 | 브랜치 전략 (main/develop) | ✅ | main·develop 분리. **main 은 보호 규칙(PR 리뷰 필수)**, develop 은 보호 없음(2026-10-08 확인) ([09-team.md 2-1. 브랜치](09-team.md#2-1-브랜치)) |
 | 기능 단위 작업 브랜치 흔적 | ✅ | `feature/setup`, `feature/fe-setup`, 프론트 `feature/fe-*`·`refactor/fe-*`·`fix/fe-*` / 백엔드: `chore/be-init`, `feature/be-db`, `feature/be-auth-jwt`, `feature/be-logs`, `feature/be-chat`, `feature/be-server-logs`, `feature/be-admin` |
 | PR 기반 Merge 기록 | ✅ | 머지된 PR 40건(2026-10-08) — 백엔드 9건(#15~#74), 프론트 28건(#4~#81), 초기 3건(#2~#9) |
-| 팀원별 유의미한 커밋 10회 이상 | ✅ | 성원모 53회 · 이성준 104회 (2026-10-08 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
+| 팀원별 유의미한 커밋 10회 이상 | ✅ | 성원모 56회 · 이성준 106회 (2026-10-10 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
 
 ### mission 5·6. 개발 환경 / 제약 사항
 
@@ -129,7 +129,7 @@
 | 내 로그 조회 API | B12 | ✅ #58·PR #59 |
 | 서버 로그 (+ `server_logs`) | B13 | ✅ #64·PR #65 (관리자 감사 로그 `admin_access`/`admin_forbidden` 은 B15 에서) |
 | 확인용 SQL | B14 | ✅ #11·PR #17 (`scripts/check_logs.sql`) |
-| 관리자 권한·시드·감사 로그 | B15 | ✅ `require_admin`·관리자 시드(#16·PR #25) + 감사 로그 `admin_access`/`admin_forbidden`(#66·PR #67, V38 통과) |
+| 관리자 권한·시드·감사 로그 | B15 | ✅ `require_admin`·관리자 시드(#16·PR #25) + 감사 로그 `admin_access`/`admin_forbidden`(#66·PR #67, V38 통과) + 시드 보강 — 이전 관리자 강등·비밀번호 `ADMIN_PASSWORD` 동기화(#84·PR #85) |
 | 관리자 사용자 목록 | B16 | ✅ #66·PR #67 |
 | 관리자 사용자별 대화 | B17 | ✅ #66·PR #67 |
 | 관리자 AI 실패 기록 | B18 | ✅ #66·PR #67 |
@@ -168,8 +168,8 @@
 | 팀 역할 및 개인별 작업 요약 | 🟡 | docs/09 |
 | 기능 단위 작업 브랜치 흔적 | ✅ | feature/setup, feature/fe-setup, 프론트 feature/fe-* 등, 백엔드 feature/be-* 6개·chore/be-init |
 | PR 기반 머지 기록 | ✅ | 머지된 PR 40건 (위 4-7 참고) |
-| 성원모 — 커밋 10회 이상 | ✅ | 53회 (2026-10-08 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
-| 이성준 — 커밋 10회 이상 | ✅ | 104회 (2026-10-08 develop, 같은 기준) |
+| 성원모 — 커밋 10회 이상 | ✅ | 56회 (2026-10-10 develop, 머지 커밋 제외 `git shortlog -sn --no-merges`) |
+| 이성준 — 커밋 10회 이상 | ✅ | 106회 (2026-10-10 develop, 같은 기준) |
 
 ---
 
