@@ -34,7 +34,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 # backend/.env 를 만들고 3절 키를 입력 (예시 파일은 두지 않음)
 uvicorn app.main:app --reload
-# → http://localhost:8000  ·  Swagger: http://localhost:8000/docs
+# → http://localhost:8000  ·  Swagger: http://localhost:8000/docs (backend/.env 에 ENABLE_DOCS=true 일 때만)
 ```
 
 ### 프론트엔드
@@ -82,6 +82,7 @@ LOGIN_FAIL_LIMIT_PER_EMAIL=5
 LOGIN_FAIL_LIMIT_PER_IP=20
 SIGNUP_RATE_LIMIT=20
 TRUST_FORWARDED_FOR=false
+ENABLE_DOCS=true
 ```
 
 | 키 | 기본값 | 설명 | 민감 |
@@ -104,6 +105,7 @@ TRUST_FORWARDED_FOR=false
 | `LOGIN_FAIL_LIMIT_PER_IP` | `20` | 로그인 실패, IP 별 10분에 이 횟수까지. 같은 공인 IP 를 여럿이 쓰는 환경을 고려해 이메일별보다 넉넉하게 | |
 | `SIGNUP_RATE_LIMIT` | `20` | 가입 요청, IP 별 10분에 이 횟수까지 | |
 | `TRUST_FORWARDED_FOR` | `false` | **Railway 는 `true`**. 프록시 뒤에서 X-Forwarded-For 의 마지막 값(프록시가 덧붙인 실제 접속 IP)으로 IP 별 제한을 센다. 끄면 모든 사용자가 프록시 IP 하나로 묶인다. 로컬은 false(헤더를 사용자가 꾸밀 수 있음) | |
+| `ENABLE_DOCS` | `false` | API 문서 화면(`/docs` · `/redoc` · `/openapi.json`)을 열지. **로컬 개발만 `true`, Railway 는 넣지 않음**(기본 false → 세 경로 404). 운영에 관리자 API 를 포함한 전체 목록이 공개되지 않게 하기 위해서다 | |
 | `LOG_FILE` | `logs/app.log` | 이벤트 로그 파일 경로(`backend/` 기준). 비우면 콘솔에만 기록. 로컬은 설정하지 않아도 됨. **Railway 는 `/data/logs/app.log`** — 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 둔다 ([6-1. 백엔드 서비스](#6-1-백엔드-서비스)) | |
 
 ### `frontend/.env.development` · `frontend/.env.production`

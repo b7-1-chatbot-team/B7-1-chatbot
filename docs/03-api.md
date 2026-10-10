@@ -14,7 +14,7 @@
 | 배포 | `https://<Railway 백엔드 서비스 도메인>` (프론트는 `https://<Railway 프론트 서비스 도메인>`) |
 
 - 요청/응답 본문: `application/json`
-- Swagger UI: `<Base URL>/docs`
+- Swagger UI: `<Base URL>/docs` — **로컬 개발에서 `ENABLE_DOCS=true` 일 때만** 열린다. 운영(Railway)은 꺼져 있어(404) 이 문서가 API 명세다
 
 ### 인증 방식
 
