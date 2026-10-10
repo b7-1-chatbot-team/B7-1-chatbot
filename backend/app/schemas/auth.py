@@ -5,6 +5,8 @@ from pydantic.networks import validate_email
 
 # 계정 규칙 (03-api). 서비스·관리자 시드에서도 같은 값을 쓰도록 상수로 둔다
 PASSWORD_MIN_LENGTH = 8  # NIST SP 800-63B 권고 최소 길이 (12-decisions)
+# 최대 길이 — 프론트 입력칸 상한과 같다. bcrypt 는 앞 72바이트만 쓰므로 더 긴 비밀번호는 보안상 이득 없이 처리 비용만 든다 (S04)
+PASSWORD_MAX_LENGTH = 128
 NICKNAME_MAX_LENGTH = 20
 
 
@@ -40,6 +42,8 @@ class SignupRequest(BaseModel):
     def password_length(cls, v: str) -> str:
         if len(v) < PASSWORD_MIN_LENGTH:
             raise ValueError(f"비밀번호는 {PASSWORD_MIN_LENGTH}자 이상으로 입력해 주세요.")
+        if len(v) > PASSWORD_MAX_LENGTH:
+            raise ValueError(f"비밀번호는 {PASSWORD_MAX_LENGTH}자 이하로 입력해 주세요.")
         return v
 
     @field_validator("nickname")
@@ -52,7 +56,7 @@ class SignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """POST /api/auth/login 요청 body. 비밀번호 길이는 검사하지 않는다 (틀리면 401 로 처리)."""
+    """POST /api/auth/login 요청 body. 최소 길이는 검사하지 않는다 (틀리면 401). 최대 길이만 가입과 같게 막는다."""
 
     email: str
     password: str
@@ -67,6 +71,8 @@ class LoginRequest(BaseModel):
     def password_required(cls, v: str) -> str:
         if not v:
             raise ValueError("비밀번호를 입력해 주세요.")
+        if len(v) > PASSWORD_MAX_LENGTH:
+            raise ValueError(f"비밀번호는 {PASSWORD_MAX_LENGTH}자 이하로 입력해 주세요.")
         return v
 
 

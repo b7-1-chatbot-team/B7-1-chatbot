@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     # API 문서 화면(/docs · /redoc · /openapi.json)을 켤지. 기본은 꺼짐 — 운영에 전체 API 목록이 공개되지 않게 (S03).
     # 로컬 개발에서 Swagger 로 확인할 때만 backend/.env 에 ENABLE_DOCS=true
     enable_docs: bool = False
+    # 요청 본문 크기 상한 — 넘으면 본문을 더 읽지 않고 413 (S04). 질문 1000자는 UTF-8 로 최대 약 4KB 라 넉넉하다
+    max_body_bytes: int = Field(default=64 * 1024, gt=0)
 
     # ---------- 요청 횟수 제한 (13-security-review S01·S02·S09) ----------
     chat_rate_limit_per_minute: int = Field(default=10, gt=0)  # 사용자별 챗 요청, 1분에 이 횟수까지
