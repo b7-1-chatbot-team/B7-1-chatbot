@@ -6,14 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0e1113" />
     <title>Chatlog</title>
-    <!-- 검색 결과 설명·링크 미리보기 (docs/05-ui-ux.md 8절 SEO). 화면별 제목은 usePageMeta 가 바꾼다 -->
+    <!--
+      검색 결과 설명·링크 미리보기 (docs/05-ui-ux.md 9절 SEO). 화면별 제목은 usePageMeta 가 바꾼다.
+      og:url·og:image 는 절대 주소가 필요해 빌드 때 VITE_SITE_URL 로 넣는다 (vite.config.ts openGraph).
+      미리보기 로봇은 JavaScript 를 실행하지 않으므로 이 정적 태그만 읽는다
+    -->
     <meta name="description" content="AI 챗봇과 대화하고, 내 대화 기록을 다시 볼 수 있는 서비스입니다. 이메일로 가입해 바로 질문해 보세요." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Chatlog" />
     <meta property="og:title" content="Chatlog" />
     <meta property="og:description" content="AI 챗봇과 대화하고, 내 대화 기록을 다시 볼 수 있는 서비스입니다." />
     <meta property="og:locale" content="ko_KR" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
