@@ -127,7 +127,7 @@ VITE_API_BASE_URL=https://<backend>.up.railway.app
 |----|------|
 | `VITE_API_BASE_URL` | 백엔드 Base URL. axios `baseURL` 로 사용 |
 | `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 무작위 값을 쓰고 **문서·코드에 적지 않는다**. 비우면 관리자 화면 미등록 (05-ui-ux.md 화면 5) |
-| `VITE_SITE_URL` | 배포된 프론트 주소(끝에 `/` 없이). canonical·og:url·`sitemap.xml` 에 쓴다. 비우면 셋 다 만들지 않는다 (05-ui-ux.md 9절) |
+| `VITE_SITE_URL` | 배포된 프론트 주소(끝에 `/` 없이). canonical·`sitemap.xml`, 링크 미리보기의 `og:url`·`og:image`(절대 주소)에 쓴다. 비우면 모두 만들지 않는다 (05-ui-ux.md 9절) |
 
 코드에서는 `import.meta.env.VITE_API_BASE_URL` 로 읽고, 현재 모드는 `import.meta.env.MODE`(`development` / `production`)로 확인한다. Node 생태계의 `NODE_ENV` 와 같은 역할이다.
 

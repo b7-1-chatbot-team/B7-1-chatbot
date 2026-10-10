@@ -525,8 +525,9 @@ export async function login(body: LoginRequest, signal?: AbortSignal): Promise<T
 | 검색 제외 | 챗 · 내 대화 로그 · 관리자 · 404 — 화면마다 `<meta name="robots" content="noindex, nofollow">` |
 | robots.txt | 빌드 때 생성. `User-agent: *` · `Allow: /`. **관리자 주소를 `Disallow` 로 적지 않는다** — robots.txt 는 누구나 읽어 숨긴 주소가 드러난다. 막는 것은 화면별 noindex 가 맡는다 |
 | sitemap.xml | 빌드 때 `VITE_SITE_URL` 이 있으면 생성 (공개 화면만). robots.txt 에 `Sitemap:` 줄 추가 |
-| canonical · og:url | 공개 화면에만, `VITE_SITE_URL` + 경로 (쿼리는 뺀다) |
-| 메타데이터 | description, Open Graph(type·site_name·title·description·locale), Twitter 카드(summary) — 검색 결과 설명과 메신저 링크 미리보기 |
+| canonical · og:url | 공개 화면에만, `VITE_SITE_URL` + 경로 (쿼리는 뺀다). 화면이 뜬 뒤 `usePageMeta` 가 바꾼다 |
+| 메타데이터 | description, Open Graph(type·site_name·title·description·locale), Twitter 카드(`summary_large_image`) — 검색 결과 설명과 메신저 링크 미리보기 |
+| 링크 미리보기 이미지 | `public/og-image.png`(1200×630). 미리보기 로봇은 JavaScript 를 실행하지 않고 절대 주소만 읽으므로, 빌드 때 `VITE_SITE_URL` 로 `og:url`(첫 화면)·`og:image`·`og:image:type/width/height/alt` 를 index.html 에 넣는다. 주소가 없으면 넣지 않는다 (#89) |
 | JS 꺼짐 | `<noscript>` 안내 |
 
 ### 접근성

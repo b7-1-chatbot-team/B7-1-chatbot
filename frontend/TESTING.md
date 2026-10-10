@@ -398,6 +398,15 @@ cd frontend && VITE_ENABLE_MOCK=false npx vite --mode development --port 5175 --
 | 167 | Lighthouse 모바일 | 99 · FCP 1.5s · LCP 2.1s · CLS 0 (적용 전과 같음) | ✅ (로컬 Caddy) |
 | 168 | 배포 후 `curl -sI` · 화면 전체 | 헤더 5종, 빌드 로그 `Using custom Caddyfile`, 콘솔 CSP 위반 없음 | ✅ (배포: 헤더 5종·폰트 적용·백엔드 요청 정상·다른 출처 요청 차단) |
 
+### V. 링크 미리보기(오픈그래프) (2026-10-10, #89)
+
+| # | 조작 | 기대 | 결과 |
+|---|------|------|:----:|
+| 172 | `VITE_SITE_URL=https://example.up.railway.app/ npm run build` | `dist/index.html` 에 `og:url`(끝 `/` 중복 없음)·`og:image`(절대 주소)·`og:image:type/width/height/alt` 6개, `dist/og-image.png` 포함 | ✅ (로컬 빌드) |
+| 173 | `VITE_SITE_URL=` 로 빌드 | `og:url`·`og:image` 태그 없음 | ✅ (로컬 빌드) |
+| 174 | `twitter:card` | `summary_large_image` | ✅ (로컬 빌드) |
+| 175 | 배포 후 카카오톡·슬랙에 주소 공유 | 큰 이미지 + 제목·설명 미리보기 (카카오는 캐시가 있어 공유 디버거로 초기화) | |
+
 ### U. 일반 사용자 화면의 API·구현 표기 삭제 (2026-10-08, #82)
 
 | # | 조작 | 기대 | 결과 |
@@ -454,7 +463,7 @@ cd frontend && VITE_ENABLE_MOCK=false npx vite --mode development --port 5175 --
 | 태블릿 768px 실기기 · 지원 하한 버전(Chrome·Edge 90, Safari 14.1, Firefox 90) | 최신 Chrome·Safari·Firefox·Edge 와 휴대폰은 배포 서버로 확인(R 154·155). 태블릿 실기기와 오래된 버전은 기기가 없어 확인하지 못했다 |
 | 동작 줄이기 설정(애니메이션 끄기) | 운영체제 설정을 바꿔 봐야 한다. 코드는 토큰으로 대응(전환·등장 0, 스피너 느리게) |
 | 앱 오류 화면 | 화면 코드에서 일부러 예외를 내야 한다. 자동 테스트로만 확인 |
-| 검색 로봇·링크 미리보기 실제 결과 | 배포 주소는 정해졌지만 Google Search Console 등록·카카오톡 링크 미리보기 실제 결과는 아직 확인하지 않았다 (robots.txt·sitemap.xml 생성은 R 140 에서 확인) |
+| 검색 로봇·링크 미리보기 실제 결과 | 배포 주소는 정해졌지만 Google Search Console 등록·카카오톡 링크 미리보기 실제 결과는 아직 확인하지 않았다 (robots.txt·sitemap.xml 생성은 R 140, 미리보기 태그는 V 172~174 에서 확인. 실제 미리보기는 V 175) |
 | 스크린리더 실제 낭독(VoiceOver·NVDA) | 역할·이름·알림 영역은 자동 테스트로만 확인 |
 
 ## 5. 테스트 중 발견한 주의점
