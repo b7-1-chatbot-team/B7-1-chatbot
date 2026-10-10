@@ -88,7 +88,7 @@ ENABLE_DOCS=true
 | 키 | 기본값 | 설명 | 민감 |
 |----|--------|------|:----:|
 | `COPA_API_KEY` | (없음) | Codyssey AI API 키 — **서버에서만 사용** | ✅ |
-| `JWT_SECRET_KEY` | (없음) | JWT 서명 키. 충분히 긴 난수 (`python -c "import secrets;print(secrets.token_urlsafe(48))"`) | ✅ |
+| `JWT_SECRET_KEY` | (없음) | JWT 서명 키. **32바이트 이상이어야 서버가 시작된다** — `python -c "import secrets;print(secrets.token_urlsafe(48))"` 로 만든 값(64자)을 넣는다. 키를 바꾸면 기존 로그인 토큰이 모두 무효가 되어 사용자는 다시 로그인해야 한다 | ✅ |
 | `JWT_ALGORITHM` | `HS256` | 서명 알고리즘. 디코드 시에도 이 값으로 **고정** | |
 | `JWT_EXPIRE_MINUTES` | `15` | access token 만료(분). 응답 `expires_in` = ×60 | |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | `1` | refresh token 만료(일). 응답 `refresh_expires_in` = ×86400 | |
@@ -275,6 +275,7 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 
 | 증상 | 원인 / 해결 |
 |------|-------------|
+| 배포 직후 서버가 시작하지 않음, 로그에 `JWT_SECRET_KEY 가 32바이트보다 짧습니다` | 서명 키가 짧다. 위 생성 명령으로 새 키를 만들어 Variables 에 넣고 재배포 (기존 로그인은 모두 풀림) |
 | 백엔드 배포 후 `ModuleNotFoundError` | `requirements.txt` 에 패키지 누락 (예: `python-dotenv`) → 추가 후 재배포 |
 | 브라우저 콘솔에 CORS 오류 | 백엔드에 `CORSMiddleware` 없음 / `CORS_ORIGINS` 에 실제 프론트 도메인 누락·끝 `/` 포함 → 수정 후 백엔드 재배포 |
 | 프론트가 `localhost:8000` 을 호출함 | `VITE_API_BASE_URL` 미설정 상태로 빌드됨 → 프론트 Variables 설정 후 **재빌드** |

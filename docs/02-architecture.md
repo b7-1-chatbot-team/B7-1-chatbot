@@ -157,7 +157,7 @@ flowchart TD
 
 | 파일 | 역할 |
 |------|------|
-| `app/main.py` | 앱 생성, CORS 미들웨어, 라우터 등록, 예외 핸들러(`RequestValidationError`·`HTTPException`·`Exception` → `{code, data:{message}}`, HTTP 200), 시작 시 관리자 시드, lifespan 에서 **만료 refresh token 정리 스케줄러(하루 1회)** 실행 |
+| `app/main.py` | 앱 생성, CORS 미들웨어, 라우터 등록, 예외 핸들러(`RequestValidationError`·`HTTPException`·`Exception` → `{code, data:{message}}`, HTTP 200), 시작 시 서명 키 검사(비었거나 32바이트 미만이면 시작 거부)·관리자 시드, lifespan 에서 **만료 refresh token 정리 스케줄러(하루 1회)** 실행 |
 | `app/core/responses.py` | `ok(data, code=200)` / `fail(code, message)` — 공통 봉투 생성 |
 | `app/config.py` | `.env` → `Settings`. 비밀값은 코드에 기본값을 두지 않음 |
 | `app/database.py` | 엔진/세션 팩토리, `PRAGMA foreign_keys=ON`, `get_db` 의존성. SQLite 파일 DB 는 연결 풀 없이(NullPool) — 동시 챗 요청에서 풀이 바닥나 서버가 멈추던 문제 대응(PR #74) |
