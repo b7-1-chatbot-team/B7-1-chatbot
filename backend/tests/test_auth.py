@@ -6,9 +6,10 @@ import jwt
 from sqlalchemy import select
 
 from app import crud
+from app.core import rate_limit
 from app.core.security import hash_refresh_token
 from app.core.timeutil import utcnow
-from app.models import RefreshToken, User
+from app.models import RefreshToken, ServerLog, User
 from app.services import auth_service
 from tests.conftest import PASSWORD, auth_header, login, signup
 
@@ -286,3 +287,54 @@ def test_v22_cors_preflight(client):
     assert ok.headers.get("access-control-allow-origin") == "http://localhost:5173"
     bad = client.options("/api/auth/login", headers={**headers, "Origin": "https://evil.example.com"})
     assert "access-control-allow-origin" not in bad.headers
+
+
+# ---------- 요청 횟수 제한 (S02·S09) ----------
+def test_login_rate_limit_by_email(client, db):
+    """같은 이메일로 10분에 5번 틀리면 6번째는 비밀번호가 맞아도 429, 로그 login_rate_limited by=email"""
+    signup(client)
+    for _ in range(5):
+        assert login(client, password="wrong-password")["code"] == 401
+    assert login(client)["code"] == 429
+    log = db.scalars(select(ServerLog).where(ServerLog.event == "login_rate_limited")).first()
+    assert log is not None and "by=email" in log.detail
+    signup(client, email="other@example.com")  # 다른 이메일은 영향 없음 (IP 한도 20회 안)
+    assert login(client, email="other@example.com")["code"] == 200
+
+
+def test_login_success_resets_email_failures(client):
+    """성공하면 그 이메일의 실패 횟수가 초기화된다 — 가끔 틀리는 정상 사용자가 막히지 않게"""
+    signup(client)
+    for _ in range(4):
+        login(client, password="wrong-password")
+    assert login(client)["code"] == 200
+    for _ in range(4):
+        assert login(client, password="wrong-password")["code"] == 401
+    assert login(client)["code"] == 200
+
+
+def test_login_rate_limit_by_ip(client, monkeypatch):
+    """한 IP 에서 여러 이메일을 돌아가며 틀려도 IP 한도를 넘으면 429"""
+    monkeypatch.setattr(rate_limit.login_fail_by_ip, "limit", 3)
+    signup(client)
+    for i in range(3):
+        assert login(client, email=f"nobody{i}@example.com")["code"] == 401
+    assert login(client)["code"] == 429  # 맞는 계정이어도 같은 IP 라 막힘
+
+
+def test_signup_rate_limit(client):
+    """한 IP 에서 10분에 20번까지 가입 요청, 21번째는 429 (중복 이메일 409 도 센다)"""
+    for i in range(20):
+        assert signup(client, email=f"user{i}@example.com")["code"] == 201
+    assert signup(client, email="user99@example.com")["code"] == 429
+
+
+def test_client_ip_uses_last_forwarded_for(monkeypatch):
+    """프록시 뒤(TRUST_FORWARDED_FOR=true)에서는 X-Forwarded-For 의 마지막 값(프록시가 덧붙인 실제 IP)을 쓴다.
+    사용자가 앞에 넣은 가짜 값으로 IP 제한을 피할 수 없다. 꺼져 있으면 헤더를 무시한다."""
+    from starlette.requests import Request
+
+    request = Request({"type": "http", "headers": [(b"x-forwarded-for", b"6.6.6.6, 203.0.113.7")], "client": ("10.0.0.1", 1234)})
+    assert rate_limit.client_ip(request) == "10.0.0.1"
+    monkeypatch.setattr(rate_limit.settings, "trust_forwarded_for", True)
+    assert rate_limit.client_ip(request) == "203.0.113.7"

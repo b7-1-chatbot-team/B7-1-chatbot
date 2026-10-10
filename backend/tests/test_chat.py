@@ -19,6 +19,7 @@ from app import crud
 from app.config import settings
 from app.models import ChatLog, ServerLog
 from app.services import ai_service
+from app.core.rate_limit import chat_limiter
 from tests.conftest import PASSWORD, auth_header, login, signup
 
 
@@ -266,13 +267,14 @@ def test_v21_db_save_failed(client, db, fake_ai, user_h, monkeypatch):
 
 
 # ---------- 동시 요청 ----------
-def test_concurrent_chats_do_not_block_server(client, fake_ai, user_h):
+def test_concurrent_chats_do_not_block_server(client, fake_ai, user_h, monkeypatch):
     """AI 응답을 기다리는 챗 20건이 동시에 있어도 다른 사용자 로그인이 바로 되고, 챗도 모두 성공한다.
 
     예전에는 동시 15건부터 DB 연결 풀이 바닥나 서버 로그 저장이 이벤트 루프를 막아 서버 전체가 멈췄다.
     멈추면 이벤트 루프가 돌지 않아 시간 제한도 동작하지 않으므로, 별도 스레드에서 돌리고 바깥에서 기다린다.
     """
     fake_ai.mode = "slow"  # AI 가 1초 뒤 응답 (상한은 기본 30초라 시간 초과 아님)
+    monkeypatch.setattr(chat_limiter, "limit", 100)  # 이 테스트는 동시 처리만 본다 — 횟수 제한(10회)에 걸리지 않게
     signup(client, email="other@example.com")
     result = {}
 
@@ -298,3 +300,20 @@ def test_concurrent_chats_do_not_block_server(client, fake_ai, user_h):
     assert result["login_code"] == 200
     assert result["login_seconds"] < 3
     assert result["chat_codes"] == [200] * 20
+
+
+# ---------- 요청 횟수 제한 (S01) ----------
+def test_chat_rate_limit(client, fake_ai, user_h, db):
+    """1분에 10회까지 처리하고 11번째는 AI 를 부르지 않고 429. 막힌 요청은 서버 로그에 rate_limited. 다른 사용자는 영향 없음"""
+    for i in range(10):
+        assert _ask(client, user_h, f"질문 {i}")["code"] == 200
+    body = _ask(client, user_h, "11번째")
+    assert body["code"] == 429
+    assert body["data"]["message"] == "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
+    assert len(fake_ai.requests) == 10  # 막힌 요청은 AI 호출 없음
+    assert len(_all_logs(db)) == 10  # 대화 기록도 남기지 않음
+    assert db.scalars(select(ServerLog).where(ServerLog.event == "rate_limited")).first() is not None
+
+    signup(client, email="other@example.com")
+    other_h = auth_header(login(client, email="other@example.com")["data"]["access_token"])
+    assert _ask(client, other_h, "다른 사용자")["code"] == 200
