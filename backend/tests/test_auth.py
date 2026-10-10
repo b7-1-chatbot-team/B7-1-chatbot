@@ -338,3 +338,19 @@ def test_client_ip_uses_last_forwarded_for(monkeypatch):
     assert rate_limit.client_ip(request) == "10.0.0.1"
     monkeypatch.setattr(rate_limit.settings, "trust_forwarded_for", True)
     assert rate_limit.client_ip(request) == "203.0.113.7"
+
+
+# ---------- 비밀번호 최대 길이 (S04) ----------
+def test_signup_password_max_length(client):
+    """가입 비밀번호는 128자까지, 129자는 422 (프론트 입력칸 상한과 같음)"""
+    assert signup(client, password="a" * 128)["code"] == 201
+    body = signup(client, email="long@example.com", password="a" * 129)
+    assert body == {"code": 422, "data": {"message": "비밀번호는 128자 이하로 입력해 주세요."}}
+
+
+def test_login_password_max_length_not_counted_as_failure(client):
+    """로그인 비밀번호 129자는 422 — 비밀번호 비교를 하지 않으므로 로그인 실패 횟수에도 세지 않는다"""
+    signup(client)
+    for _ in range(6):
+        assert login(client, password="a" * 129)["code"] == 422
+    assert login(client)["code"] == 200

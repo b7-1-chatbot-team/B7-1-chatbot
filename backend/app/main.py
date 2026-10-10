@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  (Base.metadata 에 테이블 등록)
 from app.config import settings
+from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.logging import setup_logging
 from app.core.responses import register_exception_handlers
 from app.database import Base, SessionLocal, engine
@@ -75,6 +76,9 @@ app = FastAPI(title="Chatlog API", version="0.1.0", lifespan=lifespan, **_docs_o
 
 # 모든 오류 응답을 {code, data:{message}} 봉투 형식으로 바꾸는 예외 핸들러 등록 (app/core/responses.py)
 register_exception_handlers(app)
+
+# 요청 본문이 MAX_BODY_BYTES(기본 64KB)를 넘으면 더 읽지 않고 413 (S04)
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_body_bytes)
 
 # 프론트·백엔드가 Railway 에서 서로 다른 도메인이므로 CORS 필수
 # JWT 를 Authorization 헤더로 보내므로 쿠키(credentials)는 쓰지 않는다.

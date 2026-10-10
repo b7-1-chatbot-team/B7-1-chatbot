@@ -20,7 +20,7 @@ from app.core.security import (
 )
 from app.core.timeutil import utcnow
 from app.models import User
-from app.schemas.auth import PASSWORD_MIN_LENGTH
+from app.schemas.auth import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 
 logger = logging.getLogger("app")
 
@@ -118,6 +118,10 @@ def ensure_admin(db: Session) -> None:
     # 일반 가입과 같은 비밀번호 규칙을 지키지 않으면 약한 관리자 계정이 생기므로 만들지 않는다
     if len(settings.admin_password) < PASSWORD_MIN_LENGTH:
         logger.warning("admin_seed_skipped reason=password_too_short")
+        return
+    # 로그인은 최대 길이를 넘는 비밀번호를 422 로 막으므로, 그런 관리자 계정은 만들어도 로그인할 수 없다
+    if len(settings.admin_password) > PASSWORD_MAX_LENGTH:
+        logger.warning("admin_seed_skipped reason=password_too_long")
         return
 
     user = crud.user.get_by_email(db, email)
