@@ -57,7 +57,7 @@ npm run dev                                    # http://localhost:5173
 | `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`). **배포에서는 정적 서버(Caddyfile)도 실행 중에 읽어** CSP `connect-src` 에 넣는다 — 값이 틀리면 API 요청이 브라우저에서 막힌다 |
 | `VITE_ENABLE_MOCK` | `true` 면 백엔드 없이 MSW 로 API 를 모킹 (개발 모드 전용) |
 | `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 값을 쓰고 **코드·문서에 적지 않는다**. 비우면 관리자 화면 미등록 |
-| `VITE_SITE_URL` | **운영 전용.** 배포된 프론트 주소(`https://` 부터, 끝에 `/` 없이). `sitemap.xml`·robots.txt 의 Sitemap 줄·canonical 에 쓴다. 개발에서는 비운다. 값을 바꾸면 **새로 빌드**해야 반영된다 |
+| `VITE_SITE_URL` | **운영 전용.** 배포된 프론트 주소(`https://` 부터, 끝에 `/` 없이). `sitemap.xml`·robots.txt 의 Sitemap 줄·canonical, 링크 미리보기의 `og:url`·`og:image`(절대 주소)에 쓴다. 개발에서는 비운다. 값을 바꾸면 **새로 빌드**해야 반영된다 |
 
 **관리자 화면 주소는 일부러 환경변수로 뺐습니다.** `/admin` 처럼 짐작하기 쉬운 주소는 찔러보기 좋은 표적이 됩니다. 관리자가 아닌 사람이 그 주소로 오면 비로그인·일반 사용자 모두 **없는 주소와 똑같이** 처리해 존재가 드러나지 않게 합니다. 다만 번들을 뒤지면 주소는 보이므로 이것은 무작위 탐색을 줄이는 장치이고, 권한 검사는 서버 `require_admin` 이 최종입니다.
 

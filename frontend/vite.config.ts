@@ -61,9 +61,45 @@ function seoFiles(siteUrl: string | undefined): Plugin {
   }
 }
 
+/** 링크 미리보기 이미지 (public/og-image.png). 크기를 바꾸면 OG_IMAGE_SIZE 도 함께 바꾼다 */
+const OG_IMAGE_PATH = '/og-image.png'
+const OG_IMAGE_SIZE = { width: 1200, height: 630 }
+
+/**
+ * 빌드 때 index.html 에 og:url·og:image 를 넣는다 (docs/05-ui-ux.md 9절 SEO).
+ *
+ * 카카오톡·슬랙 등의 미리보기 로봇은 JavaScript 를 실행하지 않고 절대 주소만 읽는다.
+ * usePageMeta 가 화면에서 넣는 og:url 은 로봇에게 보이지 않으므로 정적 HTML 에 넣는다.
+ * 주소를 모르면 쓸 수 없어 VITE_SITE_URL 이 있을 때만 넣는다 (sitemap.xml 과 같은 규칙)
+ */
+function openGraph(siteUrl: string | undefined): Plugin {
+  const base = siteUrl?.replace(/\/$/, '')
+  return {
+    name: 'open-graph',
+    transformIndexHtml() {
+      if (!base) return []
+      const meta = (property: string, content: string) => ({
+        tag: 'meta',
+        attrs: { property, content },
+        injectTo: 'head' as const,
+      })
+      return [
+        meta('og:url', `${base}/`),
+        meta('og:image', `${base}${OG_IMAGE_PATH}`),
+        meta('og:image:type', 'image/png'),
+        meta('og:image:width', String(OG_IMAGE_SIZE.width)),
+        meta('og:image:height', String(OG_IMAGE_SIZE.height)),
+        meta('og:image:alt', 'Chatlog — AI 챗봇과 대화하고 내 대화 기록을 다시 보는 서비스'),
+      ]
+    },
+  }
+}
+
+const siteUrl = (mode: string) => loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), stripMockWorker(mode), seoFiles(loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL)],
+  plugins: [react(), stripMockWorker(mode), seoFiles(siteUrl(mode)), openGraph(siteUrl(mode))],
   resolve: {
     // 타입 검사용 설정은 tsconfig.app.json 의 paths 에 있다. 둘을 항상 같이 수정한다.
     alias: {
