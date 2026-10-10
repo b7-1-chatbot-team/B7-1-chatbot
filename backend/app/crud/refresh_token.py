@@ -36,6 +36,14 @@ def delete(db: Session, token_hash: str, commit: bool = True) -> int:
     return result.rowcount or 0
 
 
+def delete_all_for_user(db: Session, user_id: int, commit: bool = True) -> int:
+    """한 사용자의 refresh 토큰 전부 삭제 (비밀번호가 바뀌어 기존 세션을 끊을 때). 삭제된 행 수를 반환한다."""
+    result = db.execute(sa_delete(RefreshToken).where(RefreshToken.user_id == user_id))
+    if commit:
+        db.commit()
+    return result.rowcount or 0
+
+
 def delete_expired(db: Session, now: datetime) -> int:
     """스케줄러용 — expires_at 이 지난 행 일괄 삭제. 삭제된 행 수를 반환한다."""
     result = db.execute(sa_delete(RefreshToken).where(RefreshToken.expires_at < now))

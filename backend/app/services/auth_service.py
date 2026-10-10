@@ -3,6 +3,7 @@
 import logging
 from datetime import timedelta
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -104,8 +105,10 @@ def delete_expired_refresh_tokens(db: Session) -> int:
 
 def ensure_admin(db: Session) -> None:
     """ADMIN_EMAIL/ADMIN_PASSWORD 로 관리자 계정을 만들거나, 이미 있으면 role=admin 으로 승격한다.
+    관리자 비밀번호는 항상 ADMIN_PASSWORD 와 같게 맞추고, ADMIN_EMAIL 이 아닌 관리자 계정은 일반 사용자로 내린다
+    — 관리자는 항상 ADMIN_EMAIL 한 명이고, 그 비밀번호는 ADMIN_PASSWORD 다.
 
-    회원가입 API 로는 관리자를 만들 수 없고 이 시드가 유일한 경로다. 기존 계정의 비밀번호는 바꾸지 않는다.
+    회원가입 API 로는 관리자를 만들 수 없고 이 시드가 유일한 경로다.
     """
     email = settings.admin_email.strip().lower()  # 가입 스키마와 같은 규칙으로 소문자 정규화
     # 관리자 값을 설정하지 않은 환경(로컬 개발 등)에서는 조용히 건너뛴다
@@ -127,7 +130,30 @@ def ensure_admin(db: Session) -> None:
             role="admin",
         )
         logger.info("admin_seed_created user_id=%s", user.id)
-    elif user.role != "admin":  # 일반 계정으로 이미 가입돼 있으면 권한만 승격 (재시작해도 중복 생성 없음)
-        user.role = "admin"
+    else:
+        if user.role != "admin":  # 일반 계정으로 이미 가입돼 있으면 승격 (재시작해도 중복 생성 없음)
+            user.role = "admin"
+            logger.info("admin_seed_promoted user_id=%s", user.id)
+        # 비밀번호가 ADMIN_PASSWORD 와 다르면 ADMIN_PASSWORD 로 바꾼다. 두 경우를 막기 위해서다.
+        # ① 누군가 ADMIN_EMAIL 주소로 먼저 가입해 두었으면, 승격된 계정에 그 사람의 비밀번호가 남는다
+        #    (이메일 인증이 없어 누구나 아무 주소로 가입할 수 있다).
+        # ② 비밀번호가 유출돼 ADMIN_PASSWORD 를 바꿔도, DB 의 해시가 그대로면 교체가 반영되지 않는다.
+        # 바꿀 때는 그 계정의 refresh 토큰을 모두 지워 이전 비밀번호로 만든 세션이 재발급으로 이어지지 못하게 한다.
+        # 이미 발급된 access 토큰은 만료(15분)까지 유효하다 — 토큰을 저장하지 않는 JWT 구조의 한계.
+        # 비밀번호가 같으면 아무것도 바꾸지 않으므로, 평소 재배포로 관리자가 로그아웃되지는 않는다.
+        if not verify_password(settings.admin_password, user.hashed_password):
+            user.hashed_password = hash_password(settings.admin_password)
+            crud.refresh_token.delete_all_for_user(db, user.id, commit=False)
+            logger.info("admin_seed_password_reset user_id=%s", user.id)
         db.commit()
-        logger.info("admin_seed_promoted user_id=%s", user.id)
+
+    # 지정에서 빠진 이전 관리자는 일반 사용자로 내린다.
+    # 관리자를 넘기거나 이전 계정이 유출돼 ADMIN_EMAIL 을 바꿨을 때, 이전 계정에 권한이 남지 않게 하기 위해서다.
+    # 권한은 매 요청 DB 의 role 로 확인하므로(require_admin) 이전 관리자가 가진 토큰도 다음 요청부터 403 이 된다.
+    # 위에서 시드를 건너뛴 경우(설정 없음·비밀번호 짧음)에는 여기까지 오지 않는다 → 설정 실수로 관리자가 0명이 되지 않는다.
+    previous_admins = db.scalars(select(User).where(User.role == "admin", User.id != user.id)).all()
+    for previous in previous_admins:
+        previous.role = "user"
+        logger.info("admin_seed_demoted user_id=%s", previous.id)
+    if previous_admins:
+        db.commit()

@@ -412,7 +412,7 @@ curl -s -H "Authorization: Bearer $TOKEN" 'http://localhost:8000/api/me/chats?li
 | 항목 | 규칙 |
 |------|------|
 | 권한 | `require_admin` 의존성: 토큰 사용자 조회 → **DB 의 `users.role` 이 `admin` 이 아니면 `code: 403`** (토큰에 role 을 넣지 않고 매 요청 DB 확인) |
-| 관리자 계정 생성 | 회원가입으로 불가. 서버 시작 시 `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NICKNAME` 으로 생성(이미 있으면 `role=admin` 으로 승격) |
+| 관리자 계정 생성 | 회원가입으로 불가. 서버 시작 시 `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NICKNAME` 으로 생성(이미 있으면 `role=admin` 으로 승격). 관리자는 `ADMIN_EMAIL` 한 명뿐이라, 그 외 관리자 계정은 시작 시 `user` 로 내린다 |
 | 조회 전용 | 수정·삭제 API 없음 |
 | 노출 금지 | `hashed_password`, API 키, 토큰은 어떤 응답에도 포함하지 않는다 |
 | 감사 로그 | 모든 관리자 API 호출을 로그로 남긴다 ([6. 서버 로그 이벤트 규약](#6-서버-로그-이벤트-규약)) |
