@@ -4,8 +4,8 @@
 > 기준 문서: [docs/02-architecture.md](../docs/02-architecture.md) · [docs/09-team.md](../docs/09-team.md) · [docs/11-open-issues.md](../docs/11-open-issues.md)
 > 2026-09-23 박성현 팀 이탈 → **백엔드 전체를 성원모가 담당** (AI 파이프라인·관리자 API 인수, docs/11-open-issues C10)
 > 아래 🟦·🟩 는 담당자가 아니라 **작업 영역** 구분이다 (둘 다 성원모)
-> 진행 상태 기준: **2026-10-06 develop** (`pytest -q` 59건 통과 — 인증 19 · 내 로그 4 · 챗 21 · 서버 로그 4 · 관리자 11)
-> 백엔드 API 는 명세의 전 항목(인증 · 챗 · 내 대화 로그 · 관리자 5종 · 서버 로그)이 develop 에 머지됐다. 남은 일은 배포 마무리와 문서([8. 남은 작업](#8-남은-작업))
+> 진행 상태 기준: **2026-10-10 develop** (`pytest -q` 70건 통과 — 인증 28 · 내 로그 4 · 챗 23 · 서버 로그 4 · 관리자 11)
+> 백엔드 API 는 명세의 전 항목(인증 · 챗 · 내 대화 로그 · 관리자 5종 · 서버 로그)이 develop 에 머지됐고, Railway 배포·외부망 확인도 끝났다. 남은 일은 보안 점검 문서의 백엔드 항목([8. 남은 작업](#8-남은-작업))
 
 ## 범례
 
@@ -32,13 +32,14 @@ backend/
 │   ├── __init__.py
 │   ├── main.py                  🟨 앱 진입점 — CORS · 예외 핸들러 · 라우터 등록 · lifespan
 │   ├── config.py                🟦 환경변수 로딩 (pydantic-settings)
-│   ├── database.py              🟦 엔진 · 세션 · Base · get_db
+│   ├── database.py              🟦 엔진 · 세션 · Base · get_db (SQLite 파일 DB 는 연결 풀 없이 NullPool)
 │   │
 │   ├── core/                    ── 공통 기반
 │   │   ├── responses.py         🟦 공통 응답 {code, data} · AppError · 예외 → 봉투 변환
 │   │   ├── timeutil.py          🟦 UTC 저장 / +09:00 응답 변환
 │   │   ├── security.py          🟦 bcrypt · JWT 발급/검증 · refresh token 해시
 │   │   ├── dependencies.py      🟦 get_current_user(401) · require_admin(403, 🟩 감사 로그 admin_access / admin_forbidden)
+│   │   ├── rate_limit.py        🟦 요청 횟수 제한(429) — 챗 사용자별 · 로그인 실패 이메일/IP 별 · 가입 IP 별, 실제 IP 읽기
 │   │   └── logging.py           🟩 이벤트 로그 — 콘솔 · 파일(logs/app.log) · server_logs 동시 기록 · request_id 발급
 │   │
 │   ├── models/                  ── 테이블 정의 (SQLAlchemy)
@@ -51,7 +52,7 @@ backend/
 │   │   ├── user.py              🟦 get · get_by_email · create   + 🟩 관리자: count · list_with_stats
 │   │   ├── chat_log.py          🟦 create · recent_success_for_context · 내 로그 count/list
 │   │   │                           + 🟩 관리자: stats · count/list_for_user · count/list_failures
-│   │   ├── refresh_token.py     🟦 create · get_valid · delete · delete_expired
+│   │   ├── refresh_token.py     🟦 create · get_valid · delete · delete_all_for_user · delete_expired
 │   │   └── server_log.py        🟦 create   + 🟩 관리자: list_by_request
 │   │
 │   ├── schemas/                 ── 요청·응답 검증 (Pydantic)
@@ -59,7 +60,7 @@ backend/
 │   │   └── chat.py              🟩 ChatRequest(1~1000자)
 │   │
 │   ├── services/                ── 비즈니스 로직
-│   │   ├── auth_service.py      🟦 가입 · 로그인 · 재발급(회전) · 로그아웃 · 관리자 시드 · 만료 토큰 정리
+│   │   ├── auth_service.py      🟦 가입 · 로그인 · 재발급(회전) · 로그아웃 · 관리자 시드(1명 유지 · 비밀번호 동기화) · 만료 토큰 정리
 │   │   ├── chat_service.py      🟩 챗 흐름 — 컨텍스트 구성 · AI 호출 · 성공/실패 저장 · 504 / 502
 │   │   └── ai_service.py        🟩 Codyssey AI 호출 · 전체 30초 상한 · 실패 분류(AI_TIMEOUT / AI_CALL_FAILED)
 │   │
@@ -98,9 +99,12 @@ backend/
 | 기본 구성 | `main.py`(CORS·예외 핸들러), `config.py`, `core/responses.py`, `requirements.txt`, 루트 `.gitignore` | #10 · PR #15 | ✅ |
 | DB | `database.py`, `core/timeutil.py`, `models/*`, `crud/*`, `scripts/check_logs.sql` | #11 · PR #17 | ✅ |
 | 인증 | `core/security.py`, `core/dependencies.py`, `schemas/auth.py`, `services/auth_service.py`, `routers/auth.py`, `main.py`(lifespan), `tests/test_auth.py` | #16 · PR #25 | ✅ |
+| 동시 요청 | `database.py` — SQLite 파일 DB 는 연결 풀 없이(NullPool) 사용. 동시 챗 15건에서 서버 전체가 멈추던 교착 수정, 회귀 테스트 | #72 · PR #74 | ✅ |
+| 관리자 시드 보강 | `services/auth_service.py`, `crud/refresh_token.py` — `ADMIN_EMAIL` 이 아닌 관리자는 강등(관리자 1명), 관리자 비밀번호를 `ADMIN_PASSWORD` 로 맞추고 바뀌면 refresh 토큰 폐기 | #84 · PR #85 | ✅ |
+| 요청 횟수 제한 | `core/rate_limit.py`, `routers/auth.py`, `routers/chat.py`, `config.py` — 챗 사용자별 1분 10회 · 로그인 실패 이메일별 10분 5회/IP 별 20회 · 가입 IP 별 10분 20회 → 429 | #86 · PR #87 | ✅ |
 | 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #58 · PR #59 | ✅ |
-| 배포 | Railway 서비스 설정, Volume `/data`, Variables(`DATABASE_URL=sqlite:////data/app.db` · `LOG_FILE=/data/logs/app.log` 등) — 백엔드 develop 배포 기동 확인(2026-10-01, Start Command 설정). 공개 도메인 생성 · `CORS_ORIGINS` 실제 프론트 주소 등록 · 외부망 확인 남음 | #63 | 🟡 |
-| 문서 | 루트 README 총괄 | `docs/*` | ⏳ |
+| 배포 | Railway 서비스 설정, Volume `/data`, Variables(`DATABASE_URL=sqlite:////data/app.db` · `LOG_FILE=/data/logs/app.log` 등). 공개 도메인 · `CORS_ORIGINS` 등록 · 외부망(HTTPS · 휴대폰 LTE) · 재배포 후 데이터 유지 확인(2026-10-06~07, docs/07-verification L4) | #63 | ✅ |
+| 문서 | 루트 README 총괄 | `docs/*` | ✅ |
 
 ### 🟩 AI 파이프라인 · 관리자 API (성원모)
 
@@ -241,13 +245,25 @@ request_received → ai_call_start → ai_call_success / ai_call_failed(reason=�
 | 관리자 API 는 서비스·스키마 파일 없이 라우터 → CRUD | 조회만 하므로 중간 계층이 할 일이 없음 (내 대화 로그 API 와 같은 구조). 응답은 필요한 필드만 골라 만들어 비밀번호 해시가 섞이지 않음 |
 | 통계의 평균 응답시간은 기록이 없으면 `null` | `0` 으로 두면 "0ms, 아주 빠름"으로 잘못 읽힘. 프론트는 `null` 을 "–" 로 표시하도록 만들어져 있음 (MSW 로만 확인) |
 | Railway 에서 `LOG_FILE=/data/logs/app.log` | 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 저장 |
+| SQLite 파일 DB 는 연결 풀 없이(NullPool) | 기본 풀은 연결을 15개까지만 만든다. 챗 요청은 AI 를 기다리는 동안 연결을 잡고 있어 동시 15건이면 풀이 바닥나 서버 전체가 멈췄다. SQLite 는 파일을 여는 것이라 연결 비용이 작다 |
+| 요청 횟수 제한은 메모리 카운터 | 서버가 하나라 Redis 같은 외부 저장소가 필요 없다. 대가는 재시작하면 횟수 초기화. IP 별 로그인 실패 한도를 이메일별(5회)보다 넉넉한 20회로 둔 것은 교육장처럼 여러 사람이 같은 공인 IP 를 쓰기 때문 |
+| 실제 IP 는 X-Forwarded-For 의 마지막 값 | Railway 는 실제 접속 IP 를 헤더 끝에 덧붙이고 앞쪽 값은 사용자가 꾸밀 수 있다. uvicorn `--forwarded-allow-ips="*"` 는 맨 앞 값을 써서 IP 제한을 피할 수 있으므로 쓰지 않는다 (`TRUST_FORWARDED_FOR=true`) |
+| 관리자 시드가 매 시작마다 계정을 환경변수와 맞춤 | 관리자를 바꿔도 이전 관리자가 남거나, 먼저 가입해 둔 사람의 비밀번호로 관리자가 되거나, 비밀번호 교체가 반영되지 않는 문제를 막기 위해. 시드를 건너뛰는 설정(값 없음)에서는 강등하지 않아 관리자 0명을 막는다 |
 
 ---
 
 ## 8. 남은 작업
 
+배포 마무리 · 프론트 실서버 연결 · 루트 README 는 끝났다(docs/07-verification L4, 2026-10-06~07). 남은 것은 보안 점검 문서(docs/13-security-review)의 백엔드 항목이다.
+
 | 작업 | 내용 |
 |------|------|
+| Swagger 운영에서 끄기 | 운영에서는 `/docs` · `/redoc` · `/openapi.json` 을 끄고 로컬에서만 켠다 (S03, 결정 완료) |
+| 입력·설정 검증 | 서명 키 32바이트 미만이면 시작 거부(S05) · bcrypt 비용 코드에 명시(S10) · 비표시 문자 거부(S14) · 요청 본문 크기 제한과 비밀번호 128자 상한(S04) |
+| 보안 응답 헤더 | 백엔드 응답에 보안 헤더 5종 (S07, 프론트는 완료) |
+| `backend/.env.example` | 값이 비어 있는 키 목록 파일 추가 (실제 값은 커밋 금지) |
+
+------|------|
 | 배포 마무리 | 백엔드 공개 도메인 생성 → 프론트 Variables `VITE_API_BASE_URL` · 백엔드 `CORS_ORIGINS` 에 실제 주소 등록 → 외부망에서 가입 · 질문 · 내 대화 로그 · 관리자 화면 전체 흐름 확인 |
 | 프론트 실서버 연결 | **아직 안 함.** 백엔드는 pytest 와 Swagger 로만 확인했다. 챗 · 내 대화 로그 · 관리자 화면을 MSW 없이 백엔드에 연결해 확인 (프론트 담당과 함께) |
 | `backend/.env.example` | 값이 비어 있는 키 목록 파일 추가 (실제 값은 커밋 금지) |
@@ -267,7 +283,7 @@ pip install -r requirements-dev.txt
 #   필수: JWT_SECRET_KEY · COPA_API_KEY
 #   관리자 계정: ADMIN_EMAIL · ADMIN_PASSWORD(8자 이상) · ADMIN_NICKNAME → 서버 시작 시 자동 생성
 uvicorn app.main:app --reload        # http://localhost:8000/docs (Swagger)
-python -m pytest -q                  # 자동 테스트 59건
+python -m pytest -q                  # 자동 테스트 70건
 ```
 
 > `.env` 에 같은 키가 여러 줄 있으면 **아래쪽 값**이 적용된다. 헷갈리지 않게 키마다 한 줄만 둔다.
