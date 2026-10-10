@@ -153,7 +153,7 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 # backend/.env 를 만든다 — 키 목록은 아래 "환경변수" 표 (실제 값은 커밋 금지)
-uvicorn app.main:app --reload        # http://localhost:8000/docs (Swagger)
+uvicorn app.main:app --reload        # Swagger: http://localhost:8000/docs (backend/.env 에 ENABLE_DOCS=true 일 때)
 python -m pytest -q                  # 자동 테스트
 ```
 

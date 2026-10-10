@@ -68,7 +68,10 @@ async def lifespan(_: FastAPI):
 
 
 # 앱 생성. title·version 은 Swagger(/docs) 화면에 표시된다.
-app = FastAPI(title="Chatlog API", version="0.1.0", lifespan=lifespan)
+# API 문서 화면은 ENABLE_DOCS=true 일 때만 연다 — 운영에서 관리자 API 를 포함한 전체 목록이 보이지 않게 (S03).
+# 끄면 세 경로 모두 404 이고, 제출용 API 명세는 docs/03-api.md 다.
+_docs_off = {} if settings.enable_docs else {"docs_url": None, "redoc_url": None, "openapi_url": None}
+app = FastAPI(title="Chatlog API", version="0.1.0", lifespan=lifespan, **_docs_off)
 
 # 모든 오류 응답을 {code, data:{message}} 봉투 형식으로 바꾸는 예외 핸들러 등록 (app/core/responses.py)
 register_exception_handlers(app)

@@ -23,7 +23,7 @@
 | GitHub Repository 링크 | ✅ | [루트 README](../README.md) 맨 위에 저장소 `b7-1-chatbot-team/B7-1-chatbot` 링크·서비스 URL 기입 (2026-10-08 작성) |
 | 프로젝트 개요(문제·타겟·시나리오) | ✅ | [01-scenario.md](01-scenario.md) |
 | 시스템 구조(아키텍처·컴포넌트 역할) | ✅ | [02-architecture.md](02-architecture.md) |
-| API 명세(요청/응답 예시) | ✅ | [03-api.md](03-api.md), Swagger `/docs` |
+| API 명세(요청/응답 예시) | ✅ | [03-api.md](03-api.md), Swagger `/docs`(로컬 전용 — `ENABLE_DOCS=true`, 운영은 꺼짐) |
 | DB 구조(ERD·필드 설명) | ✅ | [04-database.md](04-database.md) |
 | DB 확인 방법 안내 (1개 이상) | ✅ | ① `GET /api/me/chats`(#58·PR #59) · `/api/admin/*` 5종(#66·PR #67) **구현** ② "내 대화 로그"·**관리자 화면** (배포 서버 확인, TESTING R 146·149) ③ `scripts/check_logs.sql` **구현**(#11·PR #17). 사용 방법은 backend/README 9-4 |
 | 배포 및 실행 방법(환경변수 설정 포함) | ✅ | [06-deployment.md](06-deployment.md) — Railway 절차·환경변수·정적 서버(Caddyfile)·트러블슈팅. 외부망·CORS·재배포 데이터 유지 확인(TESTING R 150) |

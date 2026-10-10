@@ -102,6 +102,7 @@ backend/
 | 동시 요청 | `database.py` — SQLite 파일 DB 는 연결 풀 없이(NullPool) 사용. 동시 챗 15건에서 서버 전체가 멈추던 교착 수정, 회귀 테스트 | #72 · PR #74 | ✅ |
 | 관리자 시드 보강 | `services/auth_service.py`, `crud/refresh_token.py` — `ADMIN_EMAIL` 이 아닌 관리자는 강등(관리자 1명), 관리자 비밀번호를 `ADMIN_PASSWORD` 로 맞추고 바뀌면 refresh 토큰 폐기 | #84 · PR #85 | ✅ |
 | 요청 횟수 제한 | `core/rate_limit.py`, `routers/auth.py`, `routers/chat.py`, `config.py` — 챗 사용자별 1분 10회 · 로그인 실패 이메일별 10분 5회/IP 별 20회 · 가입 IP 별 10분 20회 → 429 | #86 · PR #87 | ✅ |
+| API 문서 노출 | `config.py`, `main.py`, `tests/test_app.py` — `ENABLE_DOCS=true` 일 때만 `/docs` · `/redoc` · `/openapi.json` 을 연다(기본 꺼짐, 운영 404) | #이슈번호 · PR #번호 | ✅ |
 | 내 로그 | `routers/me.py`, `tests/test_me_chats.py` | #58 · PR #59 | ✅ |
 | 배포 | Railway 서비스 설정, Volume `/data`, Variables(`DATABASE_URL=sqlite:////data/app.db` · `LOG_FILE=/data/logs/app.log` 등). 공개 도메인 · `CORS_ORIGINS` 등록 · 외부망(HTTPS · 휴대폰 LTE) · 재배포 후 데이터 유지 확인(2026-10-06~07, docs/07-verification L4) | #63 | ✅ |
 | 문서 | 루트 README 총괄 | `docs/*` | ✅ |
@@ -258,7 +259,6 @@ request_received → ai_call_start → ai_call_success / ai_call_failed(reason=�
 
 | 작업 | 내용 |
 |------|------|
-| Swagger 운영에서 끄기 | 운영에서는 `/docs` · `/redoc` · `/openapi.json` 을 끄고 로컬에서만 켠다 (S03, 결정 완료) |
 | 입력·설정 검증 | 서명 키 32바이트 미만이면 시작 거부(S05) · bcrypt 비용 코드에 명시(S10) · 비표시 문자 거부(S14) · 요청 본문 크기 제한과 비밀번호 128자 상한(S04) |
 | 보안 응답 헤더 | 백엔드 응답에 보안 헤더 5종 (S07, 프론트는 완료) |
 | `backend/.env.example` | 값이 비어 있는 키 목록 파일 추가 (실제 값은 커밋 금지) |
@@ -282,13 +282,15 @@ pip install -r requirements-dev.txt
 # backend/.env 작성 — 키 목록: docs/06-deployment.md
 #   필수: JWT_SECRET_KEY · COPA_API_KEY
 #   관리자 계정: ADMIN_EMAIL · ADMIN_PASSWORD(8자 이상) · ADMIN_NICKNAME → 서버 시작 시 자동 생성
-uvicorn app.main:app --reload        # http://localhost:8000/docs (Swagger)
+uvicorn app.main:app --reload        # Swagger: http://localhost:8000/docs (backend/.env 에 ENABLE_DOCS=true 일 때)
 python -m pytest -q                  # 자동 테스트 70건
 ```
 
 > `.env` 에 같은 키가 여러 줄 있으면 **아래쪽 값**이 적용된다. 헷갈리지 않게 키마다 한 줄만 둔다.
 
 ### 9-2. Swagger 로 확인
+
+> API 문서 화면은 기본으로 꺼져 있다(운영 노출 방지, S03). 로컬에서는 `backend/.env` 에 `ENABLE_DOCS=true` 를 넣고 서버를 다시 켠다.
 
 1. `POST /api/auth/login` 으로 로그인 → 응답의 `access_token` 을 오른쪽 위 **Authorize** 에 붙여 넣기 (`Bearer ` 없이). 토큰은 15분 뒤 만료되므로 그때 다시 로그인
 2. 일반 사용자: `POST /api/chat` → `GET /api/me/chats`

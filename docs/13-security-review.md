@@ -17,7 +17,7 @@
 
 | # | 위험도 | 빈틈 | 평가자가 해 볼 만한 것 | 현재 상태 | **처리 방법** — 프론트 · 백엔드(수정 요청) | 담당 | 상태 |
 |---|:-:|---|---|---|---|---|:-:|
-| S03 | 중간 | **Swagger(`/docs`)가 운영에 열려 있음** | 백엔드 주소 + `/docs` | 관리자 API 를 포함한 전체 API 목록이 공개된다. 권한 검사는 되지만 공격 대상이 한눈에 보인다 | **백엔드(수정 요청, 팀 결정 완료 — 운영에서 끄기)**: 운영에서는 `FastAPI(docs_url=None, redoc_url=None, openapi_url=None)` 로 끄고, 로컬·개발에서만 켠다(환경변수 `ENABLE_DOCS`). API 명세는 `docs/03-api.md` 로 제출. **프론트**: 해당 없음 | 백엔드 | ⚠️ |
+| S03 | 중간 | **Swagger(`/docs`)가 운영에 열려 있음** | 백엔드 주소 + `/docs` | (대응 전) 관리자 API 를 포함한 전체 API 목록이 공개된다. 권한 검사는 되지만 공격 대상이 한눈에 보인다 | **백엔드(수정 요청, 팀 결정 완료 — 운영에서 끄기)**: 운영에서는 `FastAPI(docs_url=None, redoc_url=None, openapi_url=None)` 로 끄고, 로컬·개발에서만 켠다(환경변수 `ENABLE_DOCS`). API 명세는 `docs/03-api.md` 로 제출. **프론트**: 해당 없음. **구현(✅)**: `ENABLE_DOCS`(기본 false)일 때만 세 경로를 만든다 — 꺼지면 404 봉투. 로컬은 `backend/.env` 에 `ENABLE_DOCS=true`. 테스트 추가(#이슈번호·PR #번호, 성원모) | 백엔드 | ✅ |
 | S04 | 중간 | **요청 크기 제한 없음** | 수 MB JSON 을 `/api/auth/signup`·`/api/chat` 에 전송 | 2026-10-07 로컬 백엔드 확인: **5MB 비밀번호를 담은 로그인 요청을 끝까지 읽고 처리**(0.25초, `code: 401`). 서버는 죽지 않지만 큰 본문을 그대로 메모리에 올린다. 질문 1000자 검사도 본문을 다 읽은 뒤에 한다 | **백엔드(수정 요청)**: 요청 본문 크기 상한 미들웨어 — `Content-Length` 가 64KB 를 넘으면 본문을 읽지 않고 `code: 413`, 비밀번호 최대 128자 검증(422), 테스트 추가. **프론트**: 입력 검증(질문 1000자 등)은 이미 있음, 추가 작업 없음 | 백엔드 | ⚠️ |
 | S05 | 중간 | **JWT 서명 키 강도 검사 없음** | (코드 리뷰) | 비어 있는지만 확인한다. 짧은 키로도 서버가 뜬다. 키가 새거나 추측되면 관리자 id 로 토큰을 위조할 수 있다 | **백엔드(수정 요청)**: 서버 시작 시 `JWT_SECRET_KEY` 가 32바이트 미만이면 시작 거부(빈 값 거부와 같은 방식), 06-deployment 에 생성 명령(`python -c "import secrets;print(secrets.token_urlsafe(48))"`) 안내. **프론트**: 해당 없음 | 백엔드 | ⚠️ |
 | S07 | 낮음 | **보안 응답 헤더** — 클릭재킹 방지(`X-Frame-Options`/`frame-ancestors`), `Content-Security-Policy`, `Strict-Transport-Security`, `Referrer-Policy`, `X-Content-Type-Options` | 다른 사이트에 iframe 으로 넣어 보기, securityheaders.com | 배포 확인(2026-10-08): 백엔드 응답에 보안 헤더 없음(`server: railway-hikari` 등만). 프론트는 적용 완료(3절 보안 헤더) | **백엔드(수정 요청)**: ① 모든 API 응답에 미들웨어로 `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` 를 붙인다. ② **Swagger(`/docs`·`/redoc`)는 CDN 스크립트·인라인 스크립트를 쓰므로 위 CSP 에서 제외**한다 — S03 으로 운영에서 끄면 제외할 필요 없음. ③ **프론트 CSP 가 `connect-src` 로 `VITE_API_BASE_URL` 의 출처(https://호스트)만 허용**하므로, API 가 다른 출처나 `http://` 로 리다이렉트하면 브라우저가 막는다. 경로 끝 `/` 리다이렉트(307)가 `http://` 로 나가지 않게 uvicorn 을 `--proxy-headers --forwarded-allow-ips="*"` 로 실행하고(이때 uvicorn 은 X-Forwarded-For **맨 앞** 값을 접속 IP 로 쓰는데, 이 값은 사용자가 꾸밀 수 있다 → 요청 횟수 제한은 이 값을 쓰지 않고 `TRUST_FORWARDED_FOR` 로 마지막 값을 직접 읽는다, S02), 백엔드 주소를 바꾸면 프론트 `VITE_API_BASE_URL` 도 함께 바꾼다. ④ JSON 응답의 `Content-Type: application/json` 을 유지한다(`nosniff` 는 형식이 틀리면 막는다). ⑤ `--no-server-header` 로 `server: uvicorn` 제거. ⑥ 헤더가 붙는지 테스트 추가 | 백엔드 | ⚠️ |
@@ -116,9 +116,8 @@ for (const p of ['/api/admin/stats', '/api/admin/users', '/api/admin/users/1/cha
 
 | 순서 | 항목 | 규모 |
 |:-:|---|---|
-| 1 | S03 Swagger 운영에서 끄기 (결정 완료) | 앱 생성 한 줄 + 환경변수 |
-| 2 | S05 키 강도 · S10 해시 비용 · S14 비표시 문자 · S04 요청 크기 | 각 몇 줄 |
-| 3 | S07 백엔드 응답 헤더 | 미들웨어. **프론트 CSP 조건(connect-src·리다이렉트·Content-Type) 참고** |
+| 1 | S05 키 강도 · S10 해시 비용 · S14 비표시 문자 · S04 요청 크기 | 각 몇 줄 |
+| 2 | S07 백엔드 응답 헤더 | 미들웨어. **프론트 CSP 조건(connect-src·리다이렉트·Content-Type) 참고** |
 | — | 평가 직전: S08 의존성 점검 재실행, P15·P16 요청 횟수 제한 재측정 | — |
 
 ## 7. 침투 테스트 (공격자 입장에서 실제로 찔러 보기)
@@ -142,7 +141,7 @@ for (const p of ['/api/admin/stats', '/api/admin/users', '/api/admin/users/1/cha
 | P07 | **권한 상승 필드 끼워넣기** | 가입 본문에 `"role":"admin"` 추가 | 무시되고 `role=user` 로 생성 | 로컬 | ✅ 로컬 — `"role":"admin"` 무시되고 `role=user` 로 생성 |
 | P08 | **로그인 후 이동 주소 조작 (오픈 리다이렉트)** | 로그인 화면으로 보낼 때 남기는 "원래 가려던 주소"에 `https://evil.example`, `//evil.example` 를 넣어 로그인 | 외부 사이트로 이동하지 않음 | 로컬 · 배포 | ✅ 2026-10-08 (설계상) — 로그인 후 이동은 React Router 내부 상태(`location.state.from.pathname`)만 사용. URL 쿼리로 주입할 수 없고, `navigate()` 는 앱 내부 라우팅이라 외부 주소로 나가지 않음. 외부 pathname 은 404(catch-all)라 `from` 자체가 안 생김 |
 | P09 | **CORS 특수 Origin** | `Origin: null`, `Origin: https://<프론트 주소>.evil.com` (앞부분만 같은 주소) | 허용 헤더가 오지 않음 (배포 A3 은 완전히 다른 주소만 확인) | 배포 | ✅ 배포 — `Origin: null`·`…railway.app.evil.com`·`https://evil.com` 모두 `access-control-allow-origin` 없음(차단). 정확히 일치하는 프론트 주소만 허용 (CORS_ORIGINS 정확 매칭) |
-| P10 | **배포 정보 노출** | 배포 프론트 `*.js.map`(소스맵), 백엔드 `/openapi.json`·`/redoc` | 소스맵 없음. API 명세 공개 여부는 S03 결정을 따름 | 배포 | ✅/🔍 배포 — 소스맵 없음(`*.js.map` 은 SPA fallback 으로 index.html 반환, 실제 맵 아님). **API 명세 `/openapi.json`·`/docs`·`/redoc` 는 200 공개** = S03 (운영에서 끌지 팀 결정) |
+| P10 | **배포 정보 노출** | 배포 프론트 `*.js.map`(소스맵), 백엔드 `/openapi.json`·`/redoc` | 소스맵 없음. API 명세 공개 여부는 S03 결정을 따름 | 배포 | ✅/🔍 배포 — 소스맵 없음(`*.js.map` 은 SPA fallback 으로 index.html 반환, 실제 맵 아님). **API 명세 `/openapi.json`·`/docs`·`/redoc` 는 200 공개** = S03 (운영에서 끌지 팀 결정). S03 구현 후 배포에서 `/docs`·`/redoc`·`/openapi.json` 404 재확인 필요 |
 | P11 | **로그 위조** | 이메일·닉네임에 줄바꿈(`\n`)과 가짜 로그 줄을 넣어 가입·로그인 | 서버 로그에 가짜 줄이 생기지 않음 (422 또는 한 줄로 기록) | 로컬 | ✅ 로컬 — 서버 로그는 request_id·user_id·path 등 식별자만 기록(자유입력 없음), 이메일 줄바꿈은 422. 닉네임은 줄바꿈 허용되나 로그에 쓰이지 않아 위조 불가 (화면은 React 가 글자로) |
 | P12 | **특수 문자 입력** | 질문·닉네임에 제어 문자, 방향 바꾸는 문자(RTL), 이모지 1000개, 전각·제로폭 공백 | 화면 깨짐 없음, 1000자 제한·"공백만" 검사가 우회되지 않음 | 로컬 | ⚠️ 로컬 — 표준 공백·1001자는 422 로 막힘. 단 **제로폭 공백(U+200B)만 넣은 메시지가 빈 입력 검사를 통과**(`str.strip()` 이 U+200B 를 공백으로 보지 않음) → 저장·AI 호출됨. 닉네임도 제어·비표시 문자 허용. → S14 |
 | P13 | **클릭재킹 실제 시험** | 다른 페이지에서 `<iframe src="<배포 프론트>">` | 화면이 들어가지 않음 (S07 헤더 부재의 실제 영향 확인) | 배포 | ✅ 배포 — 프론트 `X-Frame-Options: DENY` + CSP `frame-ancestors 'none'`, iframe `contentDocument=null`(차단). 로컬에서 다른 출처 iframe 도 차단 확인(#77) |
@@ -170,3 +169,4 @@ for (const p of ['/api/admin/stats', '/api/admin/users', '/api/admin/users/1/cha
 | 2026-10-10 | S15 추가(✅) — 관리자 시드가 비밀번호를 `ADMIN_PASSWORD` 로 맞추고, 바뀌면 그 계정의 refresh 토큰 폐기(먼저 가입해 둔 주소의 승격·비밀번호 교체 미반영 해결), 테스트 2건. S12·S15 PR 번호 기입(#84·PR #85). S01·S02 백엔드 요청 횟수 제한 구현(⚠️→✅) — 챗 사용자별 1분 10회, 로그인 실패 이메일별 10분 5회·IP 별 10분 20회(같은 공인 IP 공유 고려해 IP 는 20회로 조정), S09 가입 IP 별 10분 20회, 429 문구 추가, 실제 IP 는 X-Forwarded-For 마지막 값. 4절 429 정의, 6절 우선순위 갱신, P15·P16 재측정 표시 |
 | 2026-10-10 | 완료 내용 동기화 — S01·S02·S09 에 PR 번호(#86·PR #87) 기입, 현재 상태 칸을 "(대응 전)" 으로 표시, 3절에 요청 횟수 제한·동시 요청·관리자 계정 근거 추가 |
 | 2026-10-10 | 처리된 항목 정리 — 1절에서 끝난 S01·S02·S11·S12·S13·S15 를 빼고 근거는 3절로(보안 헤더(프론트)·git 이력 행 추가), S07 은 백엔드 몫만 남김. 판단 항목 S06·S08·S09 는 2절로 옮김. 6절은 남은 작업만 |
+| 2026-10-10 | S03 구현(⚠️→✅) — `ENABLE_DOCS`(기본 false)일 때만 `/docs`·`/redoc`·`/openapi.json` 생성, 운영은 404. 6절 우선순위 갱신, P10 재확인 표시 |
