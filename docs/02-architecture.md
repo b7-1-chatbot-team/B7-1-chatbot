@@ -94,7 +94,7 @@ flowchart TD
 │   │   ├── routers/             # auth.py, chat.py, me.py, admin.py
 │   │   ├── services/            # auth_service.py, ai_service.py, admin_service.py
 │   │   ├── crud/                # user.py, chat_log.py, server_log.py, refresh_token.py
-│   │   └── core/                # security.py, dependencies.py, logging.py, responses.py, rate_limit.py
+│   │   └── core/                # security.py, dependencies.py, logging.py, responses.py, rate_limit.py, body_limit.py
 │   ├── scripts/check_logs.sql
 │   └── requirements.txt
 ├── frontend/
@@ -167,6 +167,7 @@ flowchart TD
 | `app/core/dependencies.py` | `get_current_user` (Bearer → 사용자, 실패 401) · `require_admin` (DB role 확인, 실패 403) |
 | `app/core/logging.py` | 구조화 로그 포맷, `request_id`, 이벤트를 파일/콘솔 + `server_logs` 에 기록 |
 | `app/core/rate_limit.py` | 요청 횟수 제한(429) — 챗 사용자별 · 로그인 실패 이메일/IP 별 · 가입 IP 별 메모리 카운터, 실제 IP 는 X-Forwarded-For 마지막 값(PR #87) |
+| `app/core/body_limit.py` | 요청 본문 크기 상한 — 64KB 넘으면 본문을 읽지 않고 413 (chunked 요청은 읽는 중 차단) |
 | `app/services/auth_service.py` | 가입/로그인 로직, 이메일 중복 검사, access·refresh token 발급·재발급·폐기 |
 | `app/services/ai_service.py` | 컨텍스트 구성, httpx Codyssey AI API 호출, 타임아웃·예외 → 504/502 |
 | `app/services/admin_service.py` | 통계, 사용자 목록, 사용자별 대화, 실패 기록, 요청 흐름 |

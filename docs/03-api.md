@@ -83,6 +83,7 @@ type ApiResponse = {
 | 404 | `NOT_FOUND` | 없는 경로, 관리자 조회 대상(사용자·request_id) 없음 | 요청한 정보를 찾을 수 없습니다. |
 | 405 | `METHOD_NOT_ALLOWED` | 정해진 메서드가 아님 (예: `/api/chat` 을 GET 으로) | 허용되지 않은 요청 방식입니다. |
 | 409 | `EMAIL_ALREADY_EXISTS` | 회원가입 이메일 중복 (닉네임은 중복 허용, 검사하지 않음) | 이미 가입된 이메일입니다. |
+| 413 | `PAYLOAD_TOO_LARGE` | 요청 본문이 64KB(`MAX_BODY_BYTES`)를 넘음 — 본문을 읽지 않고 거절 (모든 API) | 요청 내용이 너무 큽니다. |
 | 422 | `VALIDATION_ERROR` | 입력값 검증 실패 (빈 입력, 길이 초과, 이메일 형식 등) | 질문은 1~1000자로 입력해 주세요. |
 | 429 | `TOO_MANY_REQUESTS` | 요청 횟수 제한 초과 — 챗 요청(사용자별 1분 10회), 로그인 실패(이메일별 10분 5회·IP 별 10분 20회, 넘으면 비밀번호가 맞아도 429), 가입 요청(IP 별 10분 20회). 막힌 요청은 서버 로그 `rate_limited`·`login_rate_limited`·`signup_rate_limited`(WARN) | 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요. |
 | 500 | `INTERNAL_ERROR` | 서버 내부 오류 | 서버 내부 오류가 발생했습니다. |
@@ -138,7 +139,7 @@ POST /api/auth/signup
 | 필드 | 규칙 |
 |------|------|
 | `email` | 이메일 형식(Pydantic `EmailStr`), **중복 불가** |
-| `password` | 최소 8자 이상 |
+| `password` | 8자 이상 128자 이하 |
 | `nickname` | 1~20자, **중복 허용 (검사하지 않음)** |
 
 - 비밀번호는 **bcrypt 로 해싱해서 저장** (평문 저장 금지). 응답에 해시를 포함하지 않는다.
@@ -191,7 +192,7 @@ POST /api/auth/login
 | `expires_in` | access token 만료까지 남은 초. `JWT_EXPIRE_MINUTES × 60` |
 | `refresh_expires_in` | refresh token 만료까지 남은 초. `REFRESH_TOKEN_EXPIRE_DAYS × 86400` |
 
-**실패**: `401`(이메일/비밀번호 불일치), `422`(검증 실패)
+**실패**: `401`(이메일/비밀번호 불일치), `422`(검증 실패 — 비밀번호 128자 초과 포함, 실패 횟수에 세지 않음)
 
 ```bash
 curl -s -X POST http://localhost:8000/api/auth/login \

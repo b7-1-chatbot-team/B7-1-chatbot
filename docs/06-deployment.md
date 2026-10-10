@@ -106,6 +106,7 @@ ENABLE_DOCS=true
 | `SIGNUP_RATE_LIMIT` | `20` | 가입 요청, IP 별 10분에 이 횟수까지 | |
 | `TRUST_FORWARDED_FOR` | `false` | **Railway 는 `true`**. 프록시 뒤에서 X-Forwarded-For 의 마지막 값(프록시가 덧붙인 실제 접속 IP)으로 IP 별 제한을 센다. 끄면 모든 사용자가 프록시 IP 하나로 묶인다. 로컬은 false(헤더를 사용자가 꾸밀 수 있음) | |
 | `ENABLE_DOCS` | `false` | API 문서 화면(`/docs` · `/redoc` · `/openapi.json`)을 열지. **로컬 개발만 `true`, Railway 는 넣지 않음**(기본 false → 세 경로 404). 운영에 관리자 API 를 포함한 전체 목록이 공개되지 않게 하기 위해서다 | |
+| `MAX_BODY_BYTES` | `65536` | 요청 본문 크기 상한(바이트, 64KB). 넘으면 본문을 읽지 않고 `code: 413`. 보통 바꿀 일 없음 | |
 | `LOG_FILE` | `logs/app.log` | 이벤트 로그 파일 경로(`backend/` 기준). 비우면 콘솔에만 기록. 로컬은 설정하지 않아도 됨. **Railway 는 `/data/logs/app.log`** — 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 둔다 ([6-1. 백엔드 서비스](#6-1-백엔드-서비스)) | |
 
 ### `frontend/.env.development` · `frontend/.env.production`
