@@ -41,7 +41,7 @@
 | B12 | 내 로그 조회 API | `GET /api/me/chats` — 토큰 사용자 기준, 성공 기록, `{total, items}` | 4-4절, 2-2절 |
 | B13 | 서버 로그 | 4개 이벤트 필수 기록 + `request_id`, **파일/콘솔과 `server_logs` 테이블에 함께 저장** (아래 [4. API 요약](#4-api-요약)) | 4-5절, 6절 |
 | B14 | 확인용 SQL | `scripts/check_logs.sql` — 사용자별·최근 대화·요청 흐름 조회 | 2-2절 |
-| B15 | 관리자 권한·시드 | `users.role`, `require_admin`(DB role 확인, 403), 시작 시 `ADMIN_EMAIL`/`ADMIN_PASSWORD` 로 생성·승격(그 외 관리자는 `user` 로 강등), 감사 로그 `admin_access`/`admin_forbidden` | 2-2절, 4-4절 |
+| B15 | 관리자 권한·시드 | `users.role`, `require_admin`(DB role 확인, 403), 시작 시 `ADMIN_EMAIL`/`ADMIN_PASSWORD` 로 생성·승격(그 외 관리자는 `user` 로 강등, 비밀번호는 `ADMIN_PASSWORD` 로 맞춤), 감사 로그 `admin_access`/`admin_forbidden` | 2-2절, 4-4절 |
 | B16 | 관리자 사용자 목록 | `GET /api/admin/users?q=` — 이메일·닉네임·가입일·대화 수·최근 대화 시각, 이메일 검색 | 4-4절 |
 | B17 | 관리자 사용자별 대화 | `GET /api/admin/users/{id}/chats` — 성공·실패 모두, 시각·질문·응답·상태 | 4-4절 |
 | B18 | 관리자 AI 실패 기록 | `GET /api/admin/failures` — 언제·누구·어떤 에러(504/502)·request_id | 4-5절 |

@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     admin_password: str = ""  # 비밀값 — 기본값 없음
     admin_nickname: str = ""
 
+    # ---------- 요청 횟수 제한 (13-security-review S01·S02·S09) ----------
+    chat_rate_limit_per_minute: int = Field(default=10, gt=0)  # 사용자별 챗 요청, 1분에 이 횟수까지
+    login_fail_limit_per_email: int = Field(default=5, gt=0)  # 로그인 실패, 이메일별 10분에 이 횟수까지
+    # IP 별은 더 넉넉하게 — 교육장·회사처럼 여러 사람이 같은 공인 IP 를 쓰면 실패가 합쳐서 세어진다
+    login_fail_limit_per_ip: int = Field(default=20, gt=0)  # 로그인 실패, IP 별 10분에 이 횟수까지
+    signup_rate_limit: int = Field(default=20, gt=0)  # 가입 요청, IP 별 10분에 이 횟수까지
+    # 프록시(Railway) 뒤에서만 true — X-Forwarded-For 로 실제 사용자 IP 를 읽는다 (core/rate_limit.client_ip)
+    trust_forwarded_for: bool = False
+
     @property
     def cors_origins_list(self) -> list[str]:
         """CORS_ORIGINS 문자열을 리스트로 변환한다.

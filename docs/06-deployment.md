@@ -77,6 +77,11 @@ ADMIN_EMAIL=
 ADMIN_PASSWORD=
 ADMIN_NICKNAME=
 LOG_FILE=logs/app.log
+CHAT_RATE_LIMIT_PER_MINUTE=10
+LOGIN_FAIL_LIMIT_PER_EMAIL=5
+LOGIN_FAIL_LIMIT_PER_IP=20
+SIGNUP_RATE_LIMIT=20
+TRUST_FORWARDED_FOR=false
 ```
 
 | 키 | 기본값 | 설명 | 민감 |
@@ -92,8 +97,13 @@ LOG_FILE=logs/app.log
 | `MAX_MESSAGE_LENGTH` | `1000` | 질문 최대 글자수 | |
 | `CORS_ORIGINS` | (없음) | 허용 Origin, 쉼표 구분. 예: `http://localhost:5173,https://<프론트>.up.railway.app` | |
 | `ADMIN_EMAIL` | (없음) | 서버 시작 시 생성(또는 `role=admin` 승격)할 관리자 이메일. **관리자는 이 이메일 한 명뿐** — 관리자 교체는 이 값을 바꾸고 재배포하면 되고, 이전 관리자는 시작 시 일반 사용자로 내려간다(로그 `admin_seed_demoted`) | |
-| `ADMIN_PASSWORD` | (없음) | 관리자 비밀번호 (8자 이상) | ✅ |
+| `ADMIN_PASSWORD` | (없음) | 관리자 비밀번호 (8자 이상). 서버 시작 시 관리자 계정 비밀번호를 이 값으로 맞춘다 — 바꾸고 재배포하면 새 비밀번호가 적용되고 관리자의 기존 로그인 세션은 끊긴다(로그 `admin_seed_password_reset`) | ✅ |
 | `ADMIN_NICKNAME` | (없음) | 관리자 닉네임 | |
+| `CHAT_RATE_LIMIT_PER_MINUTE` | `10` | 사용자별 챗 요청, 1분에 이 횟수까지. 넘으면 `code: 429` | |
+| `LOGIN_FAIL_LIMIT_PER_EMAIL` | `5` | 로그인 실패, 이메일별 10분에 이 횟수까지. 넘으면 비밀번호가 맞아도 `code: 429` | |
+| `LOGIN_FAIL_LIMIT_PER_IP` | `20` | 로그인 실패, IP 별 10분에 이 횟수까지. 같은 공인 IP 를 여럿이 쓰는 환경을 고려해 이메일별보다 넉넉하게 | |
+| `SIGNUP_RATE_LIMIT` | `20` | 가입 요청, IP 별 10분에 이 횟수까지 | |
+| `TRUST_FORWARDED_FOR` | `false` | **Railway 는 `true`**. 프록시 뒤에서 X-Forwarded-For 의 마지막 값(프록시가 덧붙인 실제 접속 IP)으로 IP 별 제한을 센다. 끄면 모든 사용자가 프록시 IP 하나로 묶인다. 로컬은 false(헤더를 사용자가 꾸밀 수 있음) | |
 | `LOG_FILE` | `logs/app.log` | 이벤트 로그 파일 경로(`backend/` 기준). 비우면 콘솔에만 기록. 로컬은 설정하지 않아도 됨. **Railway 는 `/data/logs/app.log`** — 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 둔다 ([6-1. 백엔드 서비스](#6-1-백엔드-서비스)) | |
 
 ### `frontend/.env.development` · `frontend/.env.production`

@@ -89,7 +89,7 @@ access token(JWT)은 서버에 저장하지 않는다. **refresh token 만 해�
 | `id` | INTEGER | PK | 로그 식별자 |
 | `request_id` | TEXT | NOT NULL, INDEX | 한 요청의 이벤트를 묶는 ID |
 | `level` | TEXT | NOT NULL | `INFO` / `WARN` / `ERROR` |
-| `event` | TEXT | NOT NULL | `request_received`, `ai_call_start`, `ai_call_success`, `ai_call_failed`, `db_save_success`, `db_save_failed`, `admin_access`, `admin_forbidden` |
+| `event` | TEXT | NOT NULL | `request_received`, `ai_call_start`, `ai_call_success`, `ai_call_failed`, `db_save_success`, `db_save_failed`, `admin_access`, `admin_forbidden`, `rate_limited`, `login_rate_limited`, `signup_rate_limited` |
 | `user_id` | INTEGER | FK→users.id ON DELETE SET NULL, NULL 허용 | 인증 전 요청이면 NULL |
 | `detail` | TEXT | NULL 허용 | `key=value` 형식 부가 정보. **질문 원문·비밀번호·API 키·토큰 금지** |
 | `created_at` | DATETIME | NOT NULL, INDEX | 기록 시각 |

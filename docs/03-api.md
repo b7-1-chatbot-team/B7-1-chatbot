@@ -84,7 +84,7 @@ type ApiResponse = {
 | 405 | `METHOD_NOT_ALLOWED` | 정해진 메서드가 아님 (예: `/api/chat` 을 GET 으로) | 허용되지 않은 요청 방식입니다. |
 | 409 | `EMAIL_ALREADY_EXISTS` | 회원가입 이메일 중복 (닉네임은 중복 허용, 검사하지 않음) | 이미 가입된 이메일입니다. |
 | 422 | `VALIDATION_ERROR` | 입력값 검증 실패 (빈 입력, 길이 초과, 이메일 형식 등) | 질문은 1~1000자로 입력해 주세요. |
-| 429 | `TOO_MANY_REQUESTS` | **(백엔드 구현 예정 — 13-security-review S01·S02)** 챗 요청·로그인 시도 횟수 제한 초과 | 프론트는 서버 문구와 관계없이 "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." 로 표시(#78) |
+| 429 | `TOO_MANY_REQUESTS` | 요청 횟수 제한 초과 — 챗 요청(사용자별 1분 10회), 로그인 실패(이메일별 10분 5회·IP 별 10분 20회, 넘으면 비밀번호가 맞아도 429), 가입 요청(IP 별 10분 20회). 막힌 요청은 서버 로그 `rate_limited`·`login_rate_limited`·`signup_rate_limited`(WARN) | 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요. |
 | 500 | `INTERNAL_ERROR` | 서버 내부 오류 | 서버 내부 오류가 발생했습니다. |
 | 502 | `AI_CALL_FAILED` | AI API 호출 실패 (4xx/5xx/연결 오류/빈 응답) | AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요. |
 | 504 | `AI_TIMEOUT` | AI API 타임아웃 | 현재 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요. |
@@ -412,7 +412,7 @@ curl -s -H "Authorization: Bearer $TOKEN" 'http://localhost:8000/api/me/chats?li
 | 항목 | 규칙 |
 |------|------|
 | 권한 | `require_admin` 의존성: 토큰 사용자 조회 → **DB 의 `users.role` 이 `admin` 이 아니면 `code: 403`** (토큰에 role 을 넣지 않고 매 요청 DB 확인) |
-| 관리자 계정 생성 | 회원가입으로 불가. 서버 시작 시 `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NICKNAME` 으로 생성(이미 있으면 `role=admin` 으로 승격). 관리자는 `ADMIN_EMAIL` 한 명뿐이라, 그 외 관리자 계정은 시작 시 `user` 로 내린다 |
+| 관리자 계정 생성 | 회원가입으로 불가. 서버 시작 시 `.env` 의 `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NICKNAME` 으로 생성(이미 있으면 `role=admin` 으로 승격). 관리자는 `ADMIN_EMAIL` 한 명뿐이라, 그 외 관리자 계정은 시작 시 `user` 로 내린다. 관리자 비밀번호는 시작 시 `ADMIN_PASSWORD` 로 맞춘다(다르면 바꾸고 refresh 토큰 폐기) |
 | 조회 전용 | 수정·삭제 API 없음 |
 | 노출 금지 | `hashed_password`, API 키, 토큰은 어떤 응답에도 포함하지 않는다 |
 | 감사 로그 | 모든 관리자 API 호출을 로그로 남긴다 ([6. 서버 로그 이벤트 규약](#6-서버-로그-이벤트-규약)) |

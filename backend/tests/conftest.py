@@ -30,6 +30,7 @@ os.environ.update(
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.core.rate_limit import ALL_LIMITERS  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -40,6 +41,8 @@ PASSWORD = "password1234"  # 테스트용 공통 비밀번호 (8자 이상 규�
 def client():
     """테스트 함수마다 깨끗한 DB 로 앱을 띄운 TestClient 를 준다 (테스트끼리 데이터가 섞이지 않게)."""
     Base.metadata.drop_all(bind=engine)  # 이전 테스트가 만든 테이블·데이터 전부 삭제
+    for limiter in ALL_LIMITERS:  # 요청 횟수 제한은 메모리에 남으므로 테스트마다 비운다
+        limiter.clear()
     with TestClient(app) as c:  # lifespan 실행 → create_all + 관리자 시드
         yield c
 
