@@ -138,7 +138,7 @@
 | # | 항목 | 현재 문서 초안 | 결정 |
 |---|------|----------------|------|
 | G1 | 관리자 권한 판별 | `users.role` + `require_admin` 이 **매 요청 DB role 확인** (토큰에 role 미포함), 실패 `code: 403` ([02-architecture.md 5-3. 인증 확인 `get_current_user` / `require_admin`](02-architecture.md#5-3-인증-확인-get_current_user--require_admin), [03-api.md 4-0. 공통](03-api.md#4-0-공통)) | |
-| G2 | 관리자 계정 생성 | 가입으로 불가. 서버 시작 시 `.env` `ADMIN_EMAIL`/`ADMIN_PASSWORD`/`ADMIN_NICKNAME` 으로 생성, 이미 있으면 `role=admin` 승격 ([03-api.md 4-0. 공통](03-api.md#4-0-공통), [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수)). 관리자 여러 명 필요 여부 | |
+| G2 | 관리자 계정 생성 | 가입으로 불가. 서버 시작 시 `.env` `ADMIN_EMAIL`/`ADMIN_PASSWORD`/`ADMIN_NICKNAME` 으로 생성, 이미 있으면 `role=admin` 승격, 그 외 관리자는 `user` 로 강등(관리자 1명) ([03-api.md 4-0. 공통](03-api.md#4-0-공통), [06-deployment.md 3. 환경변수](06-deployment.md#3-환경변수)). 관리자 여러 명 필요 여부 | |
 | G3 | 조회 전용 | 수정·삭제 API 없음 ([03-api.md 4-0. 공통](03-api.md#4-0-공통)) | |
 | G4 | `server_logs` 보관·정리 | 무기한 보관 (초안). refresh token 과 같은 하루 1회 스케줄러로 보관 기간(예 30일) 지난 행을 지울지 | |
 | G5 | 내 대화 로그에 AI 실패 기록 노출 | 성공만 노출 ([03-api.md 3-1. 내 대화 로그 조회](03-api.md#3-1-내-대화-로그-조회)). 사용자가 자기 실패 이력을 봐야 하는지 | **성공만 노출로 확정** — 실패 기록은 관리자 화면(F13 AI 실패 기록)에서 추적한다 |

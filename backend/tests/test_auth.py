@@ -197,6 +197,57 @@ def test_admin_seed_promotes_existing_user(client, db):
     assert user.role == "admin"
 
 
+
+def test_admin_seed_demotes_previous_admin(client, db, monkeypatch):
+    """ADMIN_EMAIL 을 바꾸고 재시작하면 관리자는 새 이메일 1명뿐이고, 이전 관리자는 가진 토큰으로도 403"""
+    old_token = login(client, email="admin@example.com", password="admin-password-1234")["data"]["access_token"]
+    assert client.get("/api/admin/stats", headers=auth_header(old_token)).json()["code"] == 200
+
+    monkeypatch.setattr(auth_service.settings, "admin_email", "new-admin@example.com")
+    auth_service.ensure_admin(db)  # 환경변수 변경 후 재시작 가정
+
+    admins = db.scalars(select(User).where(User.role == "admin")).all()
+    assert [a.email for a in admins] == ["new-admin@example.com"]
+    assert crud.user.get_by_email(db, "admin@example.com").role == "user"
+    assert client.get("/api/admin/stats", headers=auth_header(old_token)).json()["code"] == 403
+    new_token = login(client, email="new-admin@example.com", password="admin-password-1234")["data"]["access_token"]
+    assert client.get("/api/admin/stats", headers=auth_header(new_token)).json()["code"] == 200
+
+
+def test_admin_seed_skipped_keeps_admin(client, db, monkeypatch):
+    """ADMIN_EMAIL 을 비워 시드를 건너뛰면 기존 관리자를 내리지 않는다 (설정 실수로 관리자 0명 방지)"""
+    monkeypatch.setattr(auth_service.settings, "admin_email", "")
+    auth_service.ensure_admin(db)
+    assert crud.user.get_by_email(db, "admin@example.com").role == "admin"
+
+
+def test_admin_seed_resets_password_of_preregistered_account(client, db, monkeypatch):
+    """ADMIN_EMAIL 주소로 누군가 먼저 가입해 둔 경우, 승격하면서 비밀번호를 ADMIN_PASSWORD 로 바꾸고 기존 세션을 끊는다"""
+    signup(client, email="taken@example.com")  # 관리자로 지정될 주소를 다른 사람이 먼저 가입
+    squatter_refresh = login(client, email="taken@example.com")["data"]["refresh_token"]
+
+    monkeypatch.setattr(auth_service.settings, "admin_email", "taken@example.com")
+    auth_service.ensure_admin(db)  # 환경변수 변경 후 재시작 가정
+
+    assert crud.user.get_by_email(db, "taken@example.com").role == "admin"
+    assert login(client, email="taken@example.com")["code"] == 401  # 먼저 가입한 사람의 비밀번호로는 못 들어온다
+    assert client.post("/api/auth/refresh", json={"refresh_token": squatter_refresh}).json()["code"] == 401
+    assert login(client, email="taken@example.com", password="admin-password-1234")["code"] == 200
+
+
+def test_admin_seed_applies_password_rotation(client, db, monkeypatch):
+    """ADMIN_PASSWORD 를 바꾸고 재시작하면 새 비밀번호만 통하고 기존 세션은 끊긴다. 비밀번호가 같으면 세션 유지"""
+    old_refresh = login(client, email="admin@example.com", password="admin-password-1234")["data"]["refresh_token"]
+    auth_service.ensure_admin(db)  # 같은 설정으로 재시작 → 아무것도 바뀌지 않음
+    old_refresh = client.post("/api/auth/refresh", json={"refresh_token": old_refresh}).json()["data"]["refresh_token"]
+
+    monkeypatch.setattr(auth_service.settings, "admin_password", "rotated-password-5678")
+    auth_service.ensure_admin(db)  # 비밀번호 교체 후 재시작 가정
+
+    assert login(client, email="admin@example.com", password="admin-password-1234")["code"] == 401
+    assert login(client, email="admin@example.com", password="rotated-password-5678")["code"] == 200
+    assert client.post("/api/auth/refresh", json={"refresh_token": old_refresh}).json()["code"] == 401
+
 def test_require_admin_uses_db_role(client, db):
     """require_admin: 비로그인 401, 일반 사용자 403, DB role 변경이 토큰 재발급 없이 즉시 반영"""
     # 관리자 라우터가 아직 없어서 테스트 안에서만 쓰는 임시 경로를 등록해 검증한다

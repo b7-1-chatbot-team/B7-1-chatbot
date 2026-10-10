@@ -91,7 +91,7 @@ LOG_FILE=logs/app.log
 | `AI_CONTEXT_TURNS` | `5` | 프롬프트에 포함할 최근 성공 Q/A 수 | |
 | `MAX_MESSAGE_LENGTH` | `1000` | 질문 최대 글자수 | |
 | `CORS_ORIGINS` | (없음) | 허용 Origin, 쉼표 구분. 예: `http://localhost:5173,https://<프론트>.up.railway.app` | |
-| `ADMIN_EMAIL` | (없음) | 서버 시작 시 생성(또는 `role=admin` 승격)할 관리자 이메일 | |
+| `ADMIN_EMAIL` | (없음) | 서버 시작 시 생성(또는 `role=admin` 승격)할 관리자 이메일. **관리자는 이 이메일 한 명뿐** — 관리자 교체는 이 값을 바꾸고 재배포하면 되고, 이전 관리자는 시작 시 일반 사용자로 내려간다(로그 `admin_seed_demoted`) | |
 | `ADMIN_PASSWORD` | (없음) | 관리자 비밀번호 (8자 이상) | ✅ |
 | `ADMIN_NICKNAME` | (없음) | 관리자 닉네임 | |
 | `LOG_FILE` | `logs/app.log` | 이벤트 로그 파일 경로(`backend/` 기준). 비우면 콘솔에만 기록. 로컬은 설정하지 않아도 됨. **Railway 는 `/data/logs/app.log`** — 컨테이너 안의 파일은 재배포·재시작 때 사라지므로 DB 와 같은 Volume 에 둔다 ([6-1. 백엔드 서비스](#6-1-백엔드-서비스)) | |
@@ -274,7 +274,7 @@ curl -si -X OPTIONS https://<backend>.up.railway.app/api/auth/login \
 | 하루 넘게 쓰지 않은 뒤 로그인 화면으로 이동 | 정상 (refresh token 1일 만료) |
 | 15분마다 로그인 화면으로 튕김 | refresh 재발급 실패 — 인터셉터가 refresh 를 호출하는지, `refresh_tokens` 에 행이 있는지, 서버 재배포로 DB 가 초기화됐는지(Volume) 확인 |
 | 로그아웃 후에도 잠시 API 호출이 됨 | 정상. access token 은 `exp` 까지 유효하고, refresh 재발급만 차단된다 |
-| 관리자 화면이 `code: 403` | `ADMIN_EMAIL` 이 로그인 계정과 다름 / 시드 후 재시작 안 함 |
+| 관리자 화면이 `code: 403` | `ADMIN_EMAIL` 이 로그인 계정과 다름 / 시드 후 재시작 안 함 / `ADMIN_EMAIL` 을 바꾼 뒤라면 이전 관리자 계정은 일반 사용자로 내려간 것이 정상 |
 | 모든 질문이 `code: 502` | `COPA_API_KEY` 미설정·오류. 로그 `ai_call_failed reason=` 확인 (`auth_failed` / `rate_limited` / `status_5xx`) |
 | 가끔 `code: 502` (429) | AI API 호출 제한(rate limit) 초과. 잠시 후 재시도 |
 | 응답이 계속 `code: 504` | `AI_TIMEOUT_SECONDS` 가 너무 짧거나 네트워크 지연. 값 조정 후 재배포 |
