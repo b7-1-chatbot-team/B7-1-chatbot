@@ -1,4 +1,4 @@
-"""앱 전체 설정 테스트 — API 문서 화면 노출(13-security-review S03), 요청 본문 크기 상한(S04)."""
+"""앱 전체 설정 테스트 — API 문서 화면 노출(13-security-review S03), 요청 본문 크기 상한(S04), JWT 서명 키 강도(S05)."""
 
 import importlib
 
@@ -61,3 +61,20 @@ def test_body_under_limit_reaches_validation(client):
     """상한 아래 본문은 평소대로 검증까지 간다 — 60KB 비밀번호는 413 이 아니라 최대 길이 검증에서 422"""
     r = client.post("/api/auth/login", json={"email": "a@example.com", "password": "a" * (60 * 1024)})
     assert r.json() == {"code": 422, "data": {"message": "비밀번호는 128자 이하로 입력해 주세요."}}
+
+
+# ---------- JWT 서명 키 강도 (S05) ----------
+@pytest.mark.parametrize("key", ["", "short-key", "a" * 31])
+def test_weak_jwt_secret_key_refuses_start(monkeypatch, key):
+    """서명 키가 비었거나 32바이트보다 짧으면 서버가 시작하지 않는다"""
+    monkeypatch.setattr(settings, "jwt_secret_key", key)
+    with pytest.raises(RuntimeError, match="JWT_SECRET_KEY"):
+        with TestClient(app.main.app):
+            pass
+
+
+def test_jwt_secret_key_32_bytes_starts(monkeypatch):
+    """32바이트 키는 시작된다 (경계값)"""
+    monkeypatch.setattr(settings, "jwt_secret_key", "a" * 32)
+    with TestClient(app.main.app) as c:
+        assert c.get("/api/auth/me").json()["code"] == 401

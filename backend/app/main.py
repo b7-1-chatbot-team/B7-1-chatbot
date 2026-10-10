@@ -21,6 +21,9 @@ from app.services import ai_service, auth_service
 
 logger = logging.getLogger("app")
 
+# JWT 서명 키 최소 길이(바이트) — 이보다 짧으면 서버 시작 거부 (S05)
+JWT_SECRET_KEY_MIN_BYTES = 32
+
 # 만료 refresh token 정리 주기: 24시간(초 단위) — A7-6 '하루 1회'
 REFRESH_TOKEN_CLEANUP_INTERVAL_SECONDS = 24 * 60 * 60
 
@@ -52,6 +55,13 @@ async def lifespan(_: FastAPI):
     # 서명 키 없이 뜨면 빈 키로 토큰이 발급되는 보안 사고가 나므로 기동 자체를 막는다
     if not settings.jwt_secret_key:
         raise RuntimeError("JWT_SECRET_KEY 가 설정되지 않았습니다. backend/.env 또는 Railway Variables 를 확인하세요.")
+    # 짧은 키는 추측·대입으로 알아낼 수 있고, 키를 알면 관리자 id 로 토큰을 위조할 수 있으므로 기동을 막는다 (S05).
+    # 32바이트(256비트)는 서명 알고리즘 HS256 의 해시 길이와 같아 권장되는 최소 길이다
+    if len(settings.jwt_secret_key.encode()) < JWT_SECRET_KEY_MIN_BYTES:
+        raise RuntimeError(
+            f"JWT_SECRET_KEY 가 {JWT_SECRET_KEY_MIN_BYTES}바이트보다 짧습니다. "
+            'python -c "import secrets;print(secrets.token_urlsafe(48))" 로 만든 값을 넣으세요.'
+        )
     # 모델 정의대로 테이블 생성 (이미 있는 테이블은 건드리지 않음)
     Base.metadata.create_all(bind=engine)
     # ADMIN_EMAIL 관리자 계정 생성 또는 승격
