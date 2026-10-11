@@ -1,0 +1,15 @@
+.page {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-22);
+  text-align: center;
+}
+
+.title {
+  composes: pageTitle from '../styles/text.module.css';
+}
+
+.description {
+  color: var(--text-secondary);
+}

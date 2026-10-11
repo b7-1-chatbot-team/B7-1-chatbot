@@ -1,0 +1,209 @@
+# Chatlog Frontend
+
+React + TypeScript + Vite 기반 프론트엔드입니다. 전체 문서는 저장소 `docs/` 를 참고하세요.
+
+| 문서 | 내용 |
+|------|------|
+| [../docs/05-ui-ux.md](../docs/05-ui-ux.md) | 화면 설계 · 라우팅 · 디자인 토큰 · API 호출 공통 모듈 |
+| [../docs/03-api.md](../docs/03-api.md) | API 명세 (응답 봉투 `{code, data}`, 결과 코드) |
+| [../docs/06-deployment.md](../docs/06-deployment.md) | 실행 · 환경변수 · 배포 |
+| [../docs/features.md](../docs/features.md) | 기능 목록 (프론트 F1~F14) |
+
+## 실행
+
+```bash
+nvm use                                        # Node 24 (.nvmrc)
+npm install
+cp .env.development.example .env.development   # 로컬 백엔드 주소
+npm run dev                                    # http://localhost:5173
+```
+
+## 스크립트
+
+| 명령 | 설명 |
+|------|------|
+| `npm run dev` | 개발 서버 (development 모드) |
+| `npm run build` | 타입 검사 + production 모드 빌드 → `dist` |
+| `npm run build:dev` | 타입 검사 + development 모드 빌드 |
+| `npm run test` | 단위 테스트 1회 실행 (`vitest run`) |
+| `npm run test:watch` | 단위 테스트 감시 모드 |
+| `npm run typecheck` | 타입 검사만 (`tsc -b`) |
+| `npm run lint` | oxlint |
+| `npm run preview` | 빌드 결과 미리보기 |
+
+## 테스트
+
+**Vitest** + **MSW**(네트워크 모킹) + **happy-dom**(DOM·localStorage 환경) 구성입니다.
+
+검증 항목과 결과는 **[TESTING.md](TESTING.md)** 에 정리돼 있습니다. 기능을 추가하면 그 문서도 함께 갱신합니다.
+
+| 파일 | 역할 |
+|------|------|
+| `src/test/server.ts` | MSW 가짜 서버. 기본 핸들러 없이, 각 테스트가 `server.use(...)` 로 필요한 응답만 등록 |
+| `src/test/setup.ts` | 서버 기동·정리, 테스트마다 핸들러와 `localStorage` 초기화 |
+| `src/test/environment.test.ts` | 테스트 환경 자체 점검 (실패 시 개별 테스트가 아니라 설정을 먼저 확인) |
+
+- 테스트 파일은 `src/**/*.test.ts(x)` 로 두어 **검증 대상 옆에** 둡니다
+- `describe`·`it`·`expect` 는 전역으로 두지 않고 `vitest` 에서 직접 import 합니다
+- 등록하지 않은 요청은 **오류로 처리**합니다. 실제 네트워크로 나가 테스트가 조용히 통과하는 것을 막기 위해서입니다
+- 네트워크 계층에서 가로채는 MSW 를 쓰는 이유는, axios 어댑터를 바꿔치기하는 방식과 달리 **인터셉터를 실제로 통과**시킨 뒤 검증할 수 있기 때문입니다
+
+## 환경변수
+
+`VITE_` 접두어 변수만 번들에 포함되며, **번들은 브라우저에서 그대로 보이므로 비밀값을 넣지 않습니다.**
+
+| 키 | 설명 |
+|----|------|
+| `VITE_API_BASE_URL` | 백엔드 Base URL (axios `baseURL`). **배포에서는 정적 서버(Caddyfile)도 실행 중에 읽어** CSP `connect-src` 에 넣는다 — 값이 틀리면 API 요청이 브라우저에서 막힌다 |
+| `VITE_ENABLE_MOCK` | `true` 면 백엔드 없이 MSW 로 API 를 모킹 (개발 모드 전용) |
+| `VITE_ADMIN_PATH` | 관리자 화면 주소. 짐작하기 어려운 값을 쓰고 **코드·문서에 적지 않는다**. 비우면 관리자 화면 미등록 |
+| `VITE_SITE_URL` | **운영 전용.** 배포된 프론트 주소(`https://` 부터, 끝에 `/` 없이). `sitemap.xml`·robots.txt 의 Sitemap 줄·canonical, 링크 미리보기의 `og:url`·`og:image`(절대 주소)에 쓴다. 개발에서는 비운다. 값을 바꾸면 **새로 빌드**해야 반영된다 |
+
+**관리자 화면 주소는 일부러 환경변수로 뺐습니다.** `/admin` 처럼 짐작하기 쉬운 주소는 찔러보기 좋은 표적이 됩니다. 관리자가 아닌 사람이 그 주소로 오면 비로그인·일반 사용자 모두 **없는 주소와 똑같이** 처리해 존재가 드러나지 않게 합니다. 다만 번들을 뒤지면 주소는 보이므로 이것은 무작위 탐색을 줄이는 장치이고, 권한 검사는 서버 `require_admin` 이 최종입니다.
+
+모드별로 읽는 파일이 다릅니다 — `npm run dev`·`build:dev` 는 `.env.development`, `npm run build` 는 `.env.production`.
+실제 `.env.*` 파일은 커밋하지 않고, 저장소에는 `*.example` 만 둡니다.
+
+## 배포 정적 서버 · 보안 헤더 (`Caddyfile`)
+
+Railway 는 Railpack 으로 빌드한 `dist` 를 Caddy 로 내보냅니다. 이 폴더의 `Caddyfile` 이 있으면 Railpack 기본 설정 대신 쓰입니다. 기본 설정의 포트·SPA fallback(새로고침 404 방지)·압축은 그대로 두고 **보안 응답 헤더**를 더했습니다 (docs/13-security-review.md S07).
+
+| 헤더 | 값 | 하는 일 |
+|------|----|---------|
+| `X-Frame-Options` | `DENY` | 다른 사이트의 iframe 안에 표시하지 않음 (클릭재킹 방지) |
+| `Content-Security-Policy` | `script-src 'self'` · `connect-src 'self' $VITE_API_BASE_URL` · `frame-ancestors 'none'` 등 | 우리 번들·우리 CSS·구글 폰트·우리 백엔드 외의 출처를 막음. **인라인 스크립트 실행 안 됨** |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | 1년간 HTTPS 로만 접속 |
+| `X-Content-Type-Options` | `nosniff` | Content-Type 대로만 처리, 형식 추측 안 함 |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | 다른 사이트로는 도메인만 전달 |
+
+**주의:** `index.html` 에 `onload="…"` 같은 인라인 스크립트를 넣지 않습니다(CSP 가 막음). 폰트 CSS 적용은 `src/applyPreloadedFonts.ts` 가 합니다. 외부 출처(새 CDN·분석 도구 등)를 추가하면 `Caddyfile` 의 CSP 에도 추가해야 합니다.
+
+로컬 확인: `npm run build` 후 Caddy 로 `dist` 를 띄우고 `curl -I` 로 헤더를 봅니다 (`root` 를 로컬 `dist` 경로로, `PORT`·`VITE_API_BASE_URL` 환경변수 지정).
+
+## 백엔드 없이 화면 확인하기 (API 모킹)
+
+`.env.development` 에서 켜고 끕니다.
+
+```
+VITE_ENABLE_MOCK=true    # 백엔드 없이 프론트만 확인
+VITE_ENABLE_MOCK=false   # 실제 백엔드에 연결
+```
+
+켜면 `src/mocks/handlers.ts` 의 가짜 백엔드가 응답합니다. **고정 응답이 아니라 상태를 두므로, 방금 가입한 계정으로 실제 로그인이 됩니다.**
+
+| 동작 | 비고 |
+|------|------|
+| 가입·로그인·로그아웃·내 정보 | `docs/03-api.md` 형식 그대로 |
+| access token 수명 | **30초** — 재발급과 single-flight 를 눈으로 확인하려고 짧게 두었습니다 |
+| refresh token 회전 | 재발급 시 이전 토큰을 폐기합니다 |
+| 이메일 | 실제 서버와 같게 **소문자로 정규화**해 저장합니다 |
+| 데이터 보관 | `localStorage` 의 `mock:db` — 새로고침해도 유지됩니다 |
+
+**관리자 계정은 미리 준비돼 있습니다.** 실제 서버도 시작 시 `.env` 로 만들며, 회원가입으로는 관리자를 만들 수 없습니다 (`docs/03-api.md` 4-0절).
+
+| 구분 | 계정 |
+|------|------|
+| 관리자 | `admin@example.com` / `admin1234` |
+| 일반 사용자 | 회원가입으로 만드는 계정은 **항상** 일반 사용자입니다 |
+
+모킹 데이터를 초기 상태로 되돌리려면 개발자도구 → Application → Local Storage 에서 **`mock:db`** 키를 지우고 새로고침합니다.
+
+**오류 상황은 이메일 접두어로 강제합니다.** 실제 백엔드로는 재현이 번거로운 경우를 위한 것입니다.
+
+| 이메일 | 결과 |
+|--------|------|
+| `slow@example.com` | 응답 2초 지연 (로딩 표시 확인) |
+| `error500@example.com` | `code: 500` |
+| `error429@example.com` | `code: 429` — 로그인 오류 박스에 "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." |
+| `error422@example.com` | `code: 422` |
+| `offline@example.com` | 네트워크 오류 → "서버에 연결할 수 없습니다" |
+
+**챗은 질문에 표시어를 넣어 AI 실패를 강제합니다.** 실제 AI API 로는 504·502 를 재현하기 어렵습니다.
+
+| 질문에 포함 | 결과 |
+|------|------|
+| `#timeout` | `code: 504` — 오류 말풍선 + 다시 시도 아이콘. **실패 기록으로 저장**(관리자 화면에 보임) |
+| `#fail` | `code: 502` — 오류 말풍선 + 다시 시도 아이콘. 실패 기록으로 저장 |
+| `#500` | `code: 500` — 다시 시도 없음, 저장하지 않음 |
+| `#429` | `code: 429` — "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", 다시 시도 없음, 저장하지 않음 |
+| `#slow` | 6초 지연 — 5초가 넘으면 "응답이 늦어지고 있습니다" 안내 |
+
+내 대화 로그·챗 복원에는 **성공한 대화만** 나옵니다. 실패 기록은 관리자 화면(AI 실패 기록·사용자별 대화·요청 흐름)에서 봅니다 — 관리자 API 5개도 모킹됩니다.
+
+모킹은 **개발 모드에서만** 동작합니다. `import.meta.env.DEV` 로 감싸 두어 운영 빌드에서는 코드 자체가 제거됩니다. `public/mockServiceWorker.js` 는 msw 가 생성한 파일이므로 직접 수정하지 않습니다.
+
+테스트(vitest)는 별도로 `src/test/server.ts`(`msw/node`)를 쓰며, 각 테스트가 직접 핸들러를 등록합니다.
+
+## 구조
+
+```
+src/
+├── api/             # 통신 계층
+│   ├── instance.ts  # axios.create + 인터셉터 등록만 (호출 함수는 두지 않는다)
+│   ├── interceptors/# attachToken · normalize · refresh(single-flight)
+│   ├── auth.ts      # 엔드포인트 함수 (chat.ts, logs.ts 동일)
+│   ├── ApiError.ts  # code · 안내 문구 · 재시도용 config
+│   ├── types.ts     # API 요청·응답 타입 (docs/03-api.md 와 1:1)
+│   └── axios.d.ts   # _retried 플래그 모듈 확장
+├── utils/           # tokenStorage(토큰 + 변경 구독) · validators · datetime(시간 표기 규칙) · resultLabel
+├── hooks/           # useAccessToken · useAuth · useField · useSubmit · useAbortableRequest
+│                    # useChatHistory · usePagedList · useDebouncedValue · useToast · usePageMeta
+├── store/           # authContext · AuthProvider · toastContext · ToastProvider · types (AuthStatus)
+├── components/      # Button · Field · Alert · Icon · Spinner(LoadingStatus) · Toast · Timestamp
+│                    # HistoryScroller · ErrorBoundary + *.module.css
+├── pages/           # 라우트 단위 화면 — Login · Signup · NotFound, chat/ · logs/ · admin/ 폴더
+├── mocks/           # 브라우저 MSW 가짜 백엔드 (개발 모드 + VITE_ENABLE_MOCK=true 일 때만)
+├── types/           # 여러 화면이 공유하는 타입 (user.ts)
+├── styles/          # 전역 CSS와 공용 모듈
+│   ├── reset.css    # 브라우저 기본값 정리 (Josh Comeau Custom CSS Reset 기반)
+│   ├── global.css   # 디자인 토큰(:root) + 모바일·동작 줄이기 값 + 공통 기본값
+│   ├── motion.module.css  # 공용 등장 애니메이션 (composes 로 사용)
+│   └── text.module.css    # 공용 글자 모양 — 화면 제목
+├── routes/          # 라우팅
+│   ├── paths.ts     # 경로 상수 PATHS
+│   ├── types.ts     # 경로 관련 타입
+│   ├── guards.tsx   # RequireAuth · RequireAdmin · GuestOnly
+│   └── index.tsx    # 경로 정의 — 챗·로그·관리자는 lazy 로 나눠 그 화면에 갈 때 받는다
+├── test/            # server.ts(MSW) · setup.ts — 테스트는 *.test.ts 로 대상 옆에
+├── layouts/         # AppLayout(본문 바로가기 + 헤더 + 본문[오류 경계·Suspense]) · Header(메뉴·계정 영역·토스트 자리 — 헤더 아래 가운데)
+├── App.tsx          # 앱 틀 — 레이아웃으로 라우트 전체를 감쌈
+└── main.tsx         # 진입점 — MSW 시작, 마운트, Provider(BrowserRouter → ToastProvider → AuthProvider)
+```
+
+**`api/` 는 `store/` 를 import 하지 않습니다.** 인터셉터가 `AuthContext` 를 직접 부르면 `AuthContext → api/auth → instance → interceptors → AuthContext` 순환 참조가 됩니다. 재발급이 최종 실패하면 `clearTokens()` 만 호출하고, 토큰 변경 구독을 통해 인증 상태가 정리됩니다 (`docs/12-decisions.md` 17절).
+
+**import 경로 규칙**
+
+`src` 를 가리키는 alias `@/` 를 사용한다. `../../` 로 거슬러 올라가지 않는다.
+
+```ts
+import { getAccessToken } from '@/utils/tokenStorage'   // O
+import { getAccessToken } from '../../utils/tokenStorage' // X
+```
+
+같은 폴더 안의 파일은 `./paths` 처럼 상대 경로를 그대로 쓴다.
+alias 설정은 **`tsconfig.app.json` 의 `paths`(타입 검사)와 `vite.config.ts` 의 `resolve.alias`(번들) 두 곳**에 있으며, 항상 같이 수정한다.
+
+**타입·인터페이스 규칙**
+
+타입은 상수·구현 파일과 섞지 않고 **타입 파일로 분리**한다. 두는 위치는 사용 범위로 정한다.
+
+| 사용 범위 | 위치 | 예 |
+|-----------|------|----|
+| **여러 페이지·컴포넌트가 공유** | `src/types/` | `src/types/user.ts`, `src/types/chat.ts` |
+| **한 영역에서만 사용** | 그 폴더의 `types.ts` | `src/routes/types.ts`, `src/api/types.ts` |
+| 한 컴포넌트에서만 쓰는 props | 그 컴포넌트 파일 안 | `function LogCard({ ... }: Props)` |
+
+- 처음에는 좁은 범위(해당 폴더 `types.ts`)에 두고, 다른 영역에서도 쓰게 되면 `src/types/` 로 옮긴다
+- 타입 전용 import 는 `import type { ... }` 로 쓴다 (`verbatimModuleSyntax` 적용)
+
+스타일은 **CSS Modules**(`*.module.css`)를 사용하고, 색·글자 크기·간격·움직임 등은 `styles/global.css` 의 **디자인 토큰**(CSS 변수)만 씁니다.
+전역 CSS 는 `reset.css` → `global.css` 두 파일이며 `main.tsx` 에서 이 순서로 로드합니다. 여러 모듈이 같이 쓰는 모양은 `styles/*.module.css` 를 `composes` 로 가져다 씁니다.
+
+- 기준 화면·토큰 표: `docs/design/prototype.html` ([디자인 토큰]·[상태 모음])
+- 규칙: `docs/05-ui-ux.md` 1절(토큰·지원 브라우저·토스트·로딩·시간 표기), 9절(SEO·접근성)
+- **지원 브라우저** Chrome·Edge 90, Safari 14.1, Firefox 90 — `oklch()`·`color-mix()` 를 쓰지 않고 색을 hex·rgba 로 둔다
+- 사용자 화면에는 결과 코드(504 등)를 보이지 않는다. 새로고침·다시 시도·닫기는 아이콘 버튼(`Button` 의 `label`)
+- 커밋 전에 쓰지 않는 토큰·모듈 클래스, 같은 선언 반복이 없는지 확인한다 (TESTING.md 주의점 ⑦)
+
+**성능** — 폰트 CSS 는 `index.html` 에서 `preload` 로 받아 첫 화면을 막지 않고, 챗·로그·관리자 화면은 `React.lazy` 로 나눈다 (#57).

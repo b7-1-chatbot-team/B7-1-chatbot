@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <!-- Chatlog 말풍선 아이콘. 브랜드 teal 배경에 흰 말풍선 + 대화 점 3개 -->
+  <rect width="32" height="32" rx="7" fill="#70b3ab"/>
+  <path fill="#ffffff" d="M8 8.5h16a2.5 2.5 0 0 1 2.5 2.5v8a2.5 2.5 0 0 1-2.5 2.5h-8.1l-4.5 3.4a.8.8 0 0 1-1.28-.64V24H8a2.5 2.5 0 0 1-2.5-2.5V11A2.5 2.5 0 0 1 8 8.5Z"/>
+  <circle cx="11.5" cy="15.5" r="1.5" fill="#2e5551"/>
+  <circle cx="16" cy="15.5" r="1.5" fill="#2e5551"/>
+  <circle cx="20.5" cy="15.5" r="1.5" fill="#2e5551"/>
+</svg>
