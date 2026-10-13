@@ -314,13 +314,15 @@ Authorization: Bearer <token>
 {
   "code": 200,
   "data": {
-    "chat_id": 987,
+    "chat_id": "6f1c2b9e-3d4a-4e5f-8a7b-1c2d3e4f5a6b",
     "question": "FastAPI에서 CORS 설정은 어떻게 해?",
     "answer": "FastAPI에서는 CORSMiddleware를 사용합니다...",
     "created_at": "2026-09-14T10:05:12+09:00"
   }
 }
 ```
+
+> 일반 사용자 API(`/api/chat`, `/api/me/chats`)의 `chat_id` 는 대화의 공개 id(`chat_logs.public_id`, UUID 문자열)다. 순차 정수 DB id 를 내보내면 서비스 전체 대화 수·이용량을 유추할 수 있어서다(#106). 두 API 는 같은 대화에 같은 값을 준다. 관리자 API 의 `chat_id` 는 추적용 정수 DB id 그대로다.
 
 **동작 흐름**
 
@@ -382,7 +384,7 @@ Authorization: Bearer <token>
   "data": {
     "total": 42,
     "items": [
-      { "chat_id": 987, "question": "FastAPI에서 CORS 설정은 어떻게 해?", "answer": "FastAPI에서는 CORSMiddleware를 사용합니다...", "created_at": "2026-09-14T10:05:12+09:00" }
+      { "chat_id": "6f1c2b9e-3d4a-4e5f-8a7b-1c2d3e4f5a6b", "question": "FastAPI에서 CORS 설정은 어떻게 해?", "answer": "FastAPI에서는 CORSMiddleware를 사용합니다...", "created_at": "2026-09-14T10:05:12+09:00" }
     ]
   }
 }
@@ -392,6 +394,7 @@ Authorization: Bearer <token>
 |------|------|
 | `total` | 해당 사용자의 전체 **성공** 기록 수 |
 | `items` | 최신순. 성공 기록만 (AI 실패 기록 노출 여부는 [11-open-issues.md](11-open-issues.md) G5) |
+| `items[].chat_id` | 대화의 공개 id(UUID 문자열). 순서·개수를 드러내지 않는다. 화면의 "N번째" 는 프론트가 `total` 과 위치로 센 내 기록 안의 순번이다 ([05-ui-ux.md](05-ui-ux.md) 화면 4) |
 
 **실패**: `401`
 
