@@ -393,7 +393,7 @@ Authorization: Bearer <token>
 | 필드 | 의미 |
 |------|------|
 | `total` | 해당 사용자의 전체 **성공** 기록 수 |
-| `chat_id` | 대화의 UUID 문자열 (질문 전송 응답의 `chat_id` 와 같은 값) |
+| `chat_id` | 대화의 UUID 문자열 (질문 전송 응답의 `chat_id` 와 같은 값). 화면의 "N번째" 는 이 값이 아니라 프론트가 `total` 과 위치로 센 내 기록 안의 순번이다 ([05-ui-ux.md](05-ui-ux.md) 화면 4) |
 | `items` | 최신순. 성공 기록만 (AI 실패 기록 노출 여부는 [11-open-issues.md](11-open-issues.md) G5) |
 
 **실패**: `401`

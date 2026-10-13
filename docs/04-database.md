@@ -135,7 +135,7 @@ LIMIT :context_turns;   -- AI_CONTEXT_TURNS (5, A16 확정)
 **내 로그 조회** (`GET /api/me/chats`)
 ```sql
 SELECT COUNT(*) FROM chat_logs WHERE user_id = :user_id AND status = 'success';
-SELECT id, question, answer, created_at FROM chat_logs
+SELECT public_id, question, answer, created_at FROM chat_logs
 WHERE user_id = :user_id AND status = 'success'
 ORDER BY id DESC LIMIT :limit OFFSET :offset;
 ```
