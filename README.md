@@ -67,7 +67,7 @@ flowchart LR
 | **공통** (`core/`) | 공통 응답 봉투 `{code, data}`·예외 변환, 인증 의존성(`get_current_user`·`require_admin`), 이벤트 로그 |
 | **정적 서버** (`frontend/Caddyfile`) | 빌드 결과 서빙·SPA fallback·보안 응답 헤더(CSP·HSTS·클릭재킹 방지 등) |
 
-**질문 한 건의 처리 흐름** — 요청 수신 → 인증 → 입력 검증(1~1000자) → 최근 5턴으로 컨텍스트 구성 → AI 호출(30초 상한) → 성공·실패 모두 DB 저장 → `{code, data}` 응답. 단계마다 같은 `request_id` 로 서버 로그가 남습니다 (`request_received → ai_call_start → ai_call_success / ai_call_failed → db_save_success`).
+**질문 한 건의 처리 흐름** — 요청 수신 → 인증 → 입력 검증(1~1000자) → 횟수 제한(1분 10회) → 최근 5턴으로 컨텍스트 구성 → AI 호출(30초 상한) → 성공·실패 모두 DB 저장 → `{code, data}` 응답. 단계마다 같은 `request_id` 로 서버 로그가 남습니다 (`request_received → ai_call_start → ai_call_success / ai_call_failed → db_save_success`).
 
 자세히: [docs/02-architecture.md](docs/02-architecture.md)
 
@@ -131,8 +131,8 @@ erDiagram
 
 | 테이블 | 용도 | 주요 필드 |
 |--------|------|-----------|
-| `users` | 계정 | `id`, `email`(고유), `hashed_password`(bcrypt), `nickname`, `role`(user·admin), `created_at` |
-| `chat_logs` | 질문·응답 누적 저장 | `user_id`(사용자 식별), `created_at`(생성 시각), `question`, `answer`(실패 시 NULL), `status`(success·error), `error_code`, `latency_ms`, `request_id` |
+| `users` | 계정 | `id`, `public_id`(UUID — 토큰에 쓰는 바깥용 번호), `email`(고유), `hashed_password`(bcrypt), `nickname`, `role`(user·admin), `created_at` |
+| `chat_logs` | 질문·응답 누적 저장 | `public_id`(UUID — 사용자에게 보이는 `chat_id`), `user_id`(사용자 식별), `created_at`(생성 시각), `question`, `answer`(실패 시 NULL), `status`(success·error), `error_code`, `latency_ms`, `request_id` |
 | `server_logs` | 요청 단계별 이벤트 | `request_id`, `level`, `event`, `user_id`, `detail`, `created_at` |
 | `refresh_tokens` | 재발급용 토큰 | `user_id`, `token_hash`(SHA-256, 원문 저장 안 함), `expires_at` |
 
@@ -177,13 +177,17 @@ npm run dev                                    # http://localhost:5173
 | 키 | 설명 |
 |----|------|
 | `COPA_API_KEY` | Codyssey AI API 키 — **서버에서만 사용** (민감) |
-| `JWT_SECRET_KEY` | JWT 서명 키, 충분히 긴 난수 (민감). 비어 있으면 서버가 시작하지 않음 |
+| `JWT_SECRET_KEY` | JWT 서명 키, 충분히 긴 난수 (민감). 비었거나 32바이트 미만이면 서버가 시작하지 않음 |
 | `JWT_ALGORITHM` · `JWT_EXPIRE_MINUTES` · `REFRESH_TOKEN_EXPIRE_DAYS` | `HS256` · `15` · `1` |
 | `DATABASE_URL` | 기본 `sqlite:///./data/app.db`, Railway 는 `sqlite:////data/app.db` |
 | `AI_TIMEOUT_SECONDS` · `AI_CONTEXT_TURNS` · `MAX_MESSAGE_LENGTH` | `30` · `5` · `1000` |
 | `CORS_ORIGINS` | 허용할 프론트 주소, 쉼표 구분 |
 | `ADMIN_EMAIL` · `ADMIN_PASSWORD` · `ADMIN_NICKNAME` | 서버 시작 시 관리자 계정 생성(비밀번호 민감) |
 | `LOG_FILE` | 로그 파일 경로, Railway 는 `/data/logs/app.log` |
+| `CHAT_RATE_LIMIT_PER_MINUTE` · `LOGIN_FAIL_LIMIT_PER_EMAIL` · `LOGIN_FAIL_LIMIT_PER_IP` · `SIGNUP_RATE_LIMIT` | `10` · `5` · `20` · `20` — 요청 횟수 제한(넘으면 429) |
+| `TRUST_FORWARDED_FOR` | Railway 는 `true` (프록시 뒤에서 실제 접속 IP 로 횟수를 셈), 로컬은 `false` |
+| `ENABLE_DOCS` | `true` 일 때만 API 문서 화면(`/docs`) 열림. 로컬 개발만 켜고 Railway 는 넣지 않음 |
+| `MAX_BODY_BYTES` | 요청 본문 상한, 기본 `65536`(64KB) — 넘으면 413 |
 
 **프론트** (`frontend/.env.development` · `.env.production`, 예시: `frontend/.env.*.example`)
 
