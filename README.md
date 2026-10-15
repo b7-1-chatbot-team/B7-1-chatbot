@@ -9,6 +9,30 @@ AI 장애(타임아웃·호출 실패)가 나도 서비스는 멈추지 않고 �
 | **GitHub Repository** | https://github.com/b7-1-chatbot-team/B7-1-chatbot |
 | **팀** | 성원모(팀장, 백엔드) · 이성준(프론트엔드) — 박성현 2026-09-23 중도 이탈 |
 
+<details>
+<summary><strong>배포 동작 화면 (Railway, 2026-10-15 캡처) — 클릭해서 펼치기</strong></summary>
+
+<br>
+
+| 로그인 — 입력 검증 | 챗 — 질문·AI 응답 |
+|:---:|:---:|
+| <img src="docs/screenshots/deploy/00-login.png" width="420" alt="로그인 화면"> | <img src="docs/screenshots/deploy/04-chat.png" width="420" alt="챗 화면"> |
+| **내 대화 로그 — 본인 기록만 조회** | **관리자 — 통계·사용자별 대화** |
+| <img src="docs/screenshots/deploy/05-my-chat-logs.png" width="420" alt="내 대화 로그"> | <img src="docs/screenshots/deploy/06-admin-user-chats.png" width="420" alt="관리자 사용자별 대화"> |
+| **관리자 — AI 실패 기록 (AI_TIMEOUT)** | **Railway — FE·BE 서비스와 Volume** |
+| <img src="docs/screenshots/deploy/07-admin-ai-failures.png" width="420" alt="관리자 AI 실패 기록"> | <img src="docs/screenshots/deploy/01-railway-services.png" width="420" alt="Railway 서비스 구성"> |
+| **Railway — 서버 콘솔 로그 (HTTP·admin_access)** | **Railway — request_id 로 챗 1건 추적** |
+| <img src="docs/screenshots/deploy/02-railway-deploy-logs.png" width="420" alt="Railway 배포 로그"> | <img src="docs/screenshots/deploy/03-railway-request-trace.png" width="420" alt="request_id 추적 로그"> |
+| **DB 조회 — 사용자별 대화 수·최근 대화** | **DB 조회 — AI 실패 흐름·bcrypt 해시·refresh token** |
+| <img src="docs/screenshots/deploy/08-db-query-chats.png" width="420" alt="DB 조회 사용자별 대화"> | <img src="docs/screenshots/deploy/09-db-query-security.png" width="420" alt="DB 조회 실패 흐름과 보안 저장"> |
+| **DB 조회 — server_logs 테이블 (최근 서버 로그)** | |
+| <img src="docs/screenshots/deploy/10-db-server-logs.png" width="420" alt="DB server_logs 조회"> | |
+
+> 위 챗 화면의 질문(`request 1b6fcc36241f`)이 Railway 콘솔 로그와 DB `server_logs`(1124~1127)에 `request_received → ai_call_start → ai_call_success → db_save_success` 순으로 남고, `chat_logs` 199번 행에도 같은 request_id 로 저장됩니다. 관리자 화면 조회는 `admin_access` 이벤트로 기록됩니다.
+> DB 조회는 Railway Console 에서 `sqlite3 /data/app.db < scripts/check_logs.sql` 와 `server_logs` SELECT 를 실행한 결과입니다. 캡처 속 계정 이메일은 블러 처리했습니다.
+
+</details>
+
 ---
 
 ## 1. 프로젝트 개요
